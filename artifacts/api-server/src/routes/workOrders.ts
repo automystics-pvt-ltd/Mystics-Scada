@@ -57,6 +57,10 @@ router.get("/work-orders", async (req, res) => {
 
 router.post("/work-orders", requirePermission("maintenance.manage"), async (req, res) => {
   const orgId = resolveOrgId(req);
+  if (!orgId) {
+    res.status(400).json({ error: "org_required", message: "Impersonate a specific org before creating work orders" });
+    return;
+  }
   const body = CreateWorkOrderBody.parse(req.body);
 
   // Verify the plant exists and belongs to the caller's org
@@ -71,7 +75,7 @@ router.post("/work-orders", requirePermission("maintenance.manage"), async (req,
     .insert(workOrdersTable)
     .values({
       id: randomUUID(),
-      orgId: req.user!.orgId,   // always stamp the actual session org (no override)
+      orgId,
       plantId: plant.id,
       plantName: plant.name,
       equipment: body.equipment,

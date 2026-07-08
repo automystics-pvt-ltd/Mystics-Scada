@@ -360,17 +360,23 @@ export async function ensureSeedData(): Promise<void> {
       plantIds: PLANTS.map((p) => p.id),
       status: "active",
       passwordHash,
+      isSuperAdmin: true,
       lastLoginAt: null,
       createdAt: new Date(),
     });
     logger.info({ email: demoAdminEmail }, "Seeded demo admin account");
-  } else if (!existingAdmin.passwordHash) {
-    // Patch existing admin row if it was seeded without a password
-    const passwordHash = await bcrypt.hash("demo1234", 10);
+  } else {
+    // Patch existing admin: ensure password and super-admin flag are set
+    const updates: Record<string, unknown> = { isSuperAdmin: true };
+    if (!existingAdmin.passwordHash) {
+      updates.passwordHash = await bcrypt.hash("demo1234", 10);
+    }
     await db
       .update(usersTable)
-      .set({ passwordHash })
+      .set(updates)
       .where(eq(usersTable.id, existingAdmin.id));
-    logger.info({ email: demoAdminEmail }, "Patched demo admin password hash");
+    if (!existingAdmin.passwordHash) {
+      logger.info({ email: demoAdminEmail }, "Patched demo admin password hash + super-admin flag");
+    }
   }
 }

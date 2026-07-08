@@ -101,7 +101,11 @@ router.post("/roles", requirePermission("users.manage"), async (req, res) => {
   const body = CreateRoleBody.parse(req.body);
 
   // Duplicate name check within this org
-  const orgId = req.user!.orgId;
+  const orgId = resolveOrgId(req);
+  if (!orgId) {
+    res.status(400).json({ error: "org_required", message: "Impersonate a specific org before creating roles" });
+    return;
+  }
   const [conflict] = await db
     .select({ id: rolesTable.id })
     .from(rolesTable)

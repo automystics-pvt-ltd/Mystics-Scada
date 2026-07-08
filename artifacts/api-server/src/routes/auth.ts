@@ -11,7 +11,7 @@
 
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable, rolesTable } from "@workspace/db";
+import { db, usersTable, rolesTable, organizationsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { SESSION_COOKIE, parseSession, type SessionPayload } from "../middleware/authenticate";
 
@@ -73,6 +73,20 @@ router.post("/auth/login", async (req, res) => {
     return;
   }
 
+  // Block login for users whose org has been suspended by the platform admin.
+  // Super admins are exempt so they can still access the portal.
+  if (!user.isSuperAdmin) {
+    const [org] = await db
+      .select({ status: organizationsTable.status })
+      .from(organizationsTable)
+      .where(eq(organizationsTable.id, user.orgId))
+      .limit(1);
+    if (org?.status === "suspended") {
+      res.status(403).json({ error: "org_suspended", message: "Your organisation has been suspended. Contact your platform administrator." });
+      return;
+    }
+  }
+
   const payload: SessionPayload = {
     userId: user.id,
     orgId: user.orgId,
@@ -102,6 +116,7 @@ router.post("/auth/login", async (req, res) => {
     orgId: user.orgId,
     roleId: user.roleId,
     roleName: role?.name ?? user.roleId,
+    isSuperAdmin: user.isSuperAdmin,
   });
 });
 
@@ -141,6 +156,22 @@ router.get("/auth/me", async (req, res) => {
     .where(eq(rolesTable.id, user.roleId))
     .limit(1);
 
+  // When a super admin is impersonating an org, include that context so the
+  // frontend can show the "Acting as [OrgName]" banner.
+  let orgOverride: string | undefined;
+  let orgOverrideName: string | undefined;
+  if (user.isSuperAdmin && session.orgOverride) {
+    const [overrideOrg] = await db
+      .select({ id: organizationsTable.id, name: organizationsTable.name })
+      .from(organizationsTable)
+      .where(eq(organizationsTable.id, session.orgOverride))
+      .limit(1);
+    if (overrideOrg) {
+      orgOverride = overrideOrg.id;
+      orgOverrideName = overrideOrg.name;
+    }
+  }
+
   res.json({
     id: user.id,
     name: user.name,
@@ -149,6 +180,9 @@ router.get("/auth/me", async (req, res) => {
     roleId: user.roleId,
     roleName: role?.name ?? user.roleId,
     plantIds: user.plantIds,
+    isSuperAdmin: user.isSuperAdmin,
+    orgOverride,
+    orgOverrideName,
   });
 });
 

@@ -13,6 +13,8 @@ declare global {
         name: string;
         email: string;
         isSuperAdmin: boolean;
+        /** Set when a super admin is impersonating an org via the portal. */
+        orgOverride?: string;
       };
     }
   }

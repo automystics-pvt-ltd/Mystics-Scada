@@ -25,6 +25,9 @@ import AdminUsers from '@/pages/admin-users';
 import AdminRoles from '@/pages/admin-roles';
 import Settings from '@/pages/settings';
 import NotFound from '@/pages/not-found';
+import SuperAdminDashboard from '@/pages/superadmin-dashboard';
+import SuperAdminOrgs from '@/pages/superadmin-orgs';
+import SuperAdminOrgDetail from '@/pages/superadmin-org-detail';
 
 const queryClient = new QueryClient();
 
@@ -48,6 +51,9 @@ function ProtectedRoutes() {
           <Route path="/admin/users" component={AdminUsers} />
           <Route path="/admin/roles" component={AdminRoles} />
           <Route path="/settings" component={Settings} />
+          <Route path="/superadmin" component={SuperAdminDashboard} />
+          <Route path="/superadmin/orgs" component={SuperAdminOrgs} />
+          <Route path="/superadmin/orgs/:orgId" component={SuperAdminOrgDetail} />
           <Route component={NotFound} />
         </Switch>
       </TelemetryStreamProvider>

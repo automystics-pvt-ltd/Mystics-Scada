@@ -20,6 +20,8 @@ export interface SessionPayload {
   userId: string;
   orgId: string;
   roleId: string;
+  /** Set when a super admin clicks "Act as org" in the portal. */
+  orgOverride?: string;
 }
 
 export function parseSession(raw: unknown): SessionPayload | null {
@@ -87,6 +89,7 @@ export async function authenticate(
     name: user.name,
     email: user.email,
     isSuperAdmin: user.isSuperAdmin,
+    orgOverride: user.isSuperAdmin ? session.orgOverride : undefined,
   };
   next();
 }

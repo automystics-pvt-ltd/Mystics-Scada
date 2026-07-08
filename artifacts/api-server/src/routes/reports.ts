@@ -73,13 +73,18 @@ router.get("/reports", async (req, res) => {
 });
 
 router.post("/reports/generate", requirePermission("reports.export"), async (req, res) => {
+  const orgId = resolveOrgId(req);
+  if (!orgId) {
+    res.status(400).json({ error: "org_required", message: "Impersonate a specific org before generating reports" });
+    return;
+  }
   const body = GenerateReportBody.parse(req.body);
   const now = new Date();
   const [created] = await db
     .insert(reportsTable)
     .values({
       id: randomUUID(),
-      orgId: req.user!.orgId,   // always stamp the session org
+      orgId,
       name: body.name,
       type: "custom",
       format: body.format,

@@ -12,7 +12,12 @@ import {
   WifiOff,
   LogOut,
   ChevronDown,
+  ShieldAlert,
+  X,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useTelemetry } from "@/context/TelemetryStreamContext";
 import { useAuth } from "@/context/AuthContext";
@@ -21,7 +26,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { connected, lastSync, tickCount } = useTelemetry();
   const { user, logout } = useAuth();
+  const queryClient = useQueryClient();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  async function exitImpersonation() {
+    await fetch(`${import.meta.env.BASE_URL}api/superadmin/impersonate`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { "X-SCADA-Request": "1" },
+    });
+    await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+    await queryClient.invalidateQueries();
+  }
 
   /* "Xs ago" counter — updates every second */
   const [syncAgoLabel, setSyncAgoLabel] = useState<string>("--");
@@ -57,6 +73,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { name: "Roles",    href: "/admin/roles",  icon: Shield  },
     { name: "Settings", href: "/settings",     icon: Settings },
   ];
+
+  const platformNav = user?.isSuperAdmin
+    ? [{ name: "Platform Admin", href: "/superadmin", icon: ShieldAlert }]
+    : [];
 
   function getInitials(name: string) {
     return name
@@ -121,6 +141,30 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
+
+          {/* Platform admin section — super admins only */}
+          {platformNav.length > 0 && (
+            <nav className="space-y-0.5 px-2 mt-6">
+              <div className="text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest mb-2 px-2">
+                Platform
+              </div>
+              {platformNav.map((item) => {
+                const isActive = location.startsWith(item.href);
+                return (
+                  <Link key={item.name} href={item.href}>
+                    <div className={`flex items-center px-3 py-2 text-sm font-medium rounded-md gap-3 cursor-pointer transition-colors ${
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    }`}>
+                      <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? "text-primary" : "text-sidebar-foreground/50"}`} />
+                      {item.name}
+                    </div>
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
         </div>
 
         {/* Live IoT Stream indicator */}
@@ -218,12 +262,38 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto bg-background focus:outline-none">
-        <div className="py-6 px-8 h-full">
-          {children}
-        </div>
-      </main>
+      {/* Main content — with optional impersonation banner */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Impersonation banner — shown when super admin is acting as an org */}
+        {user?.orgOverride && (
+          <div className="flex items-center justify-between px-4 py-2 bg-amber-500/15 border-b border-amber-500/30 text-amber-400 text-xs font-medium flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="h-3.5 w-3.5" />
+              <span>
+                Acting as org:{" "}
+                <span className="font-bold text-amber-300">{user.orgOverrideName ?? user.orgOverride}</span>
+              </span>
+              <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-400 py-0">
+                IMPERSONATION ACTIVE
+              </Badge>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 gap-1 px-2"
+              onClick={() => void exitImpersonation()}
+            >
+              <X className="h-3 w-3" />
+              Exit
+            </Button>
+          </div>
+        )}
+        <main className="flex-1 overflow-y-auto bg-background focus:outline-none">
+          <div className="py-6 px-8 h-full">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

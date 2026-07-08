@@ -49,7 +49,11 @@ router.get("/users", requirePermission("users.view"), async (req, res) => {
 
 router.post("/users", requirePermission("users.manage"), async (req, res) => {
   const body = InviteUserBody.parse(req.body);
-  const orgId = req.user!.orgId;
+  const orgId = resolveOrgId(req);
+  if (!orgId) {
+    res.status(400).json({ error: "org_required", message: "Impersonate a specific org before inviting users" });
+    return;
+  }
 
   // Accept either roleId (direct, with org-ownership check) or role name
   const directRoleIdOnCreate = (req.body as { roleId?: string }).roleId;

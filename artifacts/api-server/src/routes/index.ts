@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import healthRouter from "./health";
 import authRouter from "./auth";
 import portfolioRouter from "./portfolio";
@@ -11,7 +11,10 @@ import rolesRouter from "./roles";
 import usersRouter from "./users";
 import streamRouter from "./stream";
 import faultInjectRouter from "./faultInject";
+import superadminRouter from "./superadmin";
 import { authenticate } from "../middleware/authenticate";
+import { requireSuperAdmin } from "../middleware/requireSuperAdmin";
+import { resolveOrgId } from "../lib/orgScope";
 
 const router: IRouter = Router();
 
@@ -21,6 +24,32 @@ router.use(authRouter);
 
 // All routes below this line require a valid session cookie.
 router.use(authenticate);
+
+/**
+ * Write-scope guard for super admins.
+ *
+ * A super admin browsing in "all orgs" mode (no orgOverride, no ?orgId=) would
+ * get resolveOrgId() → null, meaning writes have no tenant scope — they could
+ * silently land on the wrong org. Instead we require them to impersonate a
+ * specific org before making any state-changing request outside /superadmin/**.
+ *
+ * /superadmin/** routes are excluded because they carry their own org context
+ * (URL param or explicit body) and are served by a dedicated router.
+ */
+function requireOrgScopeForWrites(req: Request, res: Response, next: NextFunction): void {
+  const isMutation = ["POST", "PATCH", "PUT", "DELETE"].includes(req.method);
+  const isSuperadminRoute = req.path.startsWith("/superadmin");
+  if (isMutation && !isSuperadminRoute && req.user?.isSuperAdmin && !resolveOrgId(req)) {
+    res.status(400).json({
+      error: "org_required",
+      message: "Impersonate a specific organisation before making changes",
+    });
+    return;
+  }
+  next();
+}
+
+router.use(requireOrgScopeForWrites);
 
 router.use(portfolioRouter);
 router.use(plantsRouter);
@@ -32,5 +61,8 @@ router.use(rolesRouter);
 router.use(usersRouter);
 router.use(streamRouter);
 router.use(faultInjectRouter);
+
+// Super admin portal — requires authenticated + isSuperAdmin
+router.use(requireSuperAdmin, superadminRouter);
 
 export default router;

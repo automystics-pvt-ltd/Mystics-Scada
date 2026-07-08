@@ -13,6 +13,10 @@ export interface AuthUser {
   roleId: string;
   roleName: string;
   plantIds: string[];
+  isSuperAdmin: boolean;
+  /** Set when the super admin is browsing as a specific org. */
+  orgOverride?: string;
+  orgOverrideName?: string;
 }
 
 interface AuthContextValue {

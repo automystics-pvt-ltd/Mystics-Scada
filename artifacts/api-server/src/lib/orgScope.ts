@@ -18,7 +18,8 @@ import { eq } from "drizzle-orm";
  */
 export function resolveOrgId(req: Request): string | null {
   if (req.user!.isSuperAdmin) {
-    return (req.query["orgId"] as string | undefined) ?? null;
+    // orgOverride (set via impersonation) takes precedence over the ?orgId= query param
+    return req.user!.orgOverride ?? (req.query["orgId"] as string | undefined) ?? null;
   }
   return req.user!.orgId;
 }
