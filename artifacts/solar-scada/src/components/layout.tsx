@@ -31,6 +31,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useControlRoom } from "@/context/ControlRoomContext";
 import { ControlRoomOverlay } from "@/components/control-room-overlay";
 import { BottomNav } from "@/components/bottom-nav";
+import { NotificationBell } from "@/components/notification-panel";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -128,6 +129,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Zap className="h-4 w-4 text-primary flex-shrink-0" />
             <span className="font-bold text-sm tracking-tight">Solar SCADA</span>
             <div className="ml-auto flex items-center gap-0.5">
+              {/* Notification bell */}
+              <NotificationBell />
               {/* Theme toggle */}
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

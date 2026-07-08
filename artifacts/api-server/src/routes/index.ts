@@ -14,6 +14,7 @@ import streamRouter from "./stream";
 import faultInjectRouter from "./faultInject";
 import devicesRouter from "./devices";
 import orgRouter from "./org";
+import notificationsRouter from "./notifications";
 import superadminRouter from "./superadmin";
 import { authenticate } from "../middleware/authenticate";
 import { requireSuperAdmin } from "../middleware/requireSuperAdmin";
@@ -68,6 +69,7 @@ router.use(streamRouter);
 router.use(faultInjectRouter);
 router.use(devicesRouter);
 router.use(orgRouter);
+router.use(notificationsRouter);
 
 // Super admin portal — requires authenticated + isSuperAdmin
 router.use(requireSuperAdmin, superadminRouter);

@@ -16,6 +16,17 @@ import {
   getListInvertersQueryKey,
 } from "@workspace/api-client-react";
 
+/** Minimal shape of a notification pushed over SSE. */
+interface SseNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  resourceUrl?: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
 export interface TelemetryState {
   connected:  boolean;
   lastSync:   Date | null;
@@ -44,6 +55,25 @@ export function useTelemetryStream(): TelemetryState {
 
     const es = new EventSource(SSE_URL);
     esRef.current = es;
+
+    // ── Real-time notification push ─────────────────────────────────────
+    es.addEventListener("notification", (evt: MessageEvent) => {
+      try {
+        const notif = JSON.parse(evt.data) as SseNotification;
+        // Prepend to the cached list so the panel shows it immediately
+        queryClient.setQueryData(["notifications", "list"], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            data: [notif, ...(old.data ?? [])].slice(0, 50),
+          };
+        });
+        // Bump unread count
+        queryClient.setQueryData(["notifications", "unread-count"], (old: any) => ({
+          count: ((old?.count as number) ?? 0) + 1,
+        }));
+      } catch { /* ignore malformed */ }
+    });
 
     es.addEventListener("telemetry", (evt: MessageEvent) => {
       try {

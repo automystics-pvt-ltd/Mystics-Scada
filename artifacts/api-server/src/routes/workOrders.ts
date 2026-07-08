@@ -14,6 +14,7 @@ import {
 import { getOrgPlants } from "../lib/domain";
 import { resolveOrgId, orgCondition } from "../lib/orgScope";
 import { requirePermission } from "../middleware/requirePermission";
+import { createNotification } from "../lib/createNotification";
 
 const router: IRouter = Router();
 
@@ -93,6 +94,16 @@ router.post("/work-orders", requirePermission("maintenance.manage"), async (req,
     })
     .returning();
 
+  createNotification({
+    orgId,
+    type: "work_order.created",
+    title: `Work Order Created: ${body.equipment}`,
+    message: `${plant.name} — ${body.faultDescription} (Priority: ${body.priority})`,
+    resourceType: "work_order",
+    resourceId: created!.id,
+    resourceUrl: `/maintenance`,
+  });
+
   req.log.info({ workOrderId: created?.id }, "Work order created");
   res.status(201).json(CreateWorkOrderResponse.parse(toWorkOrderResponse(created!)));
 });
@@ -142,6 +153,19 @@ router.patch("/work-orders/:workOrderId", requirePermission("maintenance.manage"
   if (body.resolutionNotes !== undefined) updates.resolutionNotes = body.resolutionNotes;
 
   const [updated] = await db.update(workOrdersTable).set(updates).where(eq(workOrdersTable.id, workOrderId)).returning();
+
+  if (body.status && body.status !== existing.status) {
+    createNotification({
+      orgId: existing.orgId,
+      type: "work_order.status",
+      title: `Work Order ${body.status === "closed" ? "Closed" : "Updated"}: ${existing.equipment}`,
+      message: `${existing.plantName} — Status changed to ${body.status}`,
+      resourceType: "work_order",
+      resourceId: workOrderId,
+      resourceUrl: `/maintenance`,
+    });
+  }
+
   req.log.info({ workOrderId, updates: body }, "Work order updated");
   res.json(UpdateWorkOrderResponse.parse(toWorkOrderResponse(updated!)));
 });

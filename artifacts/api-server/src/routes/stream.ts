@@ -28,6 +28,7 @@ import {
 } from "../lib/domain";
 import { getFaultedInverterIds, isPlantDisconnected } from "../lib/faultInjection";
 import { resolveOrgId } from "../lib/orgScope";
+import { registerOrgNotificationClient } from "../lib/notificationRegistry";
 
 const router: IRouter = Router();
 
@@ -131,9 +132,15 @@ router.get("/stream/telemetry", (req: Request, res: Response) => {
   const pushTimer      = setInterval(pushFleet,     PUSH_INTERVAL_MS);
   const keepaliveTimer = setInterval(() => sendKeepalive(res), KEEPALIVE_INTERVAL_MS);
 
+  // Register for real-time notification push (org-scoped)
+  const unregisterNotif = orgId
+    ? registerOrgNotificationClient(orgId, (data) => sendEvent(res, "notification", data))
+    : null;
+
   req.on("close", () => {
     clearInterval(pushTimer);
     clearInterval(keepaliveTimer);
+    unregisterNotif?.();
   });
 });
 

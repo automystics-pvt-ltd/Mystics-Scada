@@ -5,6 +5,7 @@ import { db, alertsTable, alertHistoryTable } from "@workspace/db";
 import { ListAlertsQueryParams, ListAlertsResponse, GetAlertResponse, UpdateAlertBody, UpdateAlertResponse, ListAlertHistoryResponse } from "@workspace/api-zod";
 import { resolveOrgId, orgCondition } from "../lib/orgScope";
 import { requirePermission } from "../middleware/requirePermission";
+import { createNotification } from "../lib/createNotification";
 
 const router: IRouter = Router();
 
@@ -109,6 +110,22 @@ router.patch("/alerts/:alertId", requirePermission("alarm.acknowledge"), async (
   }
   if (historyEntries.length > 0) {
     await db.insert(alertHistoryTable).values(historyEntries);
+  }
+
+  // Fire in-app notification on status transitions that operators care about
+  if (body.status === "acknowledged" || body.status === "resolved") {
+    const notifType = body.status === "acknowledged" ? "alarm.acknowledged" : "alarm.resolved";
+    createNotification({
+      orgId: existing.orgId,
+      type: notifType,
+      title: body.status === "acknowledged"
+        ? `Alert Acknowledged: ${existing.title}`
+        : `Alert Resolved: ${existing.title}`,
+      message: `${existing.plantName} — ${existing.deviceName}: ${existing.message}`,
+      resourceType: "alert",
+      resourceId: alertId,
+      resourceUrl: `/alerts`,
+    });
   }
 
   req.log.info({ alertId, updates: body }, "Alert updated");

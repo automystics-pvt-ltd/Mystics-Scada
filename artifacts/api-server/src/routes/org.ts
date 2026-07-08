@@ -13,6 +13,7 @@ import {
 } from "@workspace/db";
 import { requirePermission } from "../middleware/requirePermission";
 import { auditLog } from "../lib/auditLog";
+import { validateWebhookUrlStructure, SsrfBlockedError } from "../lib/webhookSsrf";
 
 const router: IRouter = Router();
 
@@ -354,6 +355,85 @@ router.put("/org/notifications", requirePermission("notifications.manage"), asyn
   auditLog(req, "notifications.update", "notification_config", `${orgId}:email`, {});
   req.log.info({ orgId }, "Notification config updated");
   res.json({ ok: true, channel: "email", events: body.events, updatedAt: now });
+});
+
+// ── GET /org/notifications/webhook ───────────────────────────────────────────
+
+router.get("/org/notifications/webhook", requirePermission("settings.view"), async (req, res) => {
+  const orgId = getOrgId(req);
+  const [row] = await db
+    .select()
+    .from(notificationConfigsTable)
+    .where(and(eq(notificationConfigsTable.orgId, orgId), eq(notificationConfigsTable.channel, "webhook")))
+    .limit(1);
+
+  const config = row?.rules ?? {};
+  res.json({
+    url: (config as Record<string, unknown>)["url"] ?? "",
+    secret: (config as Record<string, unknown>)["secret"] ? "••••••••" : "",
+    hasSecret: !!((config as Record<string, unknown>)["secret"]),
+    enabledEvents: (config as Record<string, unknown>)["enabledEvents"] ?? ["alarm.critical", "alarm.major"],
+    updatedAt: row?.updatedAt ?? null,
+  });
+});
+
+// ── PUT /org/notifications/webhook ───────────────────────────────────────────
+
+const PutWebhookBody = z.object({
+  url:           z.string().url().max(500).or(z.literal("")),
+  secret:        z.string().max(200).optional(),
+  enabledEvents: z.array(z.string()).optional().default(["alarm.critical", "alarm.major"]),
+});
+
+router.put("/org/notifications/webhook", requirePermission("notifications.manage"), async (req, res) => {
+  const orgId = getOrgId(req);
+  const body = PutWebhookBody.parse(req.body);
+
+  // SSRF guard: validate URL structure before persisting (allows only https,
+  // rejects loopback / private ranges / internal hostnames)
+  if (body.url) {
+    try {
+      validateWebhookUrlStructure(body.url);
+    } catch (err) {
+      if (err instanceof SsrfBlockedError) {
+        res.status(400).json({ error: "invalid_webhook_url", message: err.message });
+        return;
+      }
+      throw err;
+    }
+  }
+  const now = new Date();
+
+  // If secret is omitted/empty string, keep existing secret (don't overwrite with blank)
+  let secretToStore: string | undefined;
+  if (body.secret && body.secret !== "••••••••") {
+    secretToStore = body.secret;
+  } else if (body.secret === undefined || body.secret === "") {
+    // Fetch existing secret to preserve it
+    const [existing] = await db
+      .select()
+      .from(notificationConfigsTable)
+      .where(and(eq(notificationConfigsTable.orgId, orgId), eq(notificationConfigsTable.channel, "webhook")))
+      .limit(1);
+    secretToStore = (existing?.rules as Record<string, unknown>)?.["secret"] as string | undefined;
+  }
+
+  const rules: Record<string, unknown> = {
+    url: body.url,
+    enabledEvents: body.enabledEvents,
+    ...(secretToStore ? { secret: secretToStore } : {}),
+  };
+
+  await db
+    .insert(notificationConfigsTable)
+    .values({ orgId, channel: "webhook", rules, updatedAt: now })
+    .onConflictDoUpdate({
+      target: [notificationConfigsTable.orgId, notificationConfigsTable.channel],
+      set: { rules, updatedAt: now },
+    });
+
+  auditLog(req, "notifications.update", "notification_config", `${orgId}:webhook`, { url: body.url });
+  res.json({ ok: true, url: body.url, enabledEvents: body.enabledEvents, updatedAt: now });
 });
 
 // ── GET /org/audit-log ────────────────────────────────────────────────────────

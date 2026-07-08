@@ -11,4 +11,5 @@ export * from "./users";
 export * from "./reports";
 export * from "./devices";
 export * from "./auditLogs";
+export * from "./notifications";
 export * from "./reportSchedules";
