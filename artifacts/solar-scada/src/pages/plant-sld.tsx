@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -13,12 +13,13 @@ import {
   Position,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useGetPlantSld, getGetPlantSldQueryKey, SldNode as SldNodeData, HealthState } from "@workspace/api-client-react";
+import { useGetPlantSld, getGetPlantSldQueryKey, SldNode as SldNodeData, HealthState, useListInverters } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout";
 import { Link, useParams } from "wouter";
-import { Network, Box, Server, Factory, Zap, Cpu, Lock, Unlock, Maximize2, AlertTriangle } from "lucide-react";
+import { Network, Box, Server, Factory, Zap, Cpu, Lock, Unlock, Maximize2, AlertTriangle, Zap as ZapIcon, X, TriangleAlert, ShieldAlert } from "lucide-react";
 import { cn } from "@/components/ui/scada";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useQueryClient } from "@tanstack/react-query";
 
 const TYPE_ICONS: Record<string, any> = {
   panel_array: Box,
@@ -244,6 +245,259 @@ function FlowEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targ
   );
 }
 
+// ---- Fault Simulator -------------------------------------------------------
+
+interface ActiveFaultEntry {
+  key: string;
+  label: string;
+  target: { kind: "plant" } | { kind: "inverter"; inverterId: string };
+  expiresAt: string;
+  remainingMs: number;
+}
+
+const DURATIONS = [
+  { label: "30 s", value: 30 },
+  { label: "1 min", value: 60 },
+  { label: "2 min", value: 120 },
+];
+
+function useActiveFaults(plantId: string, enabled: boolean) {
+  const [faults, setFaults] = useState<ActiveFaultEntry[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const refresh = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/plants/${plantId}/fault-inject`);
+      if (res.ok) {
+        const data = await res.json();
+        setFaults(data.faults ?? []);
+      }
+    } catch {}
+  }, [plantId]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    refresh();
+    timerRef.current = setInterval(refresh, 2000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [enabled, refresh]);
+
+  return { faults, refresh };
+}
+
+function FaultCountdown({ expiresAt }: { expiresAt: string }) {
+  const [remaining, setRemaining] = useState(() =>
+    Math.max(0, new Date(expiresAt).getTime() - Date.now())
+  );
+  useEffect(() => {
+    const id = setInterval(() => {
+      setRemaining(Math.max(0, new Date(expiresAt).getTime() - Date.now()));
+    }, 500);
+    return () => clearInterval(id);
+  }, [expiresAt]);
+
+  const secs = Math.ceil(remaining / 1000);
+  return (
+    <span className={cn("font-mono tabular-nums", secs <= 10 ? "text-status-fault" : "text-status-warning")}>
+      {secs}s
+    </span>
+  );
+}
+
+function FaultSimulatorPanel({
+  plantId,
+  inverterCount,
+}: {
+  plantId: string;
+  inverterCount: number;
+}) {
+  const queryClient = useQueryClient();
+  const sldQueryKey = getGetPlantSldQueryKey(plantId);
+
+  const [open, setOpen] = useState(false);
+  const [target, setTarget] = useState<"plant" | string>("plant");
+  const [duration, setDuration] = useState(30);
+  const [injecting, setInjecting] = useState(false);
+
+  const { faults, refresh } = useActiveFaults(plantId, open);
+  const hasFaults = faults.length > 0;
+
+  const invalidateSld = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: sldQueryKey });
+  }, [queryClient, sldQueryKey]);
+
+  const inject = useCallback(async () => {
+    setInjecting(true);
+    try {
+      const body =
+        target === "plant"
+          ? { target: "plant", durationSeconds: duration }
+          : { target: "inverter", inverterId: target, durationSeconds: duration };
+      await fetch(`/api/plants/${plantId}/fault-inject`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      await refresh();
+      invalidateSld();
+    } finally {
+      setInjecting(false);
+    }
+  }, [plantId, target, duration, refresh, invalidateSld]);
+
+  const clearAll = useCallback(async () => {
+    await fetch(`/api/plants/${plantId}/fault-inject`, { method: "DELETE" });
+    await refresh();
+    invalidateSld();
+  }, [plantId, refresh, invalidateSld]);
+
+  const clearOne = useCallback(async (key: string) => {
+    // key = "<plantId>:<suffix>"; route only accepts the suffix segment
+    const suffix = key.split(":").slice(1).join(":");
+    await fetch(`/api/plants/${plantId}/fault-inject/by/${encodeURIComponent(suffix)}`, {
+      method: "DELETE",
+    });
+    await refresh();
+    invalidateSld();
+  }, [plantId, refresh, invalidateSld]);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border transition-colors",
+          hasFaults
+            ? "border-status-fault/50 bg-status-fault/10 text-status-fault hover:bg-status-fault/20"
+            : "border-card-border bg-card hover:bg-muted/30",
+        )}
+      >
+        <ShieldAlert className="w-3.5 h-3.5" />
+        Fault Simulator
+        {hasFaults && (
+          <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-status-fault text-white text-[10px] leading-none font-bold">
+            {faults.length}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-2 z-50 w-80 rounded-xl border border-card-border bg-[#111] shadow-2xl p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TriangleAlert className="w-4 h-4 text-status-warning" />
+              <span className="font-semibold text-sm">Fault Simulator</span>
+            </div>
+            <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Inject a transient fault to see the live topology react — breaker trips, de-energized edges, and status changes reflect in real time.
+          </p>
+
+          {/* Target selector */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Fault Target</label>
+            <select
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              className="w-full bg-card border border-card-border rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+            >
+              <option value="plant">⚡ Full Plant Grid Disconnect</option>
+              {Array.from({ length: inverterCount }, (_, i) => {
+                const invId = `${plantId}-inv-${i}`;
+                return (
+                  <option key={invId} value={invId}>
+                    Inverter {i + 1} offline
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          {/* Duration selector */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Duration</label>
+            <div className="flex gap-2">
+              {DURATIONS.map((d) => (
+                <button
+                  key={d.value}
+                  onClick={() => setDuration(d.value)}
+                  className={cn(
+                    "flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
+                    duration === d.value
+                      ? "border-primary bg-primary/20 text-primary"
+                      : "border-card-border bg-card hover:bg-muted/30",
+                  )}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Inject button */}
+          <button
+            onClick={inject}
+            disabled={injecting}
+            className="w-full flex items-center justify-center gap-2 rounded-md bg-status-fault/20 border border-status-fault/40 text-status-fault hover:bg-status-fault/30 transition-colors px-3 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ZapIcon className="w-4 h-4" />
+            {injecting ? "Injecting…" : "Inject Fault"}
+          </button>
+
+          {/* Active faults list */}
+          {faults.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Active Faults</span>
+                <button
+                  onClick={clearAll}
+                  className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+                >
+                  Clear all
+                </button>
+              </div>
+              <div className="space-y-1.5">
+                {faults.map((f) => (
+                  <div
+                    key={f.key}
+                    className="flex items-center justify-between rounded-md border border-status-fault/30 bg-status-fault/10 px-2.5 py-1.5"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-1.5 h-1.5 rounded-full bg-status-fault animate-pulse shrink-0" />
+                      <span className="text-xs truncate text-status-fault">{f.label}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <FaultCountdown expiresAt={f.expiresAt} />
+                      <button
+                        onClick={() => clearOne(f.key)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {faults.length === 0 && (
+            <p className="text-center text-[11px] text-muted-foreground py-1">No active faults</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---- Main page -------------------------------------------------------------
+
 const nodeTypes = { sld: SldFlowNode };
 const edgeTypes = { flow: FlowEdge };
 
@@ -253,9 +507,14 @@ export default function PlantSld() {
   const { data: sld, isLoading } = useGetPlantSld(plantId || "", {
     query: {
       enabled: !!plantId,
-      refetchInterval: 15000,
+      refetchInterval: 5000,
       queryKey: getGetPlantSldQueryKey(plantId || ""),
     },
+  });
+
+  // Load inverter count for fault simulator target list
+  const { data: inverterList } = useListInverters(plantId || "", {
+    query: { enabled: !!plantId },
   });
 
   const [fullscreen, setFullscreen] = useState(false);
@@ -362,10 +621,16 @@ export default function PlantSld() {
               <Network className="w-6 h-6 mr-2 text-primary" />
               Live Topology (SLD)
             </h1>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <div className="text-sm text-muted-foreground">
                 Last updated: {new Date().toLocaleTimeString()}
               </div>
+              {plantId && (
+                <FaultSimulatorPanel
+                  plantId={plantId}
+                  inverterCount={inverterList?.length ?? 0}
+                />
+              )}
               <button
                 onClick={() => setFullscreen((v) => !v)}
                 className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border border-card-border bg-card hover:bg-muted/30 transition-colors"

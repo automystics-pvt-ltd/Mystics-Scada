@@ -503,6 +503,30 @@ export interface SldTopology {
   edges: SldEdge[];
 }
 
+/**
+ * Optional overrides that short-circuit the deterministic simulation for
+ * fault-injection demos.  Any inverter ID in `faultedInverterIds` is forced
+ * to status "offline" with zero readings; `plantDisconnect` does the same
+ * to every inverter in the plant.
+ */
+export interface SldOverrides {
+  faultedInverterIds?: Set<string>;
+  plantDisconnect?: boolean;
+}
+
+const ZERO_READING: InverterLiveReading = {
+  acPowerKw: 0,
+  dcPowerKw: 0,
+  acVoltageV: 0,
+  dcVoltageV: 0,
+  acCurrentA: 0,
+  frequencyHz: 0,
+  temperatureC: 0,
+  efficiencyPct: 0,
+  energyTodayKwh: 0,
+  energyLifetimeMwh: 0,
+};
+
 // Three-phase current for a given active power and line voltage.
 function threePhaseCurrentA(powerKw: number, voltageV: number): number {
   if (voltageV <= 0) return 0;
@@ -513,7 +537,7 @@ function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
-export function plantSld(plant: PlantConfig, now: Date): SldTopology {
+export function plantSld(plant: PlantConfig, now: Date, overrides?: SldOverrides): SldTopology {
   const nodes: SldNode[] = [];
   const edges: SldEdge[] = [];
 
@@ -532,10 +556,19 @@ export function plantSld(plant: PlantConfig, now: Date): SldTopology {
   const combinerPowerKw = new Array<number>(combinerCount).fill(0);
   const combinerStringFaults = new Array<number>(combinerCount).fill(0);
 
-  const inverterReadings = Array.from({ length: plant.inverterCount }, (_, i) => ({
-    health: inverterHealth(plant, i, now).health,
-    reading: inverterLiveReading(plant, i, now),
-  }));
+  const inverterReadings = Array.from({ length: plant.inverterCount }, (_, i) => {
+    const invId = inverterId(plant.id, i);
+    const forcedOffline =
+      overrides?.plantDisconnect ||
+      (overrides?.faultedInverterIds?.has(invId) ?? false);
+    if (forcedOffline) {
+      return { health: "offline" as HealthState, reading: ZERO_READING };
+    }
+    return {
+      health: inverterHealth(plant, i, now).health,
+      reading: inverterLiveReading(plant, i, now),
+    };
+  });
 
   inverterReadings.forEach(({ reading }, i) => {
     combinerPowerKw[i % combinerCount] += reading.dcPowerKw;

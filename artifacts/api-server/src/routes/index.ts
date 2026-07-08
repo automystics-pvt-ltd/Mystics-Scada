@@ -8,6 +8,7 @@ import workOrdersRouter from "./workOrders";
 import reportsRouter from "./reports";
 import usersRouter from "./users";
 import streamRouter from "./stream";
+import faultInjectRouter from "./faultInject";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(workOrdersRouter);
 router.use(reportsRouter);
 router.use(usersRouter);
 router.use(streamRouter);
+router.use(faultInjectRouter);
 
 export default router;

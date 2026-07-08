@@ -24,6 +24,7 @@ import {
   plantRevenue as rawRevenue,
   plantSld as rawSld,
 } from "./simulation";
+import { getFaultedInverterIds, isPlantDisconnected } from "./faultInjection";
 
 const PLANT_COORDS: Record<string, { lat: number; lng: number; region: string }> = {
   "plant-thar": { lat: 26.9157, lng: 70.9083, region: "Rajasthan" },
@@ -202,7 +203,11 @@ export function revenueData(plant: PlantConfig, now: Date) {
 }
 
 export function sldFor(plant: PlantConfig, now: Date) {
-  const { nodes, edges } = rawSld(plant, now);
+  const overrides = {
+    faultedInverterIds: getFaultedInverterIds(plant.id),
+    plantDisconnect: isPlantDisconnected(plant.id),
+  };
+  const { nodes, edges } = rawSld(plant, now, overrides);
 
   // First inverter feeding each combiner box, used to link combiner nodes to
   // that inverter's string diagnostics page (there is no standalone
