@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import bcrypt from "bcryptjs";
 import {
   db,
   organizationsTable,
@@ -8,7 +9,7 @@ import {
   usersTable,
   rolesTable,
 } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { logger } from "./logger";
 import { PLANTS } from "./simulation";
 
@@ -311,5 +312,47 @@ export async function ensureSeedData(): Promise<void> {
     const orders = buildWorkOrderSeed();
     await db.insert(workOrdersTable).values(orders);
     logger.info({ count: orders.length }, "Seeded work orders");
+  }
+
+  // ── Demo credentials ──────────────────────────────────────────────────────
+  // Gate strictly to non-production environments.  In production the demo
+  // account must be provisioned via the normal user-management flow.
+  if (process.env.NODE_ENV === "production") {
+    logger.info("Skipping demo credential seed (production mode)");
+    return;
+  }
+
+  // Always ensure the primary demo admin account exists with a known password.
+  // This runs every startup via upsert so it survives DB resets in dev/demo.
+  const demoAdminEmail = "admin@automystics.com";
+  const [existingAdmin] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, demoAdminEmail))
+    .limit(1);
+
+  if (!existingAdmin) {
+    const passwordHash = await bcrypt.hash("demo1234", 10);
+    await db.insert(usersTable).values({
+      id: "user-admin",
+      orgId: "org-1",
+      name: "System Administrator",
+      email: demoAdminEmail,
+      roleId: "role-admin",
+      plantIds: PLANTS.map((p) => p.id),
+      status: "active",
+      passwordHash,
+      lastLoginAt: null,
+      createdAt: new Date(),
+    });
+    logger.info({ email: demoAdminEmail }, "Seeded demo admin account");
+  } else if (!existingAdmin.passwordHash) {
+    // Patch existing admin row if it was seeded without a password
+    const passwordHash = await bcrypt.hash("demo1234", 10);
+    await db
+      .update(usersTable)
+      .set({ passwordHash })
+      .where(eq(usersTable.id, existingAdmin.id));
+    logger.info({ email: demoAdminEmail }, "Patched demo admin password hash");
   }
 }

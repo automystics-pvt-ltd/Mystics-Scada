@@ -35,6 +35,7 @@ export const usersTable = pgTable(
     roleId: text("role_id").notNull(),
     plantIds: text("plant_ids").array().notNull().default([]),
     status: text("status").notNull(),
+    passwordHash: text("password_hash"),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },

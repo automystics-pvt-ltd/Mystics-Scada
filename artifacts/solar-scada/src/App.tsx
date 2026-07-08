@@ -4,6 +4,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ThemeProvider } from '@/components/theme-provider';
 import { TelemetryStreamProvider } from '@/context/TelemetryStreamContext';
+import { AuthProvider } from '@/context/AuthContext';
+import { AuthGuard } from '@/components/auth-guard';
 
 // Pages
 import PortfolioDashboard from '@/pages/portfolio';
@@ -25,25 +27,38 @@ import NotFound from '@/pages/not-found';
 
 const queryClient = new QueryClient();
 
+function ProtectedRoutes() {
+  return (
+    <AuthGuard>
+      <TelemetryStreamProvider>
+        <Switch>
+          <Route path="/" component={PortfolioDashboard} />
+          <Route path="/plants/:plantId" component={PlantDashboard} />
+          <Route path="/plants/:plantId/sld" component={PlantSld} />
+          <Route path="/plants/:plantId/inverters" component={InverterList} />
+          <Route path="/plants/:plantId/inverters/:inverterId" component={InverterDetail} />
+          <Route path="/plants/:plantId/inverters/:inverterId/strings" component={StringDiagnostics} />
+          <Route path="/plants/:plantId/combiners/:combinerId/strings" component={CombinerStrings} />
+          <Route path="/plants/:plantId/weather" component={WeatherView} />
+          <Route path="/plants/:plantId/analytics" component={AnalyticsView} />
+          <Route path="/alerts" component={AlertCenter} />
+          <Route path="/maintenance" component={MaintenanceBoard} />
+          <Route path="/reports" component={ReportsView} />
+          <Route path="/admin/users" component={AdminUsers} />
+          <Route path="/settings" component={Settings} />
+          <Route component={NotFound} />
+        </Switch>
+      </TelemetryStreamProvider>
+    </AuthGuard>
+  );
+}
+
 function Router() {
   return (
     <Switch>
+      {/* Login is always public — outside the AuthGuard */}
       <Route path="/login" component={Login} />
-      <Route path="/" component={PortfolioDashboard} />
-      <Route path="/plants/:plantId" component={PlantDashboard} />
-      <Route path="/plants/:plantId/sld" component={PlantSld} />
-      <Route path="/plants/:plantId/inverters" component={InverterList} />
-      <Route path="/plants/:plantId/inverters/:inverterId" component={InverterDetail} />
-      <Route path="/plants/:plantId/inverters/:inverterId/strings" component={StringDiagnostics} />
-      <Route path="/plants/:plantId/combiners/:combinerId/strings" component={CombinerStrings} />
-      <Route path="/plants/:plantId/weather" component={WeatherView} />
-      <Route path="/plants/:plantId/analytics" component={AnalyticsView} />
-      <Route path="/alerts" component={AlertCenter} />
-      <Route path="/maintenance" component={MaintenanceBoard} />
-      <Route path="/reports" component={ReportsView} />
-      <Route path="/admin/users" component={AdminUsers} />
-      <Route path="/settings" component={Settings} />
-      <Route component={NotFound} />
+      <Route component={ProtectedRoutes} />
     </Switch>
   );
 }
@@ -52,14 +67,14 @@ function App() {
   return (
     <ThemeProvider defaultTheme="dark">
       <QueryClientProvider client={queryClient}>
-        <TelemetryStreamProvider>
+        <AuthProvider>
           <TooltipProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
               <Router />
             </WouterRouter>
             <Toaster />
           </TooltipProvider>
-        </TelemetryStreamProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );

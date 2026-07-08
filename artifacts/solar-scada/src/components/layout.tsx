@@ -9,13 +9,18 @@ import {
   Zap,
   Radio,
   WifiOff,
+  LogOut,
+  ChevronDown,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTelemetry } from "@/context/TelemetryStreamContext";
+import { useAuth } from "@/context/AuthContext";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { connected, lastSync, tickCount } = useTelemetry();
+  const { user, logout } = useAuth();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   /* "Xs ago" counter — updates every second */
   const [syncAgoLabel, setSyncAgoLabel] = useState<string>("--");
@@ -50,6 +55,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { name: "Users & Roles", href: "/admin/users", icon: Users    },
     { name: "Settings",      href: "/settings",    icon: Settings },
   ];
+
+  function getInitials(name: string) {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -161,6 +175,44 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <span>Frames received</span>
             <span className="font-mono">{tickCount.toLocaleString()}</span>
           </div>
+
+          {/* User info + logout */}
+          {user && (
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen((o) => !o)}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-sidebar-accent/50 transition-colors text-left"
+              >
+                <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[10px] font-bold text-primary">{getInitials(user.name)}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-sidebar-foreground truncate">{user.name}</p>
+                  <p className="text-[10px] text-sidebar-foreground/40 truncate">{user.roleName}</p>
+                </div>
+                <ChevronDown className={`h-3 w-3 text-sidebar-foreground/40 flex-shrink-0 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {userMenuOpen && (
+                <div className="absolute bottom-full left-0 right-0 mb-1 bg-popover border border-border rounded-md shadow-lg overflow-hidden z-50">
+                  <div className="px-3 py-2 border-b border-border">
+                    <p className="text-xs font-medium text-foreground truncate">{user.email}</p>
+                    <p className="text-[10px] text-muted-foreground">{user.roleName}</p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      setUserMenuOpen(false);
+                      await logout();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

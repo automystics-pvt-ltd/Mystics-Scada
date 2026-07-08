@@ -13,13 +13,13 @@ const SCHEDULED_REPORT_SEED = [
   { name: "Monthly Compliance Report", type: "monthly" as const, plantIds: [PLANTS[0]!.id], format: "pdf" as const },
 ];
 
-async function ensureScheduledReports() {
+async function ensureScheduledReports(orgId: string) {
   const existing = await db.select().from(reportsTable).limit(1);
   if (existing.length > 0) return;
   await db.insert(reportsTable).values(
     SCHEDULED_REPORT_SEED.map((r) => ({
       id: randomUUID(),
-      orgId: "org-1", // TODO(task-7): replace with req.user.orgId once auth is wired
+      orgId,
       name: r.name,
       type: r.type,
       format: r.format,
@@ -32,8 +32,8 @@ async function ensureScheduledReports() {
   );
 }
 
-router.get("/reports", async (_req, res) => {
-  await ensureScheduledReports();
+router.get("/reports", async (req, res) => {
+  await ensureScheduledReports(req.user!.orgId);
   const rows = await db.select().from(reportsTable).orderBy(desc(reportsTable.createdAt));
   const data = rows.map((r) => ({
     id: r.id,
@@ -55,7 +55,7 @@ router.post("/reports/generate", async (req, res) => {
     .insert(reportsTable)
     .values({
       id: randomUUID(),
-      orgId: "org-1", // TODO(task-7): replace with req.user.orgId once auth is wired
+      orgId: req.user!.orgId,
       name: body.name,
       type: "custom",
       format: body.format,
