@@ -14,11 +14,15 @@ export interface ActiveFault {
   /** Stable lookup key: "<plantId>:plant" or "<plantId>:<inverterId>" */
   key: string;
   plantId: string;
+  /** Organisation that owns this plant — stored so expiry callbacks have it. */
+  orgId: string;
   target: FaultTarget;
   /** Human-readable description shown in the UI */
   label: string;
   injectedAt: number; // Unix ms
   expiresAt: number;  // Unix ms
+  /** Alert row ID written to the DB when this fault was injected. */
+  alertId?: string;
 }
 
 // ---- module-level store ----
@@ -31,6 +35,7 @@ function makeKey(plantId: string, target: FaultTarget): string {
 }
 
 export function injectFault(
+  orgId: string,
   plantId: string,
   target: FaultTarget,
   durationMs: number,
@@ -44,6 +49,7 @@ export function injectFault(
   const fault: ActiveFault = {
     key,
     plantId,
+    orgId,
     target,
     label,
     injectedAt: now,
@@ -53,14 +59,35 @@ export function injectFault(
   return fault;
 }
 
-export function clearFault(key: string): void {
-  store.delete(key);
+/** Attach the DB alert row ID to a fault after async creation. */
+export function attachAlertToFault(key: string, alertId: string): void {
+  const fault = store.get(key);
+  if (fault) fault.alertId = alertId;
 }
 
-export function clearAllFaults(plantId: string): void {
+/**
+ * Remove a single fault.
+ * Returns the evicted fault (with its alertId) so the caller can resolve the alert.
+ */
+export function clearFault(key: string): ActiveFault | undefined {
+  const fault = store.get(key);
+  store.delete(key);
+  return fault;
+}
+
+/**
+ * Remove all faults for a plant.
+ * Returns the evicted faults so the caller can resolve their alerts.
+ */
+export function clearAllFaults(plantId: string): ActiveFault[] {
+  const cleared: ActiveFault[] = [];
   for (const [k, v] of store) {
-    if (v.plantId === plantId) store.delete(k);
+    if (v.plantId === plantId) {
+      store.delete(k);
+      cleared.push(v);
+    }
   }
+  return cleared;
 }
 
 /** Returns only non-expired faults; evicts expired ones as a side-effect. */
