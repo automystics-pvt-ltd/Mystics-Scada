@@ -150,11 +150,11 @@ router.get("/auth/me", async (req, res) => {
     return;
   }
 
-  const [role] = await db
-    .select({ name: rolesTable.name })
-    .from(rolesTable)
-    .where(eq(rolesTable.id, user.roleId))
-    .limit(1);
+  const [[role], [org]] = await Promise.all([
+    db.select({ name: rolesTable.name }).from(rolesTable).where(eq(rolesTable.id, user.roleId)).limit(1),
+    db.select({ name: organizationsTable.name, logoUrl: organizationsTable.logoUrl })
+      .from(organizationsTable).where(eq(organizationsTable.id, user.orgId)).limit(1),
+  ]);
 
   // Fetch permissions separately so the /auth/me select can be updated independently
   const [roleWithPerms] = await db
@@ -187,6 +187,8 @@ router.get("/auth/me", async (req, res) => {
     roleId: user.roleId,
     roleName: role?.name ?? user.roleId,
     permissions: roleWithPerms?.permissions ?? [],
+    orgName: org?.name,
+    orgLogoUrl: org?.logoUrl ?? null,
     plantIds: user.plantIds,
     isSuperAdmin: user.isSuperAdmin,
     orgOverride,

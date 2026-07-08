@@ -30,6 +30,10 @@ import SuperAdminOrgs from '@/pages/superadmin-orgs';
 import SuperAdminOrgDetail from '@/pages/superadmin-org-detail';
 import DevicesPage from '@/pages/devices';
 import DeviceDetailPage from '@/pages/device-detail';
+import OrgProfilePage from '@/pages/org-profile';
+import OrgUsersPage from '@/pages/org-users';
+import OrgNotificationsPage from '@/pages/org-notifications';
+import OrgAuditLogPage from '@/pages/org-audit-log';
 
 const queryClient = new QueryClient();
 
@@ -52,6 +56,10 @@ function ProtectedRoutes() {
           <Route path="/reports" component={ReportsView} />
           <Route path="/devices" component={DevicesPage} />
           <Route path="/devices/:id" component={DeviceDetailPage} />
+          <Route path="/org" component={OrgProfilePage} />
+          <Route path="/org/users" component={OrgUsersPage} />
+          <Route path="/org/notifications" component={OrgNotificationsPage} />
+          <Route path="/org/audit-log" component={OrgAuditLogPage} />
           <Route path="/admin/users" component={AdminUsers} />
           <Route path="/admin/roles" component={AdminRoles} />
           <Route path="/settings" component={Settings} />

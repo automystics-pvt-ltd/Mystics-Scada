@@ -12,6 +12,7 @@ import usersRouter from "./users";
 import streamRouter from "./stream";
 import faultInjectRouter from "./faultInject";
 import devicesRouter from "./devices";
+import orgRouter from "./org";
 import superadminRouter from "./superadmin";
 import { authenticate } from "../middleware/authenticate";
 import { requireSuperAdmin } from "../middleware/requireSuperAdmin";
@@ -39,8 +40,9 @@ router.use(authenticate);
  */
 function requireOrgScopeForWrites(req: Request, res: Response, next: NextFunction): void {
   const isMutation = ["POST", "PATCH", "PUT", "DELETE"].includes(req.method);
-  const isSuperadminRoute = req.path.startsWith("/superadmin");
-  if (isMutation && !isSuperadminRoute && req.user?.isSuperAdmin && !resolveOrgId(req)) {
+  // /superadmin/** carries its own org context; /org/** always operates on req.user.orgId
+  const isScopedRoute = req.path.startsWith("/superadmin") || req.path.startsWith("/org");
+  if (isMutation && !isScopedRoute && req.user?.isSuperAdmin && !resolveOrgId(req)) {
     res.status(400).json({
       error: "org_required",
       message: "Impersonate a specific organisation before making changes",
@@ -63,6 +65,7 @@ router.use(usersRouter);
 router.use(streamRouter);
 router.use(faultInjectRouter);
 router.use(devicesRouter);
+router.use(orgRouter);
 
 // Super admin portal — requires authenticated + isSuperAdmin
 router.use(requireSuperAdmin, superadminRouter);

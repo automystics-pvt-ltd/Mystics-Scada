@@ -15,6 +15,7 @@ import {
   ShieldAlert,
   X,
   Cpu,
+  Building2,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +71,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { name: "Reports",      href: "/reports",     icon: FileText        },
   ];
 
+  const orgNav = [
+    { name: "Organisation", href: "/org", icon: Building2 },
+  ];
+
   const adminNav = [
     { name: "Users",    href: "/admin/users",  icon: Users   },
     { name: "Roles",    href: "/admin/roles",  icon: Shield  },
@@ -89,15 +94,59 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       .toUpperCase();
   }
 
+  function getOrgInitials(name: string) {
+    return name
+      .split(" ")
+      .map((w) => w[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
       <div className="w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col">
 
-        {/* Logo */}
-        <div className="h-14 flex items-center px-4 border-b border-sidebar-border gap-2">
-          <Zap className="h-5 w-5 text-primary" />
-          <span className="font-bold text-base tracking-tight">Solar SCADA</span>
+        {/* App header */}
+        <div className="flex-shrink-0 border-b border-sidebar-border">
+          {/* Platform brand */}
+          <div className="h-10 flex items-center px-4 gap-2">
+            <Zap className="h-4 w-4 text-primary flex-shrink-0" />
+            <span className="font-bold text-sm tracking-tight">Solar SCADA</span>
+          </div>
+
+          {/* Org branding — clickable, navigates to /org */}
+          {user && (
+            <Link href="/org">
+              <div className={`mx-2 mb-2 flex items-center gap-2.5 px-2 py-2 rounded-md cursor-pointer transition-colors ${
+                location.startsWith("/org")
+                  ? "bg-sidebar-accent"
+                  : "hover:bg-sidebar-accent/50"
+              }`}>
+                {user.orgLogoUrl ? (
+                  <img
+                    src={user.orgLogoUrl}
+                    alt={user.orgName ?? "Org"}
+                    className="w-7 h-7 rounded-md object-cover border border-sidebar-border flex-shrink-0"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                ) : (
+                  <div className="w-7 h-7 rounded-md bg-primary/20 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[10px] font-bold text-primary">
+                      {getOrgInitials(user.orgName ?? user.orgId)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-sidebar-foreground/90 truncate">
+                    {user.orgName ?? "My Organisation"}
+                  </p>
+                  <p className="text-[10px] text-sidebar-foreground/40">Organisation settings</p>
+                </div>
+              </div>
+            </Link>
+          )}
         </div>
 
         {/* Navigation */}
