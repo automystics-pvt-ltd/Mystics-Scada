@@ -486,6 +486,8 @@ export interface SldNode {
   currentA?: number;
   breakerState?: "closed" | "open";
   parentId?: string;
+  /** Number of strings in a fault/warning state. Only set for combiner nodes. */
+  stringFaultCount?: number;
 }
 
 export interface SldEdge {
@@ -527,7 +529,8 @@ export function plantSld(plant: PlantConfig, now: Date): SldTopology {
   nodes.push({ id: arrayId, label: "PV Array", type: "panel_array", status: "normal" });
 
   const combinerCount = Math.max(2, Math.ceil(plant.inverterCount / 4));
-  const combinerPowerKw = new Array(combinerCount).fill(0);
+  const combinerPowerKw = new Array<number>(combinerCount).fill(0);
+  const combinerStringFaults = new Array<number>(combinerCount).fill(0);
 
   const inverterReadings = Array.from({ length: plant.inverterCount }, (_, i) => ({
     health: inverterHealth(plant, i, now).health,
@@ -537,6 +540,13 @@ export function plantSld(plant: PlantConfig, now: Date): SldTopology {
   inverterReadings.forEach(({ reading }, i) => {
     combinerPowerKw[i % combinerCount] += reading.dcPowerKw;
   });
+
+  // Tally string faults per combiner (strings with status !== "normal")
+  for (let i = 0; i < plant.inverterCount; i++) {
+    const strings = stringReadings(plant, i, now);
+    const faults = strings.filter((s) => s.status !== "normal").length;
+    combinerStringFaults[i % combinerCount] += faults;
+  }
 
   for (let c = 0; c < combinerCount; c++) {
     const combId = `${plant.id}-comb-${c}`;
@@ -551,6 +561,7 @@ export function plantSld(plant: PlantConfig, now: Date): SldTopology {
       voltageV: dcBusVoltageV,
       currentA: powerKw > 0 ? round1((powerKw * 1000) / dcBusVoltageV) : 0,
       parentId: arrayId,
+      stringFaultCount: combinerStringFaults[c],
     });
     edges.push({
       id: `${arrayId}->${combId}`,

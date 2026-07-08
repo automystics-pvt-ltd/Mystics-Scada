@@ -26,4 +26,9 @@ export interface SldNode {
   breakerState?: SldNodeBreakerState;
   /** @nullable */
   detailPath?: string | null;
+  /**
+     * Number of strings in a fault/warning state across all child inverters. Only populated for combiner nodes.
+     * @nullable
+     */
+  stringFaultCount?: number | null;
 }

@@ -807,6 +807,9 @@ components:
           enum: [closed, open, null]
         detailPath:
           type: ["string", "null"]
+        stringFaultCount:
+          type: ["integer", "null"]
+          description: "Number of strings in a fault/warning state across all child inverters. Only populated for combiner nodes."
 
     SldEdge:
       type: object

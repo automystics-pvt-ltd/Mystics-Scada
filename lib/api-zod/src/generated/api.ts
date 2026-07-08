@@ -135,7 +135,8 @@ export const GetPlantSldResponse = zod.object({
   "voltageV": zod.number().nullish(),
   "currentA": zod.number().nullish(),
   "breakerState": zod.union([zod.literal('closed'),zod.literal('open'),zod.literal(null)]).nullish(),
-  "detailPath": zod.string().nullish()
+  "detailPath": zod.string().nullish(),
+  "stringFaultCount": zod.number().nullish().describe('Number of strings in a fault\/warning state across all child inverters. Only populated for combiner nodes.')
 })),
   "edges": zod.array(zod.object({
   "id": zod.string(),

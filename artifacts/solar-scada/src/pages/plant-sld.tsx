@@ -16,7 +16,7 @@ import "@xyflow/react/dist/style.css";
 import { useGetPlantSld, getGetPlantSldQueryKey, SldNode as SldNodeData, HealthState } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout";
 import { Link, useParams } from "wouter";
-import { Network, Box, Server, Factory, Zap, Cpu, Lock, Unlock, Maximize2 } from "lucide-react";
+import { Network, Box, Server, Factory, Zap, Cpu, Lock, Unlock, Maximize2, AlertTriangle } from "lucide-react";
 import { cn } from "@/components/ui/scada";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -117,6 +117,19 @@ function SldFlowNode({ data }: NodeProps<Node<SldNodeDatum>>) {
         </div>
       )}
 
+      {node.type === "combiner" && node.stringFaultCount != null && node.stringFaultCount > 0 && (
+        <div className="mt-2 w-full flex items-center justify-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border border-status-warning/40 bg-status-warning/10 text-status-warning">
+          <AlertTriangle className="w-3 h-3 shrink-0" />
+          {node.stringFaultCount} string{node.stringFaultCount !== 1 ? "s" : ""} faulted
+        </div>
+      )}
+
+      {node.type === "combiner" && (node.stringFaultCount == null || node.stringFaultCount === 0) && (
+        <div className="mt-2 w-full flex items-center justify-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border border-status-normal/30 bg-status-normal/10 text-status-normal">
+          All strings nominal
+        </div>
+      )}
+
       <div className="absolute -top-2 -right-2">
         {node.status === "fault" && <div className="w-4 h-4 rounded-full bg-status-fault animate-ping absolute" />}
         {node.status === "fault" && <div className="w-4 h-4 rounded-full bg-status-fault" />}
@@ -173,9 +186,23 @@ function SldNodeDetail({ node }: { node: SldNodeDatum }) {
           </div>
         )}
       </div>
+      {node.type === "combiner" && node.stringFaultCount != null && (
+        <div className={cn(
+          "flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium border",
+          node.stringFaultCount > 0
+            ? "border-status-warning/40 bg-status-warning/10 text-status-warning"
+            : "border-status-normal/30 bg-status-normal/10 text-status-normal"
+        )}>
+          {node.stringFaultCount > 0 ? (
+            <><AlertTriangle className="w-3 h-3 shrink-0" />{node.stringFaultCount} string{node.stringFaultCount !== 1 ? "s" : ""} faulted</>
+          ) : (
+            "All strings nominal"
+          )}
+        </div>
+      )}
       {node.detailPath && (
         <Link href={node.detailPath} className="inline-block text-xs text-primary hover:underline pt-1">
-          View equipment detail &rarr;
+          {node.type === "combiner" ? "View string diagnostics →" : "View equipment detail →"}
         </Link>
       )}
     </div>

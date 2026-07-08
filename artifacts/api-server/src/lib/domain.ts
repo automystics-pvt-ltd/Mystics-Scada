@@ -226,6 +226,7 @@ export function sldFor(plant: PlantConfig, now: Date) {
       voltageV: n.voltageV ?? null,
       currentA: n.currentA ?? null,
       breakerState: n.breakerState ?? null,
+      stringFaultCount: n.stringFaultCount ?? null,
       detailPath:
         n.type === "inverter"
           ? `/plants/${plant.id}/inverters/${n.id}`
