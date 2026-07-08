@@ -28,6 +28,8 @@ import NotFound from '@/pages/not-found';
 import SuperAdminDashboard from '@/pages/superadmin-dashboard';
 import SuperAdminOrgs from '@/pages/superadmin-orgs';
 import SuperAdminOrgDetail from '@/pages/superadmin-org-detail';
+import DevicesPage from '@/pages/devices';
+import DeviceDetailPage from '@/pages/device-detail';
 
 const queryClient = new QueryClient();
 
@@ -48,6 +50,8 @@ function ProtectedRoutes() {
           <Route path="/alerts" component={AlertCenter} />
           <Route path="/maintenance" component={MaintenanceBoard} />
           <Route path="/reports" component={ReportsView} />
+          <Route path="/devices" component={DevicesPage} />
+          <Route path="/devices/:id" component={DeviceDetailPage} />
           <Route path="/admin/users" component={AdminUsers} />
           <Route path="/admin/roles" component={AdminRoles} />
           <Route path="/settings" component={Settings} />

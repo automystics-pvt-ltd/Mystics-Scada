@@ -156,6 +156,13 @@ router.get("/auth/me", async (req, res) => {
     .where(eq(rolesTable.id, user.roleId))
     .limit(1);
 
+  // Fetch permissions separately so the /auth/me select can be updated independently
+  const [roleWithPerms] = await db
+    .select({ permissions: rolesTable.permissions })
+    .from(rolesTable)
+    .where(eq(rolesTable.id, user.roleId))
+    .limit(1);
+
   // When a super admin is impersonating an org, include that context so the
   // frontend can show the "Acting as [OrgName]" banner.
   let orgOverride: string | undefined;
@@ -179,6 +186,7 @@ router.get("/auth/me", async (req, res) => {
     orgId: user.orgId,
     roleId: user.roleId,
     roleName: role?.name ?? user.roleId,
+    permissions: roleWithPerms?.permissions ?? [],
     plantIds: user.plantIds,
     isSuperAdmin: user.isSuperAdmin,
     orgOverride,

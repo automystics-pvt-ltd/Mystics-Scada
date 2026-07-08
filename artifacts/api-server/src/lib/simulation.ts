@@ -486,6 +486,128 @@ export function plantPerformance(plant: PlantConfig, now: Date): PerformanceSnap
   };
 }
 
+// ── IoT Device simulation ─────────────────────────────────────────────────────
+
+export type DeviceStatusValue = "online" | "offline" | "error";
+
+export interface DeviceStatusReading {
+  status: DeviceStatusValue;
+  signalStrengthPct: number;
+  lastSeenAt: Date;
+  firmwareVersion: string;
+}
+
+/**
+ * Deterministic live status for a registered IoT device.
+ * Status bucket changes every 10 minutes — mostly online, rare error/offline.
+ */
+export function deviceStatus(deviceId: string, now: Date): DeviceStatusReading {
+  const bucket = Math.floor(now.getTime() / (1000 * 60 * 10));
+  const roll = seededRandom(deviceId, bucket);
+
+  let status: DeviceStatusValue;
+  if (roll > 0.97) status = "error";
+  else if (roll > 0.93) status = "offline";
+  else status = "online";
+
+  // Signal strength: 55–99% for online, 10–45% when degraded
+  const sigBucket = Math.floor(now.getTime() / (1000 * 60 * 30));
+  const sigBase = seededRandom(`${deviceId}:sig`, sigBucket);
+  const signalStrengthPct =
+    status === "online"
+      ? Math.round(55 + sigBase * 44)
+      : Math.round(10 + sigBase * 35);
+
+  // Last seen: within the past 30 s for online, up to 20 min ago for offline/error
+  const seenBucket = status === "online" ? Math.floor(now.getTime() / 30000) : bucket;
+  const offsetMs =
+    status === "online"
+      ? seededRandom(`${deviceId}:seen`, seenBucket) * 30_000
+      : (2 + seededRandom(`${deviceId}:seen`, seenBucket) * 18) * 60_000;
+  const lastSeenAt = new Date(now.getTime() - offsetMs);
+
+  // Firmware version: deterministic per device, stable across time
+  const fwMaj = 3 + Math.floor(seededRandom(`${deviceId}:fw:maj`, 0) * 3);
+  const fwMin = Math.floor(seededRandom(`${deviceId}:fw:min`, 0) * 10);
+  const fwPat = Math.floor(seededRandom(`${deviceId}:fw:patch`, 0) * 20);
+  const firmwareVersion = `${fwMaj}.${fwMin}.${fwPat}`;
+
+  return { status, signalStrengthPct, lastSeenAt, firmwareVersion };
+}
+
+export interface DeviceLogEntry {
+  timestamp: Date;
+  level: "INFO" | "WARN" | "ERROR";
+  message: string;
+}
+
+const LOG_TEMPLATES = {
+  INFO: [
+    (d: Record<string, string>) => `Heartbeat OK — uptime ${d.uptime}h`,
+    (_d: Record<string, string>) => "Config sync acknowledged by controller",
+    (d: Record<string, string>) => `Poll cycle complete — ${d.regs} registers read in ${d.ms}ms`,
+    (d: Record<string, string>) => `Connection established to ${d.host}:${d.port}`,
+    (d: Record<string, string>) => `Firmware ${d.fw} verified — checksum OK`,
+    (_d: Record<string, string>) => "Scheduled reboot completed successfully",
+  ],
+  WARN: [
+    (d: Record<string, string>) => `Response timeout — retry ${d.n}/3`,
+    (d: Record<string, string>) => `Signal strength degraded (${d.pct}%)`,
+    (d: Record<string, string>) => `CRC error on register 0x${d.reg} — retrying`,
+    (d: Record<string, string>) => `High latency detected — ${d.ms}ms round-trip`,
+    (_d: Record<string, string>) => "Unexpected disconnect — reconnecting",
+  ],
+  ERROR: [
+    (d: Record<string, string>) => `Connection refused — ${d.host}:${d.port}`,
+    (d: Record<string, string>) => `Modbus exception code 0x${d.code}`,
+    (_d: Record<string, string>) => "Authentication failure — check credentials",
+    (_d: Record<string, string>) => "Checksum mismatch on received frame",
+    (_d: Record<string, string>) => "Register map mismatch — config may be stale",
+  ],
+};
+
+/** Last `count` synthetic log entries for a device, oldest first. */
+export function deviceLogs(deviceId: string, count: number, now: Date): DeviceLogEntry[] {
+  const logs: DeviceLogEntry[] = [];
+  for (let i = count - 1; i >= 0; i--) {
+    const t = new Date(now.getTime() - i * 90_000); // ~90 s between entries
+    const b = Math.floor(t.getTime() / 90_000);
+    const roll = seededRandom(`${deviceId}:log`, b);
+    const level: "INFO" | "WARN" | "ERROR" =
+      roll > 0.96 ? "ERROR" : roll > 0.87 ? "WARN" : "INFO";
+    const tpls = LOG_TEMPLATES[level];
+    const tIdx = Math.floor(seededRandom(`${deviceId}:tmpl`, b) * tpls.length);
+    const data: Record<string, string> = {
+      uptime: String(Math.floor(seededRandom(`${deviceId}:up`, b) * 720)),
+      regs:   String(Math.floor(seededRandom(`${deviceId}:regs`, b) * 120 + 30)),
+      host:   `10.0.${Math.floor(seededRandom(`${deviceId}:h1`, b) * 5 + 1)}.${Math.floor(seededRandom(`${deviceId}:h2`, b) * 254 + 1)}`,
+      port:   String(Math.floor(seededRandom(`${deviceId}:port`, b) * 3) === 0 ? 502 : 1883),
+      fw:     `3.${Math.floor(seededRandom(`${deviceId}:fw`, b) * 9)}.${Math.floor(seededRandom(`${deviceId}:fwp`, b) * 20)}`,
+      n:      String(Math.floor(seededRandom(`${deviceId}:n`, b) * 3) + 1),
+      pct:    String(Math.floor(seededRandom(`${deviceId}:pct`, b) * 30 + 10)),
+      reg:    Math.floor(seededRandom(`${deviceId}:reg`, b) * 256).toString(16).toUpperCase().padStart(2, "0"),
+      ms:     String(Math.floor(seededRandom(`${deviceId}:ms`, b) * 800 + 200)),
+      code:   Math.floor(seededRandom(`${deviceId}:code`, b) * 16).toString(16).toUpperCase().padStart(2, "0"),
+    };
+    logs.push({ timestamp: t, level, message: tpls[tIdx]!(data) });
+  }
+  return logs;
+}
+
+/** 96 data points (15-min buckets) covering the past 24 hours — connectivity timeline. */
+export function deviceConnectivityTimeline(
+  deviceId: string,
+  now: Date,
+): { timestamp: Date; status: DeviceStatusValue }[] {
+  const points: { timestamp: Date; status: DeviceStatusValue }[] = [];
+  for (let i = 95; i >= 0; i--) {
+    const t = new Date(now.getTime() - i * 15 * 60_000);
+    const { status } = deviceStatus(deviceId, t);
+    points.push({ timestamp: t, status });
+  }
+  return points;
+}
+
 export interface RevenueSnapshot {
   currency: string;
   todayRevenue: number;

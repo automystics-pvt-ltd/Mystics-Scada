@@ -8,6 +8,7 @@ import {
   workOrdersTable,
   usersTable,
   rolesTable,
+  devicesTable,
 } from "@workspace/db";
 import { eq, isNull } from "drizzle-orm";
 import { logger } from "./logger";
@@ -265,6 +266,140 @@ function buildWorkOrderSeed() {
   return orders;
 }
 
+// ── Device seed ───────────────────────────────────────────────────────────────
+
+function buildDeviceSeed(): (typeof devicesTable.$inferInsert)[] {
+  const now = new Date();
+  return [
+    // plant-thar — 5 devices
+    {
+      id: "dev-thar-rtu-01", orgId: "org-1", plantId: "plant-thar",
+      name: "Thar RTU-01 (Blocks A–D)", type: "RTU", protocol: "modbus",
+      status: "online", firmwareVersion: "4.2.1",
+      config: { ipAddress: "10.0.1.10", port: 502, modbusUnitId: 1, pollingIntervalSec: 30, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: "dev-thar-plc-01", orgId: "org-1", plantId: "plant-thar",
+      name: "Thar PLC Inverter Controller", type: "PLC", protocol: "modbus",
+      status: "online", firmwareVersion: "3.9.5",
+      config: { ipAddress: "10.0.1.20", port: 502, modbusUnitId: 2, pollingIntervalSec: 10, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: "dev-thar-wx-01", orgId: "org-1", plantId: "plant-thar",
+      name: "Thar Weather Station (Primary)", type: "weather_station", protocol: "mqtt",
+      status: "online", firmwareVersion: "5.1.0",
+      config: { brokerUrl: "mqtt://10.0.1.50:1883", topic: "plant/thar/wx/0/data", pollingIntervalSec: 60, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: "dev-thar-gw-01", orgId: "org-1", plantId: "plant-thar",
+      name: "Thar Edge Gateway", type: "gateway", protocol: "http",
+      status: "online", firmwareVersion: "2.4.3",
+      config: { ipAddress: "10.0.1.1", port: 8080, pollingIntervalSec: 15, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: "dev-thar-meter-01", orgId: "org-1", plantId: "plant-thar",
+      name: "Thar Grid Export Meter", type: "smart_meter", protocol: "modbus",
+      status: "online", firmwareVersion: "3.1.7",
+      config: { ipAddress: "10.0.1.30", port: 502, modbusUnitId: 5, pollingIntervalSec: 30, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+
+    // plant-sundarbans — 4 devices
+    {
+      id: "dev-sun-rtu-01", orgId: "org-1", plantId: "plant-sundarbans",
+      name: "Sundarbans RTU-01", type: "RTU", protocol: "modbus",
+      status: "online", firmwareVersion: "4.1.8",
+      config: { ipAddress: "10.0.2.10", port: 502, modbusUnitId: 1, pollingIntervalSec: 30, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: "dev-sun-logger-01", orgId: "org-1", plantId: "plant-sundarbans",
+      name: "Sundarbans Data Logger", type: "data_logger", protocol: "http",
+      status: "online", firmwareVersion: "1.9.2",
+      config: { ipAddress: "10.0.2.20", port: 80, pollingIntervalSec: 60, pendingDeploy: true },
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: "dev-sun-wx-01", orgId: "org-1", plantId: "plant-sundarbans",
+      name: "Sundarbans Weather Station", type: "weather_station", protocol: "mqtt",
+      status: "online", firmwareVersion: "5.0.4",
+      config: { brokerUrl: "mqtt://10.0.2.50:1883", topic: "plant/sun/wx/0/data", pollingIntervalSec: 60, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: "dev-sun-gw-01", orgId: "org-1", plantId: "plant-sundarbans",
+      name: "Sundarbans Edge Gateway", type: "gateway", protocol: "http",
+      status: "offline", firmwareVersion: "2.3.9",
+      config: { ipAddress: "10.0.2.1", port: 8080, pollingIntervalSec: 15, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+
+    // plant-deccan — 3 devices
+    {
+      id: "dev-dec-rtu-01", orgId: "org-1", plantId: "plant-deccan",
+      name: "Deccan RTU-01", type: "RTU", protocol: "modbus",
+      status: "online", firmwareVersion: "4.0.12",
+      config: { ipAddress: "10.0.3.10", port: 502, modbusUnitId: 1, pollingIntervalSec: 30, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: "dev-dec-wx-01", orgId: "org-1", plantId: "plant-deccan",
+      name: "Deccan Weather Station", type: "weather_station", protocol: "mqtt",
+      status: "online", firmwareVersion: "5.1.2",
+      config: { brokerUrl: "mqtt://10.0.3.50:1883", topic: "plant/dec/wx/0/data", pollingIntervalSec: 60, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: "dev-dec-meter-01", orgId: "org-1", plantId: "plant-deccan",
+      name: "Deccan Export Meter", type: "smart_meter", protocol: "modbus",
+      status: "online", firmwareVersion: "3.2.5",
+      config: { ipAddress: "10.0.3.30", port: 502, modbusUnitId: 3, pollingIntervalSec: 30, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+
+    // plant-coastal — 5 devices
+    {
+      id: "dev-cst-rtu-01", orgId: "org-1", plantId: "plant-coastal",
+      name: "Coastal RTU-01", type: "RTU", protocol: "modbus",
+      status: "online", firmwareVersion: "4.3.0",
+      config: { ipAddress: "10.0.4.10", port: 502, modbusUnitId: 1, pollingIntervalSec: 30, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: "dev-cst-plc-01", orgId: "org-1", plantId: "plant-coastal",
+      name: "Coastal PLC Tracker Ctrl", type: "PLC", protocol: "modbus",
+      status: "online", firmwareVersion: "3.8.1",
+      config: { ipAddress: "10.0.4.20", port: 502, modbusUnitId: 2, pollingIntervalSec: 10, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: "dev-cst-wx-01", orgId: "org-1", plantId: "plant-coastal",
+      name: "Coastal Weather Station", type: "weather_station", protocol: "mqtt",
+      status: "online", firmwareVersion: "5.0.9",
+      config: { brokerUrl: "mqtt://10.0.4.50:1883", topic: "plant/cst/wx/0/data", pollingIntervalSec: 60, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: "dev-cst-tracker-01", orgId: "org-1", plantId: "plant-coastal",
+      name: "Coastal Tracker Controller", type: "tracker_controller", protocol: "mqtt",
+      status: "online", firmwareVersion: "2.7.4",
+      config: { brokerUrl: "mqtt://10.0.4.50:1883", topic: "plant/cst/tracker/data", pollingIntervalSec: 30, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: "dev-cst-gw-01", orgId: "org-1", plantId: "plant-coastal",
+      name: "Coastal Edge Gateway", type: "gateway", protocol: "http",
+      status: "error", firmwareVersion: "2.4.1",
+      config: { ipAddress: "10.0.4.1", port: 8080, pollingIntervalSec: 15, pendingDeploy: false },
+      createdAt: now, updatedAt: now,
+    },
+  ];
+}
+
 // ── Main seed entry point ─────────────────────────────────────────────────────
 
 export async function ensureSeedData(): Promise<void> {
@@ -330,6 +465,13 @@ export async function ensureSeedData(): Promise<void> {
     const orders = buildWorkOrderSeed();
     await db.insert(workOrdersTable).values(orders);
     logger.info({ count: orders.length }, "Seeded work orders");
+  }
+
+  const existingDevices = await db.select().from(devicesTable).limit(1);
+  if (existingDevices.length === 0) {
+    const devices = buildDeviceSeed();
+    await db.insert(devicesTable).values(devices);
+    logger.info({ count: devices.length }, "Seeded IoT devices");
   }
 
   // ── Demo credentials ──────────────────────────────────────────────────────

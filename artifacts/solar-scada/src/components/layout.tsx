@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ShieldAlert,
   X,
+  Cpu,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +66,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { name: "Portfolio",    href: "/",            icon: LayoutDashboard },
     { name: "Alert Center", href: "/alerts",      icon: AlertTriangle   },
     { name: "Work Orders",  href: "/maintenance", icon: Wrench          },
+    { name: "Devices",      href: "/devices",     icon: Cpu             },
     { name: "Reports",      href: "/reports",     icon: FileText        },
   ];
 

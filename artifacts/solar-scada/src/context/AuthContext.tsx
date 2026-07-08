@@ -12,6 +12,7 @@ export interface AuthUser {
   orgId: string;
   roleId: string;
   roleName: string;
+  permissions: string[];
   plantIds: string[];
   isSuperAdmin: boolean;
   /** Set when the super admin is browsing as a specific org. */
