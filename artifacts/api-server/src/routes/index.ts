@@ -7,6 +7,7 @@ import alertsRouter from "./alerts";
 import workOrdersRouter from "./workOrders";
 import reportsRouter from "./reports";
 import usersRouter from "./users";
+import streamRouter from "./stream";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(alertsRouter);
 router.use(workOrdersRouter);
 router.use(reportsRouter);
 router.use(usersRouter);
+router.use(streamRouter);
 
 export default router;

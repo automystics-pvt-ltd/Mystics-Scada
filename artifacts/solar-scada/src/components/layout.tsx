@@ -1,118 +1,170 @@
 import { Link, useLocation } from "wouter";
-import { 
-  LayoutDashboard, 
-  Activity, 
-  AlertTriangle, 
-  Wrench, 
-  FileText, 
-  Settings, 
-  Users, 
-  Sun,
-  Menu,
+import {
+  LayoutDashboard,
+  AlertTriangle,
+  Wrench,
+  FileText,
+  Settings,
+  Users,
   Zap,
-  Cpu,
-  Power
+  Radio,
+  WifiOff,
 } from "lucide-react";
-import { useState } from "react";
-import { useHealthCheck } from "@workspace/api-client-react";
+import { useState, useEffect } from "react";
+import { useTelemetry } from "@/context/TelemetryStreamContext";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { data: health } = useHealthCheck({ query: { refetchInterval: 30000, queryKey: ["health"] } });
+  const { connected, lastSync, tickCount } = useTelemetry();
+
+  /* "Xs ago" counter — updates every second */
+  const [syncAgoLabel, setSyncAgoLabel] = useState<string>("--");
+  useEffect(() => {
+    function update() {
+      if (!lastSync) { setSyncAgoLabel("--"); return; }
+      const secs = Math.round((Date.now() - lastSync.getTime()) / 1000);
+      setSyncAgoLabel(secs <= 1 ? "just now" : `${secs}s ago`);
+    }
+    update();
+    const t = setInterval(update, 1000);
+    return () => clearInterval(t);
+  }, [lastSync]);
+
+  /* Flash the stream dot when a new tick arrives */
+  const [flash, setFlash] = useState(false);
+  useEffect(() => {
+    if (tickCount === 0) return;
+    setFlash(true);
+    const t = setTimeout(() => setFlash(false), 600);
+    return () => clearTimeout(t);
+  }, [tickCount]);
 
   const navigation = [
-    { name: "Portfolio", href: "/", icon: LayoutDashboard },
-    { name: "Alert Center", href: "/alerts", icon: AlertTriangle },
-    { name: "Work Orders", href: "/maintenance", icon: Wrench },
-    { name: "Reports", href: "/reports", icon: FileText },
+    { name: "Portfolio",    href: "/",            icon: LayoutDashboard },
+    { name: "Alert Center", href: "/alerts",      icon: AlertTriangle   },
+    { name: "Work Orders",  href: "/maintenance", icon: Wrench          },
+    { name: "Reports",      href: "/reports",     icon: FileText        },
   ];
 
   const adminNav = [
-    { name: "Users & Roles", href: "/admin/users", icon: Users },
-    { name: "Settings", href: "/settings", icon: Settings },
+    { name: "Users & Roles", href: "/admin/users", icon: Users    },
+    { name: "Settings",      href: "/settings",    icon: Settings },
   ];
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
       <div className="w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col">
-        <div className="h-14 flex items-center px-4 border-b border-sidebar-border">
-          <Zap className="h-6 w-6 text-primary mr-2" />
-          <span className="font-bold text-lg tracking-tight">Solar SCADA</span>
+
+        {/* Logo */}
+        <div className="h-14 flex items-center px-4 border-b border-sidebar-border gap-2">
+          <Zap className="h-5 w-5 text-primary" />
+          <span className="font-bold text-base tracking-tight">Solar SCADA</span>
         </div>
-        
+
+        {/* Navigation */}
         <div className="flex-1 overflow-y-auto py-4">
-          <nav className="space-y-1 px-2">
-            <div className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2 px-2">Operations</div>
+          <nav className="space-y-0.5 px-2">
+            <div className="text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest mb-2 px-2 pt-1">
+              Operations
+            </div>
             {navigation.map((item) => {
               const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
               return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                <Link key={item.name} href={item.href}>
+                  <div className={`flex items-center px-3 py-2 text-sm font-medium rounded-md gap-3 cursor-pointer transition-colors ${
                     isActive
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                  }`}
-                >
-                  <item.icon
-                    className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                      isActive ? "text-primary" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
-                    }`}
-                  />
-                  {item.name}
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  }`}>
+                    <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? "text-primary" : "text-sidebar-foreground/50"}`} />
+                    {item.name}
+                  </div>
                 </Link>
               );
             })}
           </nav>
 
-          <nav className="space-y-1 px-2 mt-8">
-            <div className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2 px-2">Administration</div>
+          <nav className="space-y-0.5 px-2 mt-6">
+            <div className="text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest mb-2 px-2">
+              Administration
+            </div>
             {adminNav.map((item) => {
               const isActive = location.startsWith(item.href);
               return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                <Link key={item.name} href={item.href}>
+                  <div className={`flex items-center px-3 py-2 text-sm font-medium rounded-md gap-3 cursor-pointer transition-colors ${
                     isActive
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                  }`}
-                >
-                  <item.icon
-                    className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                      isActive ? "text-primary" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
-                    }`}
-                  />
-                  {item.name}
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  }`}>
+                    <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? "text-primary" : "text-sidebar-foreground/50"}`} />
+                    {item.name}
+                  </div>
                 </Link>
               );
             })}
           </nav>
         </div>
 
-        {/* System Status Footer */}
-        <div className="p-4 border-t border-sidebar-border bg-sidebar text-xs">
-          <div className="flex items-center justify-between text-sidebar-foreground/70 mb-1">
-            <span>System Status</span>
-            <div className="flex items-center">
-              {health?.status === "ok" ? (
-                <><span className="h-2 w-2 rounded-full bg-status-normal mr-1.5 animate-pulse-subtle" /> Online</>
-              ) : (
-                <><span className="h-2 w-2 rounded-full bg-status-warning mr-1.5" /> Degraded</>
-              )}
+        {/* Live IoT Stream indicator */}
+        <div className="p-3 border-t border-sidebar-border space-y-2">
+          <div className={`rounded-lg px-3 py-2.5 border transition-colors ${
+            connected
+              ? "bg-status-normal/8 border-status-normal/20"
+              : "bg-status-fault/8 border-status-fault/20"
+          }`}>
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-2">
+                {connected ? (
+                  <Radio className={`h-3.5 w-3.5 text-status-normal ${flash ? "animate-ping-once" : "animate-pulse-subtle"}`} />
+                ) : (
+                  <WifiOff className="h-3.5 w-3.5 text-status-fault" />
+                )}
+                <span className={`text-xs font-semibold ${connected ? "text-status-normal" : "text-status-fault"}`}>
+                  {connected ? "IoT Stream Live" : "Stream Offline"}
+                </span>
+              </div>
+              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
+                connected ? "bg-status-normal/15 text-status-normal" : "bg-status-fault/15 text-status-fault"
+              }`}>
+                {connected ? "SSE" : "ERR"}
+              </span>
             </div>
+
+            <div className="flex items-center justify-between text-[10px] text-sidebar-foreground/50">
+              <span>Last sync</span>
+              <span className={`font-mono ${flash ? "text-status-normal" : ""} transition-colors`}>
+                {syncAgoLabel}
+              </span>
+            </div>
+
+            {/* Mini sync activity bar */}
+            {connected && (
+              <div className="mt-2 flex gap-0.5">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`flex-1 h-1 rounded-full transition-all duration-300 ${
+                      flash && i >= 8 - (tickCount % 8) - 1
+                        ? "bg-status-normal"
+                        : "bg-status-normal/20"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-          <div className="flex items-center justify-between text-sidebar-foreground/50">
-            <span>Last sync</span>
-            <span>Just now</span>
+
+          {/* Tick counter */}
+          <div className="flex items-center justify-between px-1 text-[10px] text-sidebar-foreground/40">
+            <span>Frames received</span>
+            <span className="font-mono">{tickCount.toLocaleString()}</span>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main content */}
       <main className="flex-1 overflow-y-auto bg-background focus:outline-none">
         <div className="py-6 px-8 h-full">
           {children}

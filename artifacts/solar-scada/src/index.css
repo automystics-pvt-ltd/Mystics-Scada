@@ -201,10 +201,20 @@
 }
 
 @keyframes data-flash {
-  0% { color: inherit; }
-  50% { color: hsl(var(--primary)); text-shadow: 0 0 8px hsl(var(--primary) / 0.5); }
+  0%   { color: inherit; }
+  30%  { color: hsl(var(--status-normal)); text-shadow: 0 0 10px hsl(var(--status-normal) / 0.6); }
   100% { color: inherit; }
 }
 .animate-data-flash {
-  animation: data-flash 1s ease-out;
+  animation: data-flash 0.8s ease-out;
+}
+
+/* Single ping for IoT tick indicator */
+@keyframes ping-once {
+  0%   { transform: scale(1);   opacity: 1; }
+  60%  { transform: scale(1.8); opacity: 0.4; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+.animate-ping-once {
+  animation: ping-once 0.6s ease-out;
 }
