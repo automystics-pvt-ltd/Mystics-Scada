@@ -21,6 +21,7 @@ import {
   performanceData,
   revenueData,
 } from "../lib/domain";
+import { combinerStrings } from "../lib/combinerStrings";
 import { activeAlertCountsByPlant } from "../lib/alertCounts";
 
 const router: IRouter = Router();
@@ -104,6 +105,46 @@ router.get("/plants/:plantId/revenue", (req, res) => {
     return;
   }
   const data = GetPlantRevenueResponse.parse(revenueData(plant, new Date()));
+  res.json(data);
+});
+
+/**
+ * GET /plants/:plantId/combiners/:combinerId/strings
+ *
+ * Returns all strings across every inverter feeding the given combiner box,
+ * grouped by inverter. This is what the SLD combiner-node popover links to.
+ */
+router.get("/plants/:plantId/combiners/:combinerId/strings", (req, res) => {
+  const plant = PLANTS.find((p) => p.id === req.params["plantId"]);
+  if (!plant) {
+    res.status(404).json({ error: "not_found", message: "Plant not found" });
+    return;
+  }
+
+  const combinerId = req.params["combinerId"] ?? "";
+
+  // Enforce exact format: <plantId>-comb-<non-negative integer>
+  const expectedPrefix = `${plant.id}-comb-`;
+  if (!combinerId.startsWith(expectedPrefix)) {
+    res.status(404).json({ error: "not_found", message: "Combiner not found for this plant" });
+    return;
+  }
+
+  const suffix = combinerId.slice(expectedPrefix.length);
+  const combinerIndex = Number.parseInt(suffix, 10);
+  const combinerCount = Math.max(2, Math.ceil(plant.inverterCount / 4));
+
+  if (
+    Number.isNaN(combinerIndex) ||
+    String(combinerIndex) !== suffix ||   // rejects "0x1", "1.5", trailing chars
+    combinerIndex < 0 ||
+    combinerIndex >= combinerCount
+  ) {
+    res.status(404).json({ error: "not_found", message: "Combiner index out of range" });
+    return;
+  }
+
+  const data = combinerStrings(plant, combinerId, new Date());
   res.json(data);
 });
 

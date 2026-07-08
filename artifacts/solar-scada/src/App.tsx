@@ -13,6 +13,7 @@ import PlantSld from '@/pages/plant-sld';
 import InverterList from '@/pages/inverter-list';
 import InverterDetail from '@/pages/inverter-detail';
 import StringDiagnostics from '@/pages/string-diagnostics';
+import CombinerStrings from '@/pages/combiner-strings';
 import WeatherView from '@/pages/weather';
 import AnalyticsView from '@/pages/analytics';
 import AlertCenter from '@/pages/alerts';
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/plants/:plantId/inverters" component={InverterList} />
       <Route path="/plants/:plantId/inverters/:inverterId" component={InverterDetail} />
       <Route path="/plants/:plantId/inverters/:inverterId/strings" component={StringDiagnostics} />
+      <Route path="/plants/:plantId/combiners/:combinerId/strings" component={CombinerStrings} />
       <Route path="/plants/:plantId/weather" component={WeatherView} />
       <Route path="/plants/:plantId/analytics" component={AnalyticsView} />
       <Route path="/alerts" component={AlertCenter} />

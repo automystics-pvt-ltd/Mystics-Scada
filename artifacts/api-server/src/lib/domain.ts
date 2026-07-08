@@ -230,8 +230,8 @@ export function sldFor(plant: PlantConfig, now: Date) {
       detailPath:
         n.type === "inverter"
           ? `/plants/${plant.id}/inverters/${n.id}`
-          : n.type === "combiner" && firstInverterByCombiner.has(n.id)
-            ? `/plants/${plant.id}/inverters/${firstInverterByCombiner.get(n.id)}/strings`
+          : n.type === "combiner"
+            ? `/plants/${plant.id}/combiners/${n.id}/strings`
             : null,
     })),
     edges: edges.map((e) => ({

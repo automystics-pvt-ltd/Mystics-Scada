@@ -58,10 +58,12 @@ const STATUS_DOT: Record<HealthState, string> = {
   offline: "bg-status-offline",
 };
 
-type SldNodeDatum = SldNodeData & { plantId: string; [key: string]: unknown };
+type SldNodeDatum = SldNodeData & { plantId: string };
 
-function SldFlowNode({ data }: NodeProps<Node<SldNodeDatum>>) {
-  const node = data;
+// ReactFlow requires data to satisfy Record<string,unknown>. We receive the
+// payload as that generic and immediately cast to our typed shape.
+function SldFlowNode({ data }: NodeProps<Node<Record<string, unknown>>>) {
+  const node = data as unknown as SldNodeDatum;
   const Icon = TYPE_ICONS[node.type] || Box;
   const hasBreaker = node.breakerState !== undefined && node.breakerState !== null;
 
@@ -324,7 +326,7 @@ export default function PlantSld() {
           x: col * COLUMN_WIDTH - (totalColumns * COLUMN_WIDTH) / 2 + NODE_WIDTH / 2,
           y: level * LEVEL_HEIGHT,
         },
-        data: { ...n, plantId } as SldNodeDatum,
+        data: { ...n, plantId } as unknown as Record<string, unknown>,
         sourcePosition: Position.Top,
         targetPosition: Position.Bottom,
         draggable: false,
