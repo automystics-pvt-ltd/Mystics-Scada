@@ -127,9 +127,16 @@ function SldFlowNode({ data }: NodeProps<Node<Record<string, unknown>>>) {
         </div>
       )}
 
-      {node.type === "combiner" && (node.stringFaultCount == null || node.stringFaultCount === 0) && (
+      {node.type === "combiner" && node.stringFaultCount != null && node.stringFaultCount === 0 && (
         <div className="mt-2 w-full flex items-center justify-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border border-status-normal/30 bg-status-normal/10 text-status-normal">
           All strings nominal
+        </div>
+      )}
+
+      {/* Inverters offline or irradiance too low — deviation math is unreliable */}
+      {node.type === "combiner" && node.stringFaultCount == null && (
+        <div className="mt-2 w-full flex items-center justify-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border border-muted-foreground/20 bg-muted/20 text-muted-foreground">
+          Readings unavailable
         </div>
       )}
 
@@ -189,18 +196,21 @@ function SldNodeDetail({ node }: { node: SldNodeDatum }) {
           </div>
         )}
       </div>
-      {node.type === "combiner" && node.stringFaultCount != null && (
-        <div className={cn(
-          "flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium border",
-          node.stringFaultCount > 0
-            ? "border-status-warning/40 bg-status-warning/10 text-status-warning"
-            : "border-status-normal/30 bg-status-normal/10 text-status-normal"
-        )}>
-          {node.stringFaultCount > 0 ? (
-            <><AlertTriangle className="w-3 h-3 shrink-0" />{node.stringFaultCount} string{node.stringFaultCount !== 1 ? "s" : ""} faulted</>
-          ) : (
-            "All strings nominal"
-          )}
+      {node.type === "combiner" && node.stringFaultCount != null && node.stringFaultCount > 0 && (
+        <div className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium border border-status-warning/40 bg-status-warning/10 text-status-warning">
+          <AlertTriangle className="w-3 h-3 shrink-0" />
+          {node.stringFaultCount} string{node.stringFaultCount !== 1 ? "s" : ""} faulted
+        </div>
+      )}
+      {node.type === "combiner" && node.stringFaultCount != null && node.stringFaultCount === 0 && (
+        <div className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium border border-status-normal/30 bg-status-normal/10 text-status-normal">
+          All strings nominal
+        </div>
+      )}
+      {/* Inverters offline or irradiance too low — deviation math is unreliable */}
+      {node.type === "combiner" && node.stringFaultCount == null && (
+        <div className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium border border-muted-foreground/20 bg-muted/20 text-muted-foreground">
+          Readings unavailable
         </div>
       )}
       {node.detailPath && (

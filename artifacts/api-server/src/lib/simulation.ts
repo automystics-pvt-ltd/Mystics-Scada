@@ -503,8 +503,12 @@ export interface SldNode {
   currentA?: number;
   breakerState?: "closed" | "open";
   parentId?: string;
-  /** Number of strings in a fault/warning state. Only set for combiner nodes. */
-  stringFaultCount?: number;
+  /**
+   * Number of strings in a fault/warning state. Only set for combiner nodes.
+   * Null means the inverters feeding this combiner are offline/standby and
+   * string readings are not meaningful (e.g. night-time or all inverters down).
+   */
+  stringFaultCount?: number | null;
 }
 
 export interface SldEdge {
@@ -573,7 +577,8 @@ export function plantSld(plant: PlantConfig, now: Date, overrides?: SldOverrides
 
   const combinerCount = Math.max(2, Math.ceil(plant.inverterCount / 4));
   const combinerPowerKw = new Array<number>(combinerCount).fill(0);
-  const combinerStringFaults = new Array<number>(combinerCount).fill(0);
+  // null = no active inverters feeding this combiner; readings are not meaningful.
+  const combinerStringFaults = new Array<number | null>(combinerCount).fill(null);
 
   const inverterReadings = Array.from({ length: plant.inverterCount }, (_, i) => {
     const invId = inverterId(plant.id, i);
@@ -581,13 +586,18 @@ export function plantSld(plant: PlantConfig, now: Date, overrides?: SldOverrides
       overrides?.plantDisconnect ||
       (overrides?.faultedInverterIds?.has(invId) ?? false);
     if (forcedOffline) {
-      return { status: "comm_lost" as InverterStatus, health: "offline" as HealthState, reading: ZERO_READING };
+      return { status: "comm_lost" as InverterStatus, health: "offline" as HealthState, reading: ZERO_READING, isProducing: false };
     }
     const inv = inverterHealth(plant, i, now);
+    const reading = inverterLiveReading(plant, i, now);
     return {
       status: inv.status,
       health: inv.health,
-      reading: inverterLiveReading(plant, i, now),
+      reading,
+      // Only count string faults when the inverter is actually generating DC
+      // power. At night (irradiance < 5 W/m²) baseCurrent = 0, so all strings
+      // read 0 A and deviation arithmetic produces meaningless results.
+      isProducing: reading.dcPowerKw > 0,
     };
   });
 
@@ -595,17 +605,21 @@ export function plantSld(plant: PlantConfig, now: Date, overrides?: SldOverrides
     combinerPowerKw[i % combinerCount] += reading.dcPowerKw;
   });
 
-  // Tally string faults per combiner, but only for running inverters.
-  // Standby, comm_lost, and fault inverters all produce zero DC current.
-  // The simulation's isDegraded flag (5-minute bucket) can persist briefly
+  // Tally string faults per combiner — only for inverters actively generating
+  // DC power. Standby/comm_lost/fault inverters produce zero DC current, and
+  // the simulation's isDegraded flag (5-minute bucket) can persist briefly
   // through status transitions, producing spurious "warning" string statuses
-  // even when there is no measurable string signal.  Restricting the count
-  // to "running" inverters ensures the SLD badge reflects real anomalies only.
+  // even when there is no measurable string signal. At night (irradiance < 5
+  // W/m²) baseCurrent = 0, so deviation arithmetic is meaningless. Using
+  // isProducing (dcPowerKw > 0) as the gate keeps the count accurate and lets
+  // the combiner show "Readings unavailable" when no inverter is generating.
   for (let i = 0; i < plant.inverterCount; i++) {
-    if (inverterReadings[i]?.status !== "running") continue;
+    const { isProducing } = inverterReadings[i]!;
+    if (!isProducing) continue;
     const strings = stringReadings(plant, i, now);
     const faults = strings.filter((s) => s.status !== "normal").length;
-    combinerStringFaults[i % combinerCount] += faults;
+    const c = i % combinerCount;
+    combinerStringFaults[c] = (combinerStringFaults[c] ?? 0) + faults;
   }
 
   for (let c = 0; c < combinerCount; c++) {
