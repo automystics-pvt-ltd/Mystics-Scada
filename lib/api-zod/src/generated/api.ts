@@ -132,7 +132,17 @@ export const GetPlantSldResponse = zod.object({
   "status": zod.enum(['normal', 'warning', 'fault', 'offline']),
   "parentId": zod.string().nullable(),
   "powerKw": zod.number().nullish(),
-  "voltageV": zod.number().nullish()
+  "voltageV": zod.number().nullish(),
+  "currentA": zod.number().nullish(),
+  "breakerState": zod.union([zod.literal('closed'),zod.literal('open'),zod.literal(null)]).nullish(),
+  "detailPath": zod.string().nullish()
+})),
+  "edges": zod.array(zod.object({
+  "id": zod.string(),
+  "fromId": zod.string(),
+  "toId": zod.string(),
+  "powerKw": zod.number(),
+  "energized": zod.boolean()
 }))
 })
 

@@ -482,58 +482,177 @@ export interface SldNode {
   type: "panel_array" | "combiner" | "inverter" | "transformer" | "switchyard" | "grid";
   status: HealthState;
   powerKw?: number;
+  voltageV?: number;
+  currentA?: number;
+  breakerState?: "closed" | "open";
   parentId?: string;
 }
 
-export function plantSld(plant: PlantConfig, now: Date): SldNode[] {
+export interface SldEdge {
+  id: string;
+  fromId: string;
+  toId: string;
+  powerKw: number;
+  energized: boolean;
+}
+
+export interface SldTopology {
+  nodes: SldNode[];
+  edges: SldEdge[];
+}
+
+// Three-phase current for a given active power and line voltage.
+function threePhaseCurrentA(powerKw: number, voltageV: number): number {
+  if (voltageV <= 0) return 0;
+  return (powerKw * 1000) / (Math.sqrt(3) * voltageV);
+}
+
+function round1(n: number): number {
+  return Math.round(n * 10) / 10;
+}
+
+export function plantSld(plant: PlantConfig, now: Date): SldTopology {
   const nodes: SldNode[] = [];
-  nodes.push({ id: `${plant.id}-array`, label: "PV Array", type: "panel_array", status: "normal" });
+  const edges: SldEdge[] = [];
+
+  const gridVoltageV = plant.capacityMw >= 50 ? 132_000 : 33_000;
+  // Worst-case inverter health drives node status/coloring, but the grid
+  // interconnection breaker should only trip when the entire plant is
+  // disconnected (every inverter offline) — a single faulted/offline
+  // inverter must not falsely show the whole plant tripped off the grid.
+  const plantHealthStatus = plantHealth(plant, now);
+  const plantWarningOrWorse = plantHealthStatus !== "normal";
+
+  const arrayId = `${plant.id}-array`;
+  nodes.push({ id: arrayId, label: "PV Array", type: "panel_array", status: "normal" });
 
   const combinerCount = Math.max(2, Math.ceil(plant.inverterCount / 4));
+  const combinerPowerKw = new Array(combinerCount).fill(0);
+
+  const inverterReadings = Array.from({ length: plant.inverterCount }, (_, i) => ({
+    health: inverterHealth(plant, i, now).health,
+    reading: inverterLiveReading(plant, i, now),
+  }));
+
+  inverterReadings.forEach(({ reading }, i) => {
+    combinerPowerKw[i % combinerCount] += reading.dcPowerKw;
+  });
+
   for (let c = 0; c < combinerCount; c++) {
+    const combId = `${plant.id}-comb-${c}`;
+    const powerKw = round1(combinerPowerKw[c]);
+    const dcBusVoltageV = 630;
     nodes.push({
-      id: `${plant.id}-comb-${c}`,
+      id: combId,
       label: `Combiner Box ${c + 1}`,
       type: "combiner",
       status: "normal",
-      parentId: `${plant.id}-array`,
+      powerKw,
+      voltageV: dcBusVoltageV,
+      currentA: powerKw > 0 ? round1((powerKw * 1000) / dcBusVoltageV) : 0,
+      parentId: arrayId,
+    });
+    edges.push({
+      id: `${arrayId}->${combId}`,
+      fromId: arrayId,
+      toId: combId,
+      powerKw,
+      energized: powerKw > 0,
     });
   }
 
-  for (let i = 0; i < plant.inverterCount; i++) {
-    const { health } = inverterHealth(plant, i, now);
-    const reading = inverterLiveReading(plant, i, now);
+  let transformerInputKw = 0;
+  const xfmrId = `${plant.id}-xfmr`;
+
+  inverterReadings.forEach(({ health, reading }, i) => {
+    const invId = inverterId(plant.id, i);
+    const combId = `${plant.id}-comb-${i % combinerCount}`;
+    const powerKw = reading.acPowerKw;
+    transformerInputKw += powerKw;
     nodes.push({
-      id: inverterId(plant.id, i),
+      id: invId,
       label: `Inverter ${i + 1}`,
       type: "inverter",
       status: health,
-      powerKw: reading.acPowerKw,
-      parentId: `${plant.id}-comb-${i % combinerCount}`,
+      powerKw,
+      voltageV: reading.acVoltageV > 0 ? round1(reading.acVoltageV) : undefined,
+      currentA: reading.acVoltageV > 0 ? round1(threePhaseCurrentA(powerKw, reading.acVoltageV)) : 0,
+      parentId: combId,
     });
-  }
+    edges.push({
+      id: `${combId}->${invId}`,
+      fromId: combId,
+      toId: invId,
+      powerKw: round1(powerKw),
+      energized: powerKw > 0,
+    });
+    edges.push({
+      id: `${invId}->${xfmrId}`,
+      fromId: invId,
+      toId: xfmrId,
+      powerKw: round1(powerKw),
+      energized: powerKw > 0,
+    });
+  });
+
+  const totalPowerKw = round1(plantLivePowerKw(plant, now));
+  const xfmrCurrentA = round1(threePhaseCurrentA(totalPowerKw, gridVoltageV));
+
+  // The grid breaker only trips when every inverter is disconnected — a
+  // single faulted/offline inverter should not falsely show the whole plant
+  // tripped off the grid, since the rest of the plant may still be exporting.
+  const allInvertersOffline = plant.inverterCount > 0 && inverterReadings.every(({ health }) => health === "offline");
+  const gridBreakerOpen = allInvertersOffline;
 
   nodes.push({
-    id: `${plant.id}-xfmr`,
+    id: xfmrId,
     label: "Step-up Transformer",
     type: "transformer",
-    status: plantHealth(plant, now) === "offline" ? "warning" : "normal",
-    powerKw: plantLivePowerKw(plant, now),
-  });
-  nodes.push({
-    id: `${plant.id}-switchyard`,
-    label: "Switchyard",
-    type: "switchyard",
-    status: "normal",
-    parentId: `${plant.id}-xfmr`,
-  });
-  nodes.push({
-    id: `${plant.id}-grid`,
-    label: "Grid Interconnection",
-    type: "grid",
-    status: "normal",
-    parentId: `${plant.id}-switchyard`,
+    status: gridBreakerOpen ? "offline" : plantWarningOrWorse ? "warning" : "normal",
+    powerKw: totalPowerKw,
+    voltageV: gridVoltageV,
+    currentA: xfmrCurrentA,
   });
 
-  return nodes;
+  const switchyardId = `${plant.id}-switchyard`;
+  nodes.push({
+    id: switchyardId,
+    label: "Switchyard",
+    type: "switchyard",
+    status: gridBreakerOpen ? "offline" : plantWarningOrWorse ? "warning" : "normal",
+    powerKw: totalPowerKw,
+    voltageV: gridVoltageV,
+    currentA: xfmrCurrentA,
+    breakerState: gridBreakerOpen ? "open" : "closed",
+    parentId: xfmrId,
+  });
+  edges.push({
+    id: `${xfmrId}->${switchyardId}`,
+    fromId: xfmrId,
+    toId: switchyardId,
+    powerKw: totalPowerKw,
+    energized: !gridBreakerOpen && totalPowerKw > 0,
+  });
+
+  const gridId = `${plant.id}-grid`;
+  nodes.push({
+    id: gridId,
+    label: "Grid Interconnection",
+    type: "grid",
+    status: gridBreakerOpen ? "offline" : "normal",
+    powerKw: totalPowerKw,
+    voltageV: gridVoltageV,
+    currentA: xfmrCurrentA,
+    breakerState: gridBreakerOpen ? "open" : "closed",
+    parentId: switchyardId,
+  });
+  edges.push({
+    id: `${switchyardId}->${gridId}`,
+    fromId: switchyardId,
+    toId: gridId,
+    powerKw: totalPowerKw,
+    energized: !gridBreakerOpen && totalPowerKw > 0,
+  });
+
+  return { nodes, edges };
 }

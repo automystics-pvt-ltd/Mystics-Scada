@@ -5,6 +5,18 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@keyframes sld-flow {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+.sld-flow-dash {
+  animation-name: sld-flow;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
 @theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));

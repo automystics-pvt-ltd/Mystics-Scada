@@ -7,3 +7,5 @@ export * from "./generated/types";
 // params type. Explicitly re-export the zod schema version to resolve the
 // ambiguity (see .local/skills/pnpm-workspace/references/openapi.md).
 export { GetInverterTrendParams, GetPlantYieldParams } from "./generated/api";
+export * from './generated/api';
+export * from './generated/types';

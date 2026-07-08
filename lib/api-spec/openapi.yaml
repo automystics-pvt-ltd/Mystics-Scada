@@ -800,10 +800,32 @@ components:
           type: ["number", "null"]
         voltageV:
           type: ["number", "null"]
+        currentA:
+          type: ["number", "null"]
+        breakerState:
+          type: ["string", "null"]
+          enum: [closed, open, null]
+        detailPath:
+          type: ["string", "null"]
+
+    SldEdge:
+      type: object
+      required: [id, fromId, toId, powerKw, energized]
+      properties:
+        id:
+          type: string
+        fromId:
+          type: string
+        toId:
+          type: string
+        powerKw:
+          type: number
+        energized:
+          type: boolean
 
     SldResponse:
       type: object
-      required: [plantId, nodes]
+      required: [plantId, nodes, edges]
       properties:
         plantId:
           type: string
@@ -811,6 +833,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SldNode"
+        edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/SldEdge"
 
     InverterStatus:
       type: string

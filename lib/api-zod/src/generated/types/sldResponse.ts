@@ -5,9 +5,11 @@
  * Solar SCADA monitoring API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { SldEdge } from './sldEdge';
 import type { SldNode } from './sldNode';
 
 export interface SldResponse {
   plantId: string;
   nodes: SldNode[];
+  edges: SldEdge[];
 }

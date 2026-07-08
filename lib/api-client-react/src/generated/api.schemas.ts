@@ -102,6 +102,17 @@ export const SldNodeType = {
   grid: 'grid',
 } as const;
 
+/**
+ * @nullable
+ */
+export type SldNodeBreakerState = typeof SldNodeBreakerState[keyof typeof SldNodeBreakerState] | null;
+
+
+export const SldNodeBreakerState = {
+  closed: 'closed',
+  open: 'open',
+} as const;
+
 export interface SldNode {
   id: string;
   type: SldNodeType;
@@ -113,11 +124,26 @@ export interface SldNode {
   powerKw?: number | null;
   /** @nullable */
   voltageV?: number | null;
+  /** @nullable */
+  currentA?: number | null;
+  /** @nullable */
+  breakerState?: SldNodeBreakerState;
+  /** @nullable */
+  detailPath?: string | null;
+}
+
+export interface SldEdge {
+  id: string;
+  fromId: string;
+  toId: string;
+  powerKw: number;
+  energized: boolean;
 }
 
 export interface SldResponse {
   plantId: string;
   nodes: SldNode[];
+  edges: SldEdge[];
 }
 
 export type InverterStatus = typeof InverterStatus[keyof typeof InverterStatus];

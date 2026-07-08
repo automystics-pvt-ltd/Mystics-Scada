@@ -202,7 +202,18 @@ export function revenueData(plant: PlantConfig, now: Date) {
 }
 
 export function sldFor(plant: PlantConfig, now: Date) {
-  const nodes = rawSld(plant, now);
+  const { nodes, edges } = rawSld(plant, now);
+
+  // First inverter feeding each combiner box, used to link combiner nodes to
+  // that inverter's string diagnostics page (there is no standalone
+  // combiner-level page).
+  const firstInverterByCombiner = new Map<string, string>();
+  for (const n of nodes) {
+    if (n.type === "inverter" && n.parentId && !firstInverterByCombiner.has(n.parentId)) {
+      firstInverterByCombiner.set(n.parentId, n.id);
+    }
+  }
+
   return {
     plantId: plant.id,
     nodes: nodes.map((n) => ({
@@ -212,7 +223,22 @@ export function sldFor(plant: PlantConfig, now: Date) {
       status: n.status,
       parentId: n.parentId ?? null,
       powerKw: n.powerKw ?? null,
-      voltageV: null,
+      voltageV: n.voltageV ?? null,
+      currentA: n.currentA ?? null,
+      breakerState: n.breakerState ?? null,
+      detailPath:
+        n.type === "inverter"
+          ? `/plants/${plant.id}/inverters/${n.id}`
+          : n.type === "combiner" && firstInverterByCombiner.has(n.id)
+            ? `/plants/${plant.id}/inverters/${firstInverterByCombiner.get(n.id)}/strings`
+            : null,
+    })),
+    edges: edges.map((e) => ({
+      id: e.id,
+      fromId: e.fromId,
+      toId: e.toId,
+      powerKw: e.powerKw,
+      energized: e.energized,
     })),
   };
 }

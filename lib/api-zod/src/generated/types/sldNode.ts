@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { HealthState } from './healthState';
+import type { SldNodeBreakerState } from './sldNodeBreakerState';
 import type { SldNodeType } from './sldNodeType';
 
 export interface SldNode {
@@ -19,4 +20,10 @@ export interface SldNode {
   powerKw?: number | null;
   /** @nullable */
   voltageV?: number | null;
+  /** @nullable */
+  currentA?: number | null;
+  /** @nullable */
+  breakerState?: SldNodeBreakerState;
+  /** @nullable */
+  detailPath?: string | null;
 }
