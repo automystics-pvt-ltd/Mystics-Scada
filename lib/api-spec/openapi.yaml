@@ -3,13 +3,31 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Solar SCADA monitoring API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: portfolio
+    description: Fleet / portfolio level views
+  - name: plants
+    description: Plant level monitoring
+  - name: inverters
+    description: Inverter and string monitoring
+  - name: weather
+    description: Weather station monitoring
+  - name: analytics
+    description: Yield, performance and revenue analytics
+  - name: alerts
+    description: Alert engine and lifecycle
+  - name: maintenance
+    description: Work orders / maintenance tickets
+  - name: reports
+    description: Scheduled and on-demand reports
+  - name: users
+    description: User and role administration
 paths:
   /healthz:
     get:
@@ -24,7 +42,597 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /portfolio/summary:
+    get:
+      operationId: getPortfolioSummary
+      tags: [portfolio]
+      summary: Aggregated fleet-wide KPIs and plant list
+      responses:
+        "200":
+          description: Portfolio summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioSummary"
+
+  /plants:
+    get:
+      operationId: listPlants
+      tags: [plants]
+      summary: List all plants with live summary KPIs
+      responses:
+        "200":
+          description: Plant list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlantSummary"
+
+  /plants/{plantId}:
+    get:
+      operationId: getPlant
+      tags: [plants]
+      summary: Get plant detail with live KPIs
+      parameters:
+        - $ref: "#/components/parameters/PlantIdParam"
+      responses:
+        "200":
+          description: Plant detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlantDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /plants/{plantId}/sld:
+    get:
+      operationId: getPlantSld
+      tags: [plants]
+      summary: Single line diagram topology with live node status
+      parameters:
+        - $ref: "#/components/parameters/PlantIdParam"
+      responses:
+        "200":
+          description: SLD topology
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SldResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /plants/{plantId}/inverters:
+    get:
+      operationId: listInverters
+      tags: [inverters]
+      summary: List inverters for a plant with live status
+      parameters:
+        - $ref: "#/components/parameters/PlantIdParam"
+      responses:
+        "200":
+          description: Inverter list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Inverter"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /inverters/{inverterId}:
+    get:
+      operationId: getInverter
+      tags: [inverters]
+      summary: Get inverter detail
+      parameters:
+        - $ref: "#/components/parameters/InverterIdParam"
+      responses:
+        "200":
+          description: Inverter detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Inverter"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /inverters/{inverterId}/trend:
+    get:
+      operationId: getInverterTrend
+      tags: [inverters]
+      summary: Historical trend points for an inverter
+      parameters:
+        - $ref: "#/components/parameters/InverterIdParam"
+        - name: range
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [hour, day, week, month]
+            default: day
+      responses:
+        "200":
+          description: Trend points
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InverterTrendPoint"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /inverters/{inverterId}/strings:
+    get:
+      operationId: listStringReadings
+      tags: [inverters]
+      summary: Per-string current/voltage comparison for an inverter
+      parameters:
+        - $ref: "#/components/parameters/InverterIdParam"
+      responses:
+        "200":
+          description: String readings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StringReading"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /plants/{plantId}/weather-stations:
+    get:
+      operationId: listWeatherStations
+      tags: [weather]
+      summary: List weather stations with live readings for a plant
+      parameters:
+        - $ref: "#/components/parameters/PlantIdParam"
+      responses:
+        "200":
+          description: Weather stations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WeatherStation"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /plants/{plantId}/yield:
+    get:
+      operationId: getPlantYield
+      tags: [analytics]
+      summary: Actual vs. expected generation series
+      parameters:
+        - $ref: "#/components/parameters/PlantIdParam"
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [daily, weekly, monthly, yearly]
+            default: daily
+      responses:
+        "200":
+          description: Yield series
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/YieldSeries"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /plants/{plantId}/performance:
+    get:
+      operationId: getPlantPerformance
+      tags: [analytics]
+      summary: PR trend, availability and loss breakdown
+      parameters:
+        - $ref: "#/components/parameters/PlantIdParam"
+      responses:
+        "200":
+          description: Performance data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PerformanceData"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /plants/{plantId}/revenue:
+    get:
+      operationId: getPlantRevenue
+      tags: [analytics]
+      summary: Revenue / savings / CO2 avoided
+      parameters:
+        - $ref: "#/components/parameters/PlantIdParam"
+      responses:
+        "200":
+          description: Revenue data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueData"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      summary: List alerts, optionally filtered
+      parameters:
+        - name: plantId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: severity
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AlertSeverity"
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AlertStatus"
+      responses:
+        "200":
+          description: Alert list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+
+  /alerts/{alertId}:
+    get:
+      operationId: getAlert
+      tags: [alerts]
+      summary: Get a single alert
+      parameters:
+        - $ref: "#/components/parameters/AlertIdParam"
+      responses:
+        "200":
+          description: Alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateAlert
+      tags: [alerts]
+      summary: Acknowledge, assign, comment on, or resolve/close an alert
+      parameters:
+        - $ref: "#/components/parameters/AlertIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlertUpdate"
+      responses:
+        "200":
+          description: Updated alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /alerts/{alertId}/history:
+    get:
+      operationId: listAlertHistory
+      tags: [alerts]
+      summary: Full audit trail for an alert
+      parameters:
+        - $ref: "#/components/parameters/AlertIdParam"
+      responses:
+        "200":
+          description: History entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AlertHistoryEntry"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /work-orders:
+    get:
+      operationId: listWorkOrders
+      tags: [maintenance]
+      summary: List maintenance work orders, optionally filtered
+      parameters:
+        - name: plantId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/WorkOrderStatus"
+      responses:
+        "200":
+          description: Work order list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkOrder"
+    post:
+      operationId: createWorkOrder
+      tags: [maintenance]
+      summary: Manually create a work order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkOrderInput"
+      responses:
+        "201":
+          description: Created work order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkOrder"
+
+  /work-orders/{workOrderId}:
+    get:
+      operationId: getWorkOrder
+      tags: [maintenance]
+      summary: Get a work order
+      parameters:
+        - $ref: "#/components/parameters/WorkOrderIdParam"
+      responses:
+        "200":
+          description: Work order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkOrder"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateWorkOrder
+      tags: [maintenance]
+      summary: Update work order status, assignment or resolution
+      parameters:
+        - $ref: "#/components/parameters/WorkOrderIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkOrderUpdate"
+      responses:
+        "200":
+          description: Updated work order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkOrder"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /reports:
+    get:
+      operationId: listReports
+      tags: [reports]
+      summary: List scheduled and previously generated reports
+      responses:
+        "200":
+          description: Report list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReportDefinition"
+
+  /reports/generate:
+    post:
+      operationId: generateReport
+      tags: [reports]
+      summary: Generate an on-demand report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportGenerateInput"
+      responses:
+        "201":
+          description: Generated report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportDefinition"
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List users
+      responses:
+        "200":
+          description: User list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: inviteUser
+      tags: [users]
+      summary: Invite a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{userId}:
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update a user's role, plants or status
+      parameters:
+        - $ref: "#/components/parameters/UserIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /roles:
+    get:
+      operationId: listRoles
+      tags: [users]
+      summary: List predefined and custom roles with permissions
+      responses:
+        "200":
+          description: Role list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Role"
+
 components:
+  parameters:
+    PlantIdParam:
+      name: plantId
+      in: path
+      required: true
+      schema:
+        type: string
+    InverterIdParam:
+      name: inverterId
+      in: path
+      required: true
+      schema:
+        type: string
+    AlertIdParam:
+      name: alertId
+      in: path
+      required: true
+      schema:
+        type: string
+    WorkOrderIdParam:
+      name: workOrderId
+      in: path
+      required: true
+      schema:
+        type: string
+    UserIdParam:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +642,745 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    HealthState:
+      type: string
+      enum: [normal, warning, fault, offline]
+
+    AlertSeverity:
+      type: string
+      enum: [critical, major, minor, informational]
+
+    AlertStatus:
+      type: string
+      enum: [open, acknowledged, assigned, resolved, closed]
+
+    AlertCounts:
+      type: object
+      required: [critical, major, minor, informational]
+      properties:
+        critical:
+          type: integer
+        major:
+          type: integer
+        minor:
+          type: integer
+        informational:
+          type: integer
+
+    PlantSummary:
+      type: object
+      required:
+        - id
+        - name
+        - region
+        - lat
+        - lng
+        - capacityKw
+        - currentPowerKw
+        - todayEnergyKwh
+        - pr
+        - availabilityPct
+        - healthStatus
+        - alertCounts
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        region:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        capacityKw:
+          type: number
+        currentPowerKw:
+          type: number
+        todayEnergyKwh:
+          type: number
+        pr:
+          type: number
+        availabilityPct:
+          type: number
+        healthStatus:
+          $ref: "#/components/schemas/HealthState"
+        alertCounts:
+          $ref: "#/components/schemas/AlertCounts"
+
+    PlantDetail:
+      type: object
+      required:
+        - id
+        - name
+        - region
+        - lat
+        - lng
+        - capacityKw
+        - currentPowerKw
+        - todayEnergyKwh
+        - todayTargetKwh
+        - pr
+        - availabilityPct
+        - healthStatus
+        - alertCounts
+        - irradiancePoaWm2
+        - irradianceGhiWm2
+        - ambientTempC
+        - moduleTempC
+        - inverterCount
+        - offlineInverterCount
+        - lastUpdated
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        region:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        capacityKw:
+          type: number
+        currentPowerKw:
+          type: number
+        todayEnergyKwh:
+          type: number
+        todayTargetKwh:
+          type: number
+        pr:
+          type: number
+        availabilityPct:
+          type: number
+        healthStatus:
+          $ref: "#/components/schemas/HealthState"
+        alertCounts:
+          $ref: "#/components/schemas/AlertCounts"
+        irradiancePoaWm2:
+          type: number
+        irradianceGhiWm2:
+          type: number
+        ambientTempC:
+          type: number
+        moduleTempC:
+          type: number
+        inverterCount:
+          type: integer
+        offlineInverterCount:
+          type: integer
+        lastUpdated:
+          type: string
+          format: date-time
+
+    SldNode:
+      type: object
+      required: [id, type, label, status, parentId]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [panel_array, string, combiner, inverter, transformer, switchyard, grid]
+        label:
+          type: string
+        status:
+          $ref: "#/components/schemas/HealthState"
+        parentId:
+          type: ["string", "null"]
+        powerKw:
+          type: ["number", "null"]
+        voltageV:
+          type: ["number", "null"]
+
+    SldResponse:
+      type: object
+      required: [plantId, nodes]
+      properties:
+        plantId:
+          type: string
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/SldNode"
+
+    InverterStatus:
+      type: string
+      enum: [running, standby, fault, comm_lost]
+
+    Inverter:
+      type: object
+      required:
+        - id
+        - plantId
+        - name
+        - status
+        - acPowerKw
+        - dcPowerKw
+        - acVoltageV
+        - acCurrentA
+        - dcVoltageV
+        - dcCurrentA
+        - frequencyHz
+        - efficiencyPct
+        - temperatureC
+        - powerFactor
+        - dailyEnergyKwh
+        - monthlyEnergyKwh
+        - lifetimeEnergyMwh
+        - lastUpdated
+      properties:
+        id:
+          type: string
+        plantId:
+          type: string
+        name:
+          type: string
+        status:
+          $ref: "#/components/schemas/InverterStatus"
+        acPowerKw:
+          type: number
+        dcPowerKw:
+          type: number
+        acVoltageV:
+          type: number
+        acCurrentA:
+          type: number
+        dcVoltageV:
+          type: number
+        dcCurrentA:
+          type: number
+        frequencyHz:
+          type: number
+        efficiencyPct:
+          type: number
+        temperatureC:
+          type: number
+        powerFactor:
+          type: number
+        dailyEnergyKwh:
+          type: number
+        monthlyEnergyKwh:
+          type: number
+        lifetimeEnergyMwh:
+          type: number
+        lastUpdated:
+          type: string
+          format: date-time
+
+    InverterTrendPoint:
+      type: object
+      required: [timestamp, acPowerKw, dcPowerKw, efficiencyPct, temperatureC]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        acPowerKw:
+          type: number
+        dcPowerKw:
+          type: number
+        efficiencyPct:
+          type: number
+        temperatureC:
+          type: number
+
+    StringReading:
+      type: object
+      required:
+        - id
+        - inverterId
+        - label
+        - currentA
+        - voltageV
+        - status
+        - medianCurrentA
+        - deviationPct
+        - isDeviating
+      properties:
+        id:
+          type: string
+        inverterId:
+          type: string
+        label:
+          type: string
+        currentA:
+          type: number
+        voltageV:
+          type: number
+        status:
+          type: string
+          enum: [on, off]
+        medianCurrentA:
+          type: number
+        deviationPct:
+          type: number
+        isDeviating:
+          type: boolean
+
+    WeatherStation:
+      type: object
+      required:
+        - id
+        - plantId
+        - name
+        - zone
+        - poaWm2
+        - ghiWm2
+        - ambientTempC
+        - moduleTempC
+        - windSpeedMs
+        - windDirectionDeg
+        - humidityPct
+        - rainfallMm
+        - lastUpdated
+      properties:
+        id:
+          type: string
+        plantId:
+          type: string
+        name:
+          type: string
+        zone:
+          type: string
+        poaWm2:
+          type: number
+        ghiWm2:
+          type: number
+        ambientTempC:
+          type: number
+        moduleTempC:
+          type: number
+        windSpeedMs:
+          type: number
+        windDirectionDeg:
+          type: number
+        humidityPct:
+          type: number
+        rainfallMm:
+          type: number
+        lastUpdated:
+          type: string
+          format: date-time
+
+    YieldPoint:
+      type: object
+      required: [label, actualKwh, expectedKwh, deviationPct]
+      properties:
+        label:
+          type: string
+        actualKwh:
+          type: number
+        expectedKwh:
+          type: number
+        deviationPct:
+          type: number
+
+    YieldSeries:
+      type: object
+      required: [period, specificYieldKwhPerKwp, points]
+      properties:
+        period:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+        specificYieldKwhPerKwp:
+          type: number
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/YieldPoint"
+
+    PrPoint:
+      type: object
+      required: [label, pr, targetPr]
+      properties:
+        label:
+          type: string
+        pr:
+          type: number
+        targetPr:
+          type: number
+
+    LossBreakdown:
+      type: object
+      required: [soilingPct, shadingPct, temperaturePct, downtimePct, curtailmentPct]
+      properties:
+        soilingPct:
+          type: number
+        shadingPct:
+          type: number
+        temperaturePct:
+          type: number
+        downtimePct:
+          type: number
+        curtailmentPct:
+          type: number
+
+    PerformanceData:
+      type: object
+      required: [prTrend, availabilityPct, gridAvailabilityPct, lossBreakdown]
+      properties:
+        prTrend:
+          type: array
+          items:
+            $ref: "#/components/schemas/PrPoint"
+        availabilityPct:
+          type: number
+        gridAvailabilityPct:
+          type: number
+        lossBreakdown:
+          $ref: "#/components/schemas/LossBreakdown"
+
+    RevenueData:
+      type: object
+      required: [currency, tariffPerKwh, todayRevenue, monthRevenue, lifetimeRevenue, co2AvoidedKgToday, co2AvoidedKgLifetime]
+      properties:
+        currency:
+          type: string
+        tariffPerKwh:
+          type: number
+        todayRevenue:
+          type: number
+        monthRevenue:
+          type: number
+        lifetimeRevenue:
+          type: number
+        co2AvoidedKgToday:
+          type: number
+        co2AvoidedKgLifetime:
+          type: number
+
+    Alert:
+      type: object
+      required:
+        - id
+        - plantId
+        - plantName
+        - deviceType
+        - deviceName
+        - title
+        - message
+        - severity
+        - status
+        - assignedTo
+        - createdAt
+        - acknowledgedAt
+        - resolvedAt
+      properties:
+        id:
+          type: string
+        plantId:
+          type: string
+        plantName:
+          type: string
+        deviceType:
+          type: string
+          enum: [plant, inverter, string, weather_station, tracker, grid, transformer, security]
+        deviceName:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        severity:
+          $ref: "#/components/schemas/AlertSeverity"
+        status:
+          $ref: "#/components/schemas/AlertStatus"
+        assignedTo:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        acknowledgedAt:
+          type: ["string", "null"]
+          format: date-time
+        resolvedAt:
+          type: ["string", "null"]
+          format: date-time
+
+    AlertUpdate:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/AlertStatus"
+        assignedTo:
+          type: string
+        comment:
+          type: string
+
+    AlertHistoryEntry:
+      type: object
+      required: [id, alertId, timestamp, actor, action]
+      properties:
+        id:
+          type: string
+        alertId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        actor:
+          type: string
+        action:
+          type: string
+        note:
+          type: ["string", "null"]
+
+    WorkOrderPriority:
+      type: string
+      enum: [low, medium, high, critical]
+
+    WorkOrderStatus:
+      type: string
+      enum: [open, assigned, in_progress, resolved, verified, closed]
+
+    WorkOrder:
+      type: object
+      required:
+        - id
+        - plantId
+        - plantName
+        - equipment
+        - faultDescription
+        - priority
+        - status
+        - assignedTo
+        - createdAt
+        - dueDate
+        - slaBreached
+        - rootCause
+        - resolutionNotes
+        - sourceAlertId
+      properties:
+        id:
+          type: string
+        plantId:
+          type: string
+        plantName:
+          type: string
+        equipment:
+          type: string
+        faultDescription:
+          type: string
+        priority:
+          $ref: "#/components/schemas/WorkOrderPriority"
+        status:
+          $ref: "#/components/schemas/WorkOrderStatus"
+        assignedTo:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        dueDate:
+          type: ["string", "null"]
+          format: date-time
+        slaBreached:
+          type: boolean
+        rootCause:
+          type: ["string", "null"]
+        resolutionNotes:
+          type: ["string", "null"]
+        sourceAlertId:
+          type: ["string", "null"]
+
+    WorkOrderInput:
+      type: object
+      required: [plantId, equipment, faultDescription, priority]
+      properties:
+        plantId:
+          type: string
+        equipment:
+          type: string
+        faultDescription:
+          type: string
+        priority:
+          $ref: "#/components/schemas/WorkOrderPriority"
+        assignedTo:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+
+    WorkOrderUpdate:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/WorkOrderStatus"
+        assignedTo:
+          type: string
+        priority:
+          $ref: "#/components/schemas/WorkOrderPriority"
+        rootCause:
+          type: string
+        resolutionNotes:
+          type: string
+
+    ReportFormat:
+      type: string
+      enum: [pdf, excel]
+
+    ReportType:
+      type: string
+      enum: [daily, weekly, monthly, custom]
+
+    ReportDefinition:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - plantIds
+        - format
+        - recipients
+        - lastGeneratedAt
+        - status
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/ReportType"
+        plantIds:
+          type: array
+          items:
+            type: string
+        format:
+          $ref: "#/components/schemas/ReportFormat"
+        recipients:
+          type: array
+          items:
+            type: string
+        lastGeneratedAt:
+          type: ["string", "null"]
+          format: date-time
+        status:
+          type: string
+          enum: [scheduled, ready]
+
+    ReportGenerateInput:
+      type: object
+      required: [name, plantIds, startDate, endDate, format]
+      properties:
+        name:
+          type: string
+        plantIds:
+          type: array
+          items:
+            type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        format:
+          $ref: "#/components/schemas/ReportFormat"
+
+    UserStatus:
+      type: string
+      enum: [active, invited, disabled]
+
+    User:
+      type: object
+      required: [id, name, email, role, plantIds, status, lastLogin]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        plantIds:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: "#/components/schemas/UserStatus"
+        lastLogin:
+          type: ["string", "null"]
+          format: date-time
+
+    UserInput:
+      type: object
+      required: [name, email, role]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        plantIds:
+          type: array
+          items:
+            type: string
+
+    UserUpdate:
+      type: object
+      properties:
+        role:
+          type: string
+        plantIds:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: "#/components/schemas/UserStatus"
+
+    Role:
+      type: object
+      required: [id, name, description, permissions, userCount]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        userCount:
+          type: integer
+
+    PortfolioSummary:
+      type: object
+      required:
+        - totalPlants
+        - totalCapacityMw
+        - totalCurrentPowerMw
+        - totalGenerationTodayMwh
+        - avgPr
+        - avgAvailabilityPct
+        - alertCounts
+        - plants
+      properties:
+        totalPlants:
+          type: integer
+        totalCapacityMw:
+          type: number
+        totalCurrentPowerMw:
+          type: number
+        totalGenerationTodayMwh:
+          type: number
+        avgPr:
+          type: number
+        avgAvailabilityPct:
+          type: number
+        alertCounts:
+          $ref: "#/components/schemas/AlertCounts"
+        plants:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlantSummary"

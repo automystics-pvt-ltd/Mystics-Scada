@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Solar SCADA"
+version = "1.0.0"
+id = "artifacts/solar-scada"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23851
+
+[services.development]
+run = "pnpm --filter @workspace/solar-scada run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/solar-scada", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/solar-scada/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23851"
+BASE_PATH = "/"

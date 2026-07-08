@@ -1,0 +1,3 @@
+- [Orval Params-type collision](orval-params-collision.md) — mixed path+query ops need explicit re-exports in api-zod index to avoid TS2308 name clash.
+- [Simulated telemetry vs persisted state](simulated-vs-persisted-telemetry.md) — SCADA-style demos: compute read-heavy live telemetry in-memory, persist only mutable/CRUD state in DB.
+- [DB row vs API response shape drift](db-row-response-mapping.md) — never `zodResponseSchema.parse(dbRow)` directly; map fields explicitly or codegen'd response validation throws cryptic zod errors.

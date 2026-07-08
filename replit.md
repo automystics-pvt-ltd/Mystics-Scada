@@ -1,13 +1,14 @@
-# [Project name]
+# Solar SCADA (Automystics Technologies)
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Phase 1 control-room monitoring dashboard for a solar plant portfolio: live plant/inverter/string telemetry, weather, yield/PR/availability/revenue analytics, alerting, maintenance work orders, reporting, and user/role administration.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server
+- `pnpm --filter @workspace/solar-scada run dev` — run the frontend (web app, artifact `solar-scada`)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec (`lib/api-spec/openapi.yaml`)
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
 
@@ -17,20 +18,29 @@ _Replace the heading above with the project's name, and this line with one sente
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
+- API codegen: Orval (from OpenAPI spec) → `lib/api-zod` (schemas) + `lib/api-client-react` (React Query hooks)
+- Frontend: React + Vite, Tailwind, Recharts, wouter routing
 - Build: esbuild (CJS bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — source-of-truth API contract for all endpoints/schemas.
+- `artifacts/api-server/src/lib/simulation.ts` + `domain.ts` — deterministic in-memory telemetry simulation (plants, inverters, strings, weather, SLD, yield/performance/revenue) and its adapter to API response shapes.
+- `artifacts/api-server/src/lib/seed.ts` — idempotent Postgres seeding for roles/users/alerts/work orders on server startup.
+- `artifacts/api-server/src/routes/` — one route module per resource (portfolio, plants, inverters, alerts, workOrders, reports, users), mounted in `routes/index.ts`.
+- `lib/db/src/schema/` — Drizzle schema for persisted resources: alerts, alert history, work orders, users, roles, reports.
+- `artifacts/solar-scada/` — the frontend web app (dark-mode-first industrial SCADA UI).
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Telemetry (plants, inverters, strings, weather, yield/PR/availability/revenue, SLD) is computed deterministically in-memory via time-seeded pseudo-random functions — no DB needed, since there are no real sensors in Phase 1. See `.agents/memory/simulated-vs-persisted-telemetry.md`.
+- Only entities needing real CRUD/mutation state are persisted in Postgres: alerts (+ history), work orders, users, roles, reports.
+- API-first workflow: OpenAPI spec → Orval codegen → both backend routes and frontend hooks are built against the generated zod schemas/types, not hand-rolled fetches.
+- DB-row-to-API-response mapping is done explicitly per resource (`toWorkOrderResponse`, etc.) rather than passing raw Drizzle rows into `ResponseSchema.parse()`, since column names and response field names can diverge. See `.agents/memory/db-row-response-mapping.md`.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- `/` portfolio dashboard, `/plants/:plantId` (+ overview/SLD/inverters/weather/analytics sub-pages), `/alerts` alert center, `/maintenance` work order kanban, `/reports`, `/admin/users`, `/settings`, `/login` (mock UI, no real backend auth yet — Phase 1 scope).
 
 ## User preferences
 
@@ -38,7 +48,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Orval's zod generator can produce a name collision (`<Op>Params`) for operations mixing path + query params; fixed via explicit re-export in `lib/api-zod/src/index.ts`. See `.agents/memory/orval-params-collision.md`.
+- After changing `lib/db` schema or any workspace lib, run `pnpm -w run typecheck:libs` before typechecking `api-server`, or stale `dist` declarations cause false type errors.
 
 ## Pointers
 

@@ -1,0 +1,131 @@
+import { randomUUID } from "node:crypto";
+import { Router, type IRouter } from "express";
+import { and, desc, eq } from "drizzle-orm";
+import { db, workOrdersTable } from "@workspace/db";
+import {
+  ListWorkOrdersQueryParams,
+  ListWorkOrdersResponse,
+  CreateWorkOrderBody,
+  CreateWorkOrderResponse,
+  GetWorkOrderResponse,
+  UpdateWorkOrderBody,
+  UpdateWorkOrderResponse,
+} from "@workspace/api-zod";
+import { PLANTS } from "../lib/domain";
+
+const router: IRouter = Router();
+
+function toWorkOrderResponse(row: typeof workOrdersTable.$inferSelect) {
+  return {
+    id: row.id,
+    plantId: row.plantId,
+    plantName: row.plantName,
+    equipment: row.equipment,
+    faultDescription: row.faultDescription,
+    priority: row.priority,
+    status: row.status,
+    assignedTo: row.assignedTo,
+    createdAt: row.createdAt,
+    dueDate: row.dueAt,
+    slaBreached: row.slaBreached,
+    rootCause: row.rootCause,
+    resolutionNotes: row.resolutionNotes,
+    sourceAlertId: row.sourceAlertId,
+  };
+}
+
+router.get("/work-orders", async (req, res) => {
+  const query = ListWorkOrdersQueryParams.parse(req.query);
+  const conditions = [];
+  if (query.plantId) conditions.push(eq(workOrdersTable.plantId, query.plantId));
+  if (query.status) conditions.push(eq(workOrdersTable.status, query.status));
+
+  const rows = await db
+    .select()
+    .from(workOrdersTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(workOrdersTable.createdAt));
+
+  res.json(ListWorkOrdersResponse.parse(rows.map(toWorkOrderResponse)));
+});
+
+router.post("/work-orders", async (req, res) => {
+  const body = CreateWorkOrderBody.parse(req.body);
+  const plant = PLANTS.find((p) => p.id === body.plantId);
+  if (!plant) {
+    res.status(404).json({ error: "not_found", message: "Plant not found" });
+    return;
+  }
+
+  const now = new Date();
+  const [created] = await db
+    .insert(workOrdersTable)
+    .values({
+      id: randomUUID(),
+      plantId: plant.id,
+      plantName: plant.name,
+      equipment: body.equipment,
+      faultDescription: body.faultDescription,
+      priority: body.priority,
+      status: "open",
+      assignedTo: body.assignedTo ?? null,
+      dueAt: body.dueDate ?? null,
+      slaBreached: false,
+      rootCause: null,
+      resolutionNotes: null,
+      sourceAlertId: null,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning();
+
+  req.log.info({ workOrderId: created?.id }, "Work order created");
+  res.status(201).json(CreateWorkOrderResponse.parse(toWorkOrderResponse(created!)));
+});
+
+router.get("/work-orders/:workOrderId", async (req, res) => {
+  const [row] = await db.select().from(workOrdersTable).where(eq(workOrdersTable.id, req.params["workOrderId"] ?? ""));
+  if (!row) {
+    res.status(404).json({ error: "not_found", message: "Work order not found" });
+    return;
+  }
+  res.json(GetWorkOrderResponse.parse(toWorkOrderResponse(row)));
+});
+
+router.patch("/work-orders/:workOrderId", async (req, res) => {
+  const workOrderId = req.params["workOrderId"] ?? "";
+  const [existing] = await db.select().from(workOrdersTable).where(eq(workOrdersTable.id, workOrderId));
+  if (!existing) {
+    res.status(404).json({ error: "not_found", message: "Work order not found" });
+    return;
+  }
+
+  const body = UpdateWorkOrderBody.parse(req.body);
+  if (
+    !body.status &&
+    body.assignedTo === undefined &&
+    !body.priority &&
+    body.rootCause === undefined &&
+    body.resolutionNotes === undefined
+  ) {
+    res.status(400).json({ error: "invalid_request", message: "At least one updatable field must be provided" });
+    return;
+  }
+
+  const now = new Date();
+  const updates: Partial<typeof workOrdersTable.$inferInsert> = { updatedAt: now };
+  if (body.status) {
+    updates.status = body.status;
+    if (body.status === "closed") updates.closedAt = now;
+  }
+  if (body.assignedTo !== undefined) updates.assignedTo = body.assignedTo;
+  if (body.priority) updates.priority = body.priority;
+  if (body.rootCause !== undefined) updates.rootCause = body.rootCause;
+  if (body.resolutionNotes !== undefined) updates.resolutionNotes = body.resolutionNotes;
+
+  const [updated] = await db.update(workOrdersTable).set(updates).where(eq(workOrdersTable.id, workOrderId)).returning();
+  req.log.info({ workOrderId, updates: body }, "Work order updated");
+  res.json(UpdateWorkOrderResponse.parse(toWorkOrderResponse(updated!)));
+});
+
+export default router;
