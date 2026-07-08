@@ -4,11 +4,15 @@
  *
  * Route: /plants/:plantId/combiners/:combinerId/strings
  * Linked from the SLD combiner-node popover.
+ *
+ * URL params:
+ *   ?filter=all|faulting   — "faulting" hides healthy strings & empty inverter groups
+ *   ?sort=default|deviation — "deviation" sorts worst-deviating strings first within each group
  */
 
 import { useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout";
-import { Link, useParams } from "wouter";
+import { Link, useParams, useSearch, useLocation } from "wouter";
 import {
   Layers,
   AlertTriangle,
@@ -16,6 +20,9 @@ import {
   CheckCircle2,
   Server,
   Cpu,
+  SlidersHorizontal,
+  ArrowDownUp,
+  Filter,
 } from "lucide-react";
 import { LiveValue } from "@/components/ui/scada";
 import { cn } from "@/components/ui/scada";
@@ -67,6 +74,73 @@ function useCombinerStrings(plantId: string, combinerId: string) {
     enabled: !!plantId && !!combinerId,
     refetchInterval: 5_000,
   });
+}
+
+/* ── URL-backed filter / sort state ───────────────────────────────────── */
+
+type FilterMode = "all" | "faulting";
+type SortMode   = "default" | "deviation";
+
+const VALID_FILTERS = new Set<FilterMode>(["all", "faulting"]);
+const VALID_SORTS   = new Set<SortMode>(["default", "deviation"]);
+
+function buildUrl(basePath: string, p: URLSearchParams): string {
+  const qs = p.toString();
+  return qs ? `${basePath}?${qs}` : basePath;
+}
+
+function useFilterSort(basePath: string) {
+  const search = useSearch();
+  const [, navigate] = useLocation();
+  const params = new URLSearchParams(search);
+
+  const rawFilter = params.get("filter") ?? "all";
+  const rawSort   = params.get("sort")   ?? "default";
+
+  // Clamp invalid param values to their defaults so the toolbar is deterministic
+  const filter: FilterMode = VALID_FILTERS.has(rawFilter as FilterMode) ? (rawFilter as FilterMode) : "all";
+  const sort: SortMode     = VALID_SORTS.has(rawSort as SortMode)       ? (rawSort as SortMode)     : "default";
+
+  function setFilter(next: FilterMode) {
+    const p = new URLSearchParams(search);
+    next === "all" ? p.delete("filter") : p.set("filter", next);
+    navigate(buildUrl(basePath, p), { replace: true });
+  }
+
+  function setSort(next: SortMode) {
+    const p = new URLSearchParams(search);
+    next === "default" ? p.delete("sort") : p.set("sort", next);
+    navigate(buildUrl(basePath, p), { replace: true });
+  }
+
+  return { filter, sort, setFilter, setSort };
+}
+
+/* ── Apply filter + sort to a payload ─────────────────────────────────── */
+
+function applyFilterSort(
+  groups: InverterGroup[],
+  filter: FilterMode,
+  sort: SortMode,
+): InverterGroup[] {
+  return groups
+    .map((group) => {
+      let strings = [...group.strings];
+
+      // Sort first so worst offenders bubble to the top
+      if (sort === "deviation") {
+        strings.sort((a, b) => Math.abs(b.deviationPct) - Math.abs(a.deviationPct));
+      }
+
+      // Then filter
+      if (filter === "faulting") {
+        strings = strings.filter((s) => s.isDeviating);
+      }
+
+      return { ...group, strings };
+    })
+    // Drop groups with no visible strings when filtering
+    .filter((group) => filter === "all" || group.strings.length > 0);
 }
 
 /* ── Inverter status badge color ──────────────────────────────────────── */
@@ -139,16 +213,23 @@ function StringCard({ str }: { str: StringRow }) {
 
 /* ── Inverter group section ───────────────────────────────────────────── */
 
-function InverterGroup({ group }: { group: InverterGroup }) {
-  // Count only genuinely anomalous strings (deviating current vs peer median).
-  // Strings that are "off" at night or during inverter standby are expected
-  // behaviour, not faults — counting them would mislead operators.
+function InverterGroupSection({
+  group,
+  filter,
+  totalOriginalStrings,
+}: {
+  group: InverterGroup;
+  filter: FilterMode;
+  totalOriginalStrings: number;
+}) {
   const faultCount = group.strings.filter((s) => s.isDeviating).length;
+  // When filter=faulting, every visible string is faulting; show count vs total
+  const hiddenCount = filter === "faulting" ? totalOriginalStrings - group.strings.length : 0;
 
   return (
     <div className="space-y-3">
       {/* Group header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <Cpu className="w-4 h-4 text-muted-foreground" />
           <span className="font-semibold text-sm">{group.inverterName}</span>
@@ -170,6 +251,11 @@ function InverterGroup({ group }: { group: InverterGroup }) {
           <span className="ml-auto flex items-center gap-1 text-[11px] text-status-normal font-medium">
             <CheckCircle2 className="w-3 h-3" />
             All nominal
+          </span>
+        )}
+        {hiddenCount > 0 && (
+          <span className="text-[11px] text-muted-foreground">
+            ({hiddenCount} healthy hidden)
           </span>
         )}
       </div>
@@ -194,6 +280,107 @@ function InverterGroup({ group }: { group: InverterGroup }) {
   );
 }
 
+/* ── Toolbar ──────────────────────────────────────────────────────────── */
+
+function Toolbar({
+  filter,
+  sort,
+  onFilter,
+  onSort,
+  faultingStrings,
+  totalStrings,
+  visibleStrings,
+}: {
+  filter: FilterMode;
+  sort: SortMode;
+  onFilter: (f: FilterMode) => void;
+  onSort: (s: SortMode) => void;
+  faultingStrings: number;
+  totalStrings: number;
+  visibleStrings: number;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-card-border bg-card px-4 py-2.5">
+      <SlidersHorizontal className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+
+      {/* Filter toggle */}
+      <div className="flex items-center gap-1 rounded-md border border-border p-0.5 bg-muted/50">
+        <button
+          onClick={() => onFilter("all")}
+          className={cn(
+            "flex items-center gap-1.5 rounded px-3 py-1 text-xs font-medium transition-all",
+            filter === "all"
+              ? "bg-background shadow text-foreground"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <Layers className="w-3 h-3" />
+          All strings
+          <span className="font-mono text-[10px] text-muted-foreground ml-0.5">
+            ({totalStrings})
+          </span>
+        </button>
+        <button
+          onClick={() => onFilter("faulting")}
+          className={cn(
+            "flex items-center gap-1.5 rounded px-3 py-1 text-xs font-medium transition-all",
+            filter === "faulting"
+              ? "bg-status-fault/10 shadow text-status-fault"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <Filter className="w-3 h-3" />
+          Faulting only
+          {faultingStrings > 0 && (
+            <span
+              className={cn(
+                "font-mono text-[10px] ml-0.5",
+                filter === "faulting" ? "text-status-fault" : "text-muted-foreground",
+              )}
+            >
+              ({faultingStrings})
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Sort toggle */}
+      <div className="flex items-center gap-1 rounded-md border border-border p-0.5 bg-muted/50 ml-auto">
+        <button
+          onClick={() => onSort("default")}
+          className={cn(
+            "flex items-center gap-1.5 rounded px-3 py-1 text-xs font-medium transition-all",
+            sort === "default"
+              ? "bg-background shadow text-foreground"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          Default order
+        </button>
+        <button
+          onClick={() => onSort("deviation")}
+          className={cn(
+            "flex items-center gap-1.5 rounded px-3 py-1 text-xs font-medium transition-all",
+            sort === "deviation"
+              ? "bg-background shadow text-foreground"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <ArrowDownUp className="w-3 h-3" />
+          Worst first
+        </button>
+      </div>
+
+      {/* Visible count hint when filter is active */}
+      {filter === "faulting" && (
+        <span className="text-[11px] text-muted-foreground w-full pt-0.5 border-t border-border/50 mt-0.5">
+          Showing {visibleStrings} of {totalStrings} strings · {totalStrings - visibleStrings} healthy strings hidden
+        </span>
+      )}
+    </div>
+  );
+}
+
 /* ── Page ─────────────────────────────────────────────────────────────── */
 
 export default function CombinerStrings() {
@@ -202,10 +389,28 @@ export default function CombinerStrings() {
     combinerId: string;
   }>();
 
+  const basePath = `/plants/${plantId}/combiners/${combinerId}/strings`;
+  const { filter, sort, setFilter, setSort } = useFilterSort(basePath);
+
   const { data, isLoading, isError } = useCombinerStrings(
     plantId ?? "",
     combinerId ?? "",
   );
+
+  // Apply filter + sort to each inverter group
+  const visibleGroups = data
+    ? applyFilterSort(data.inverterGroups, filter, sort)
+    : [];
+
+  const visibleStrings = visibleGroups.reduce((n, g) => n + g.strings.length, 0);
+
+  // Map original string counts per inverter (for "N healthy hidden" label)
+  const originalStringCount: Record<string, number> = {};
+  if (data) {
+    for (const g of data.inverterGroups) {
+      originalStringCount[g.inverterId] = g.strings.length;
+    }
+  }
 
   return (
     <AppLayout>
@@ -273,6 +478,19 @@ export default function CombinerStrings() {
           </div>
         </div>
 
+        {/* Toolbar (only shown when data is available) */}
+        {data && (
+          <Toolbar
+            filter={filter}
+            sort={sort}
+            onFilter={setFilter}
+            onSort={setSort}
+            faultingStrings={data.faultingStrings}
+            totalStrings={data.totalStrings}
+            visibleStrings={visibleStrings}
+          />
+        )}
+
         {/* Content */}
         {isLoading && (
           <div className="space-y-8">
@@ -295,10 +513,25 @@ export default function CombinerStrings() {
           </div>
         )}
 
-        {data && (
+        {data && visibleGroups.length === 0 && filter === "faulting" && (
+          <div className="rounded-lg border border-status-normal/30 bg-status-normal/10 text-status-normal p-8 text-center">
+            <CheckCircle2 className="w-8 h-8 mx-auto mb-2" />
+            <p className="font-semibold">No faulting strings</p>
+            <p className="text-sm mt-1 text-status-normal/70">
+              All {data.totalStrings} strings in this combiner are operating nominally.
+            </p>
+          </div>
+        )}
+
+        {data && visibleGroups.length > 0 && (
           <div className="space-y-10">
-            {data.inverterGroups.map((group) => (
-              <InverterGroup key={group.inverterId} group={group} />
+            {visibleGroups.map((group) => (
+              <InverterGroupSection
+                key={group.inverterId}
+                group={group}
+                filter={filter}
+                totalOriginalStrings={originalStringCount[group.inverterId] ?? group.strings.length}
+              />
             ))}
           </div>
         )}
