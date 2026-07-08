@@ -44,6 +44,7 @@ router.post("/users", async (req, res) => {
     .insert(usersTable)
     .values({
       id: randomUUID(),
+      orgId: "org-1", // TODO(task-7): replace with req.user.orgId once auth is wired
       name: body.name,
       email: body.email,
       roleId,

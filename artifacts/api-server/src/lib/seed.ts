@@ -1,29 +1,72 @@
 import { randomUUID } from "node:crypto";
-import { db, alertsTable, alertHistoryTable, workOrdersTable, usersTable, rolesTable } from "@workspace/db";
+import {
+  db,
+  organizationsTable,
+  alertsTable,
+  alertHistoryTable,
+  workOrdersTable,
+  usersTable,
+  rolesTable,
+} from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { logger } from "./logger";
 import { PLANTS } from "./simulation";
+
+// ── Demo organizations ───────────────────────────────────────────────────────
+
+const ORG_SEED = [
+  {
+    id: "org-1",
+    name: "Automystics Demo",
+    slug: "automystics-demo",
+    planTier: "enterprise",
+    status: "active",
+    logoUrl: null,
+  },
+  {
+    id: "org-2",
+    name: "Sunergy Corp",
+    slug: "sunergy-corp",
+    planTier: "professional",
+    status: "active",
+    logoUrl: null,
+  },
+] as const;
+
+// ── Roles & users (org-1) ────────────────────────────────────────────────────
 
 const ROLE_SEED = [
   {
     id: "role-admin",
+    orgId: "org-1",
     name: "Administrator",
     description: "Full access to all plants, settings, and user management.",
-    permissions: ["manage_users", "manage_roles", "acknowledge_alerts", "manage_work_orders", "generate_reports", "supervisory_control"],
+    permissions: [
+      "manage_users",
+      "manage_roles",
+      "acknowledge_alerts",
+      "manage_work_orders",
+      "generate_reports",
+      "supervisory_control",
+    ],
   },
   {
     id: "role-operator",
+    orgId: "org-1",
     name: "Control Room Operator",
     description: "Monitors live telemetry, acknowledges alerts, and raises work orders.",
     permissions: ["acknowledge_alerts", "manage_work_orders", "generate_reports"],
   },
   {
     id: "role-technician",
+    orgId: "org-1",
     name: "O&M Technician",
     description: "Executes and closes out maintenance work orders in the field.",
     permissions: ["manage_work_orders"],
   },
   {
     id: "role-viewer",
+    orgId: "org-1",
     name: "Viewer",
     description: "Read-only access to dashboards and reports.",
     permissions: ["generate_reports"],
@@ -31,13 +74,63 @@ const ROLE_SEED = [
 ];
 
 const USER_SEED = [
-  { id: "user-1", name: "Ananya Rao", email: "ananya.rao@automystics.com", roleId: "role-admin", plantIds: PLANTS.map((p) => p.id), status: "active" },
-  { id: "user-2", name: "Vikram Sethi", email: "vikram.sethi@automystics.com", roleId: "role-operator", plantIds: ["plant-thar", "plant-coastal"], status: "active" },
-  { id: "user-3", name: "Fatima Sheikh", email: "fatima.sheikh@automystics.com", roleId: "role-operator", plantIds: ["plant-sundarbans", "plant-deccan"], status: "active" },
-  { id: "user-4", name: "Rohan Mehta", email: "rohan.mehta@automystics.com", roleId: "role-technician", plantIds: ["plant-thar"], status: "active" },
-  { id: "user-5", name: "Priya Nair", email: "priya.nair@automystics.com", roleId: "role-technician", plantIds: ["plant-sundarbans", "plant-coastal"], status: "invited" },
-  { id: "user-6", name: "Karan Bose", email: "karan.bose@automystics.com", roleId: "role-viewer", plantIds: PLANTS.map((p) => p.id), status: "active" },
+  {
+    id: "user-1",
+    orgId: "org-1",
+    name: "Ananya Rao",
+    email: "ananya.rao@automystics.com",
+    roleId: "role-admin",
+    plantIds: PLANTS.map((p) => p.id),
+    status: "active",
+  },
+  {
+    id: "user-2",
+    orgId: "org-1",
+    name: "Vikram Sethi",
+    email: "vikram.sethi@automystics.com",
+    roleId: "role-operator",
+    plantIds: ["plant-thar", "plant-coastal"],
+    status: "active",
+  },
+  {
+    id: "user-3",
+    orgId: "org-1",
+    name: "Fatima Sheikh",
+    email: "fatima.sheikh@automystics.com",
+    roleId: "role-operator",
+    plantIds: ["plant-sundarbans", "plant-deccan"],
+    status: "active",
+  },
+  {
+    id: "user-4",
+    orgId: "org-1",
+    name: "Rohan Mehta",
+    email: "rohan.mehta@automystics.com",
+    roleId: "role-technician",
+    plantIds: ["plant-thar"],
+    status: "active",
+  },
+  {
+    id: "user-5",
+    orgId: "org-1",
+    name: "Priya Nair",
+    email: "priya.nair@automystics.com",
+    roleId: "role-technician",
+    plantIds: ["plant-sundarbans", "plant-coastal"],
+    status: "invited",
+  },
+  {
+    id: "user-6",
+    orgId: "org-1",
+    name: "Karan Bose",
+    email: "karan.bose@automystics.com",
+    roleId: "role-viewer",
+    plantIds: PLANTS.map((p) => p.id),
+    status: "active",
+  },
 ];
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function pastDate(minutesAgo: number): Date {
   return new Date(Date.now() - minutesAgo * 60 * 1000);
@@ -46,6 +139,8 @@ function pastDate(minutesAgo: number): Date {
 const DEVICE_TYPES = ["inverter", "string", "weather_station", "tracker", "transformer", "plant"] as const;
 const SEVERITIES = ["critical", "major", "minor", "informational"] as const;
 const STATUSES = ["open", "acknowledged", "assigned", "resolved", "closed"] as const;
+
+// ── Alert seed ───────────────────────────────────────────────────────────────
 
 function buildAlertSeed() {
   const alerts: (typeof alertsTable.$inferInsert)[] = [];
@@ -61,7 +156,12 @@ function buildAlertSeed() {
       const severity = SEVERITIES[(n * 3) % SEVERITIES.length]!;
       const status = STATUSES[n % 3]! as (typeof STATUSES)[number];
       const invIdx = n % plant.inverterCount;
-      const deviceName = deviceType === "inverter" ? `Inverter ${invIdx + 1}` : deviceType === "plant" ? plant.name : `${deviceType.replace("_", " ")} ${invIdx + 1}`;
+      const deviceName =
+        deviceType === "inverter"
+          ? `Inverter ${invIdx + 1}`
+          : deviceType === "plant"
+            ? plant.name
+            : `${deviceType.replace("_", " ")} ${invIdx + 1}`;
       const titles: Record<string, string> = {
         inverter: "Inverter efficiency below threshold",
         string: "String current deviation detected",
@@ -74,6 +174,7 @@ function buildAlertSeed() {
 
       alerts.push({
         id,
+        orgId: "org-1",
         plantId: plant.id,
         plantName: plant.name,
         deviceType,
@@ -90,6 +191,7 @@ function buildAlertSeed() {
 
       history.push({
         id: randomUUID(),
+        orgId: "org-1",
         alertId: id,
         timestamp: createdAt,
         actor: "System",
@@ -100,6 +202,7 @@ function buildAlertSeed() {
       if (status !== "open") {
         history.push({
           id: randomUUID(),
+          orgId: "org-1",
           alertId: id,
           timestamp: pastDate(30 + n * 47 - 5),
           actor: "Vikram Sethi",
@@ -111,6 +214,7 @@ function buildAlertSeed() {
       if (status === "resolved" || status === "closed") {
         history.push({
           id: randomUUID(),
+          orgId: "org-1",
           alertId: id,
           timestamp: pastDate(30 + n * 47 - 20),
           actor: "Rohan Mehta",
@@ -124,6 +228,8 @@ function buildAlertSeed() {
   return { alerts, history };
 }
 
+// ── Work order seed ──────────────────────────────────────────────────────────
+
 function buildWorkOrderSeed() {
   const orders: (typeof workOrdersTable.$inferInsert)[] = [];
   const priorities = ["low", "medium", "high", "critical"] as const;
@@ -136,6 +242,7 @@ function buildWorkOrderSeed() {
       const dueAt = pastDate(-60 * 24 * (n % 5));
       orders.push({
         id: `wo-${n}`,
+        orgId: "org-1",
         plantId: plant.id,
         plantName: plant.name,
         equipment: `Inverter ${(n % plant.inverterCount) + 1}`,
@@ -144,8 +251,14 @@ function buildWorkOrderSeed() {
         status,
         assignedTo: status === "open" ? null : "Priya Nair",
         sourceAlertId: null,
-        rootCause: status === "resolved" || status === "verified" || status === "closed" ? "Cable insulation damage from rodent activity." : null,
-        resolutionNotes: status === "verified" || status === "closed" ? "Replaced damaged cable section and re-tested insulation resistance." : null,
+        rootCause:
+          status === "resolved" || status === "verified" || status === "closed"
+            ? "Cable insulation damage from rodent activity."
+            : null,
+        resolutionNotes:
+          status === "verified" || status === "closed"
+            ? "Replaced damaged cable section and re-tested insulation resistance."
+            : null,
         slaBreached: dueAt.getTime() < Date.now() && status !== "closed" && status !== "verified",
         dueAt,
         createdAt: pastDate(60 * 24 + n * 200),
@@ -157,7 +270,25 @@ function buildWorkOrderSeed() {
   return orders;
 }
 
+// ── Main seed entry point ─────────────────────────────────────────────────────
+
 export async function ensureSeedData(): Promise<void> {
+  // Organizations must be created first — all other tables have a FK to this.
+  // We check for the specific demo org IDs rather than "any org exists" so that
+  // a partial or externally-provisioned DB doesn't silently skip org creation
+  // and then fail FK constraints on the dependent seed inserts.
+  for (const org of ORG_SEED) {
+    const [existing] = await db
+      .select()
+      .from(organizationsTable)
+      .where(eq(organizationsTable.id, org.id))
+      .limit(1);
+    if (!existing) {
+      await db.insert(organizationsTable).values({ ...org });
+      logger.info({ orgId: org.id }, "Seeded organization");
+    }
+  }
+
   const existingUsers = await db.select().from(usersTable).limit(1);
   if (existingUsers.length === 0) {
     await db.insert(rolesTable).values(ROLE_SEED);

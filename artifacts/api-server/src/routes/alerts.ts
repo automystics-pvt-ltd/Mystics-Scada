@@ -64,6 +64,7 @@ router.patch("/alerts/:alertId", async (req, res) => {
   if (body.status) {
     historyEntries.push({
       id: randomUUID(),
+      orgId: existing.orgId,
       alertId,
       timestamp: now,
       actor: body.assignedTo ?? "Control Room Operator",
@@ -75,6 +76,7 @@ router.patch("/alerts/:alertId", async (req, res) => {
   if (body.assignedTo && !body.status) {
     historyEntries.push({
       id: randomUUID(),
+      orgId: existing.orgId,
       alertId,
       timestamp: now,
       actor: "Control Room Operator",
@@ -86,6 +88,7 @@ router.patch("/alerts/:alertId", async (req, res) => {
   if (body.comment) {
     historyEntries.push({
       id: randomUUID(),
+      orgId: existing.orgId,
       alertId,
       timestamp: now,
       actor: "Control Room Operator",

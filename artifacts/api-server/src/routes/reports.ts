@@ -19,6 +19,7 @@ async function ensureScheduledReports() {
   await db.insert(reportsTable).values(
     SCHEDULED_REPORT_SEED.map((r) => ({
       id: randomUUID(),
+      orgId: "org-1", // TODO(task-7): replace with req.user.orgId once auth is wired
       name: r.name,
       type: r.type,
       format: r.format,
@@ -54,6 +55,7 @@ router.post("/reports/generate", async (req, res) => {
     .insert(reportsTable)
     .values({
       id: randomUUID(),
+      orgId: "org-1", // TODO(task-7): replace with req.user.orgId once auth is wired
       name: body.name,
       type: "custom",
       format: body.format,

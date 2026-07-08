@@ -62,6 +62,7 @@ router.post("/work-orders", async (req, res) => {
     .insert(workOrdersTable)
     .values({
       id: randomUUID(),
+      orgId: "org-1", // TODO(task-7): replace with req.user.orgId once auth is wired
       plantId: plant.id,
       plantName: plant.name,
       equipment: body.equipment,
