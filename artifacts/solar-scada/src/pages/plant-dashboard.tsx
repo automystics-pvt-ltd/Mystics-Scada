@@ -12,8 +12,10 @@ import { Link, useParams } from "wouter";
 import {
   Sun, Thermometer, Activity, Zap, Network, Cpu, BarChart4, CloudLightning,
   Wind, Droplets, ArrowLeft, TrendingUp, Brain, ChevronDown, ChevronUp,
-  TrendingDown, AlertTriangle,
+  TrendingDown, AlertTriangle, Layers,
 } from "lucide-react";
+import { computeHealthScore, healthScoreColor, syntheticSparkline } from "@/lib/plantHierarchy";
+import { HealthScoreGauge } from "@/components/ui/scada";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
@@ -38,6 +40,7 @@ const PLANT_SEV = {
 const SUB_NAV = (plantId: string) => [
   { name: "Overview",          href: `/plants/${plantId}`,           icon: null },
   { name: "Single Line Diagram", href: `/plants/${plantId}/sld`,     icon: Network },
+  { name: "Zones",             href: `/plants/${plantId}/zones`,     icon: Layers },
   { name: "Inverters",         href: `/plants/${plantId}/inverters`, icon: Cpu },
   { name: "Weather",           href: `/plants/${plantId}/weather`,   icon: CloudLightning },
   { name: "Analytics",         href: `/plants/${plantId}/analytics`, icon: BarChart4 },
@@ -118,9 +121,24 @@ export default function PlantDashboard() {
             <span>/</span>
             <span className="text-foreground">{plant?.name ?? "Loading…"}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">{plant?.name ?? "Plant Dashboard"}</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{plant?.name ?? "Plant Dashboard"}</h1>
             {plant && <HealthBadge status={plant.healthStatus} className="mt-0.5" />}
+            {plant && (() => {
+              const score = computeHealthScore(
+                plant.pr,
+                plant.availabilityPct,
+                { critical: plant.alertCounts?.critical ?? 0, major: plant.alertCounts?.major ?? 0 },
+              );
+              return (
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-border">
+                  <span className="text-xs text-muted-foreground">Health</span>
+                  <span className="text-sm font-bold font-mono" style={{ color: healthScoreColor(score) }}>
+                    {score} / 100
+                  </span>
+                </div>
+              );
+            })()}
           </div>
           <p className="text-sm text-muted-foreground mt-1">
             {plant?.region} · {plant?.capacityKw ? (plant.capacityKw / 1000).toFixed(2) : "--"} MWp installed

@@ -35,6 +35,11 @@ import OrgProfilePage from '@/pages/org-profile';
 import OrgUsersPage from '@/pages/org-users';
 import OrgNotificationsPage from '@/pages/org-notifications';
 import OrgAuditLogPage from '@/pages/org-audit-log';
+import PlantZones from '@/pages/plant-zones';
+import PlantZoneDetail from '@/pages/plant-zone-detail';
+import PlantZoneArrays from '@/pages/plant-zone-arrays';
+import PlantZoneArrayDetail from '@/pages/plant-zone-array-detail';
+import { ControlRoomProvider } from '@/context/ControlRoomContext';
 
 const queryClient = new QueryClient();
 
@@ -50,6 +55,10 @@ function ProtectedRoutes() {
           <Route path="/plants/:plantId/inverters/:inverterId" component={InverterDetail} />
           <Route path="/plants/:plantId/inverters/:inverterId/strings" component={StringDiagnostics} />
           <Route path="/plants/:plantId/combiners/:combinerId/strings" component={CombinerStrings} />
+          <Route path="/plants/:plantId/zones" component={PlantZones} />
+          <Route path="/plants/:plantId/zones/:zoneId/arrays/:arrayId" component={PlantZoneArrayDetail} />
+          <Route path="/plants/:plantId/zones/:zoneId/arrays" component={PlantZoneArrays} />
+          <Route path="/plants/:plantId/zones/:zoneId" component={PlantZoneDetail} />
           <Route path="/plants/:plantId/weather" component={WeatherView} />
           <Route path="/plants/:plantId/analytics" component={AnalyticsView} />
           <Route path="/alerts" component={AlertCenter} />
@@ -88,16 +97,18 @@ function Router() {
 function App() {
   return (
     <ThemeProvider defaultTheme="dark">
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <TooltipProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-              <Router />
-            </WouterRouter>
-            <Toaster />
-          </TooltipProvider>
-        </AuthProvider>
-      </QueryClientProvider>
+      <ControlRoomProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <TooltipProvider>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+                <Router />
+              </WouterRouter>
+              <Toaster />
+            </TooltipProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ControlRoomProvider>
     </ThemeProvider>
   );
 }

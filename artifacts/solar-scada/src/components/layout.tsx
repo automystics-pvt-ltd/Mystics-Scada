@@ -17,6 +17,9 @@ import {
   Cpu,
   Building2,
   Brain,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -24,11 +27,17 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useTelemetry } from "@/context/TelemetryStreamContext";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/components/theme-provider";
+import { useControlRoom } from "@/context/ControlRoomContext";
+import { ControlRoomOverlay } from "@/components/control-room-overlay";
+import { BottomNav } from "@/components/bottom-nav";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { connected, lastSync, tickCount } = useTelemetry();
   const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const { isActive: crActive, toggle: toggleCR } = useControlRoom();
   const queryClient = useQueryClient();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -106,16 +115,42 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
+    <>
+    <ControlRoomOverlay />
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar */}
-      <div className="w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col">
+      {/* Sidebar — hidden on mobile, visible md+ */}
+      <div className="hidden md:flex w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex-col flex-shrink-0">
 
         {/* App header */}
         <div className="flex-shrink-0 border-b border-sidebar-border">
-          {/* Platform brand */}
+          {/* Platform brand + utility toggles */}
           <div className="h-10 flex items-center px-4 gap-2">
             <Zap className="h-4 w-4 text-primary flex-shrink-0" />
             <span className="font-bold text-sm tracking-tight">Solar SCADA</span>
+            <div className="ml-auto flex items-center gap-0.5">
+              {/* Theme toggle */}
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                className="w-7 h-7 rounded-md flex items-center justify-center text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+              >
+                {theme === "dark"
+                  ? <Sun className="h-3.5 w-3.5" />
+                  : <Moon className="h-3.5 w-3.5" />}
+              </button>
+              {/* Control room toggle */}
+              <button
+                onClick={toggleCR}
+                title="Control Room Mode"
+                className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
+                  crActive
+                    ? "text-primary bg-primary/20"
+                    : "text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                }`}
+              >
+                <Monitor className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
 
           {/* Org branding — clickable, navigates to /org */}
@@ -316,7 +351,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main content — with optional impersonation banner */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Impersonation banner — shown when super admin is acting as an org */}
         {user?.orgOverride && (
           <div className="flex items-center justify-between px-4 py-2 bg-amber-500/15 border-b border-amber-500/30 text-amber-400 text-xs font-medium flex-shrink-0">
@@ -342,11 +377,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         )}
         <main className="flex-1 overflow-y-auto bg-background focus:outline-none">
-          <div className="py-6 px-8 h-full">
+          <div className="py-4 px-4 md:py-6 md:px-8 h-full pb-[72px] md:pb-6">
             {children}
           </div>
         </main>
+        {/* Bottom nav — visible only on mobile */}
+        <BottomNav />
       </div>
     </div>
+    </>
   );
 }

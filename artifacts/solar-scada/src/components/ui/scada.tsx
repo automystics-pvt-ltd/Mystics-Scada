@@ -1,12 +1,17 @@
 import { HealthState, AlertSeverity } from "@workspace/api-client-react";
 import {
   CheckCircle2, AlertTriangle, XCircle, HelpCircle,
-  TrendingUp, TrendingDown, Minus,
+  TrendingUp, TrendingDown, Minus, ArrowRight,
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from "recharts";
 import { useEffect, useRef, useState } from "react";
+import { Link } from "wouter";
+import { computeHealthScore as _computeHealthScore, healthScoreColor, healthScoreLabel } from "@/lib/plantHierarchy";
+
+// Re-export for convenience so callers only need one import
+export { computeHealthScore } from "@/lib/plantHierarchy";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -281,5 +286,120 @@ export function KpiCard({
         </div>
       )}
     </div>
+  );
+}
+
+/* ── Health Score Gauge ──────────────────────────────────────────────── */
+
+export function HealthScoreGauge({
+  score,
+  size = 80,
+  strokeWidth = 6,
+  showLabel = true,
+  className,
+}: {
+  score: number;
+  size?: number;
+  strokeWidth?: number;
+  showLabel?: boolean;
+  className?: string;
+}) {
+  const color = healthScoreColor(score);
+  const label = healthScoreLabel(score);
+  return (
+    <GenerationRing
+      pct={score}
+      label={`${Math.round(score)}`}
+      sublabel={showLabel ? label : undefined}
+      size={size}
+      strokeWidth={strokeWidth}
+      color={color}
+      className={className}
+    />
+  );
+}
+
+/* ── Drill-Down Card ─────────────────────────────────────────────────── */
+
+export function DrillDownCard({
+  title,
+  subtitle,
+  healthScore,
+  status,
+  kpis,
+  alertCount,
+  sparklineData,
+  sparklineColor,
+  href,
+  loading = false,
+}: {
+  title: string;
+  subtitle?: string;
+  healthScore?: number;
+  status?: HealthState;
+  kpis: { label: string; value: string }[];
+  alertCount?: number;
+  sparklineData?: { v: number }[];
+  sparklineColor?: string;
+  href: string;
+  loading?: boolean;
+}) {
+  const color = sparklineColor ?? (healthScore != null ? healthScoreColor(healthScore) : "hsl(var(--primary))");
+
+  if (loading) {
+    return <div className="bg-card border border-card-border rounded-xl p-5 h-44 animate-pulse" />;
+  }
+
+  return (
+    <Link href={href}>
+      <div className="bg-card border border-card-border rounded-xl p-4 hover:border-primary/40 cursor-pointer group transition-all">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <div className="font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">{title}</div>
+            {subtitle && <div className="text-xs text-muted-foreground mt-0.5">{subtitle}</div>}
+          </div>
+          {status && <HealthBadge status={status} className="flex-shrink-0 ml-2" />}
+        </div>
+        <div className="flex items-center gap-4">
+          {healthScore != null && (
+            <HealthScoreGauge score={healthScore} size={64} strokeWidth={5} showLabel={false} />
+          )}
+          <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-1.5 min-w-0">
+            {kpis.slice(0, 4).map((kpi) => (
+              <div key={kpi.label} className="min-w-0">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wider truncate">{kpi.label}</div>
+                <div className="font-mono text-sm font-medium truncate">{kpi.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        {alertCount != null && alertCount > 0 && (
+          <div className="mt-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-status-fault/15 text-status-fault">
+            {alertCount} alert{alertCount > 1 ? "s" : ""}
+          </div>
+        )}
+        {sparklineData && sparklineData.length > 0 && (
+          <div className="mt-2 h-8 -mx-1 opacity-50 group-hover:opacity-100 transition-opacity">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id={`ddc-${title.replace(/\W/g, "")}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor={color} stopOpacity={0.25} />
+                    <stop offset="95%" stopColor={color} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Area type="monotone" dataKey="v" stroke={color} strokeWidth={1.5}
+                  fill={`url(#ddc-${title.replace(/\W/g, "")})`} dot={false} isAnimationActive={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+        <div className="mt-1.5 flex justify-end">
+          <span className="text-xs text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            View detail <ArrowRight className="w-3 h-3" />
+          </span>
+        </div>
+      </div>
+    </Link>
   );
 }

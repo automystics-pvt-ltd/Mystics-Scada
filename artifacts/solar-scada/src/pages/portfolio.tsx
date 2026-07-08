@@ -5,6 +5,8 @@ import { Zap, Activity, AlertTriangle, Battery, Power, ArrowRight, XCircle, Brai
 import { Link } from "wouter";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { computeHealthScore, healthScoreColor } from "@/lib/plantHierarchy";
+import { HealthScoreGauge } from "@/components/ui/scada";
 
 const BASE = import.meta.env.BASE_URL as string;
 
@@ -193,6 +195,12 @@ export default function PortfolioDashboard() {
                         : "hsl(0 84% 60%)";
                     const sparkData = plantSparkline(plant.capacityKw, plant.currentPowerKw);
 
+                    const healthScore = computeHealthScore(
+                      plant.pr,
+                      plant.availabilityPct,
+                      { critical: plant.alertCounts.critical, major: plant.alertCounts.major },
+                    );
+
                     return (
                       <Link key={plant.id} href={`/plants/${plant.id}`}>
                         <div className="bg-card border border-card-border rounded-xl p-4 hover:border-primary/40 hover:bg-card/80 transition-all cursor-pointer group">
@@ -202,7 +210,12 @@ export default function PortfolioDashboard() {
                               <div className="font-semibold text-foreground group-hover:text-primary transition-colors">{plant.name}</div>
                               <div className="text-xs text-muted-foreground mt-0.5">{plant.region}</div>
                             </div>
-                            <HealthBadge status={plant.healthStatus} />
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold font-mono" style={{ color: healthScoreColor(healthScore) }}>
+                                ★ {healthScore}
+                              </span>
+                              <HealthBadge status={plant.healthStatus} />
+                            </div>
                           </div>
 
                           {/* Ring + stats */}
