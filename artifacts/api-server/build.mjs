@@ -29,6 +29,9 @@ async function buildAll() {
     // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
     external: [
       "*.node",
+      // pdfkit → fontkit → brotli requires @swc/helpers via CJS; keep pdfkit external
+      // so Node.js resolves it from node_modules at runtime instead of bundling it.
+      "pdfkit",
       "sharp",
       "better-sqlite3",
       "sqlite3",

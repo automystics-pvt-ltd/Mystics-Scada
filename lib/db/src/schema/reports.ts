@@ -19,6 +19,12 @@ export const reportsTable = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     downloadUrl: text("download_url"),
+    /** Content type key from REPORT_TYPE_CATALOG (e.g. "energy_generation"). Null on legacy rows. */
+    reportType: text("report_type"),
+    /** Reporting period start — null on legacy rows. */
+    dateFrom: timestamp("date_from", { withTimezone: true }),
+    /** Reporting period end — null on legacy rows. */
+    dateTo: timestamp("date_to", { withTimezone: true }),
   },
   (table) => ({
     orgIdIdx: index("reports_org_id_idx").on(table.orgId),
