@@ -312,28 +312,40 @@ export function weatherStations(plant: PlantConfig, now: Date): WeatherLiveReadi
   return stations;
 }
 
-export function plantHealth(plant: PlantConfig, now: Date): HealthState {
+export function plantHealth(plant: PlantConfig, now: Date, overrides?: SldOverrides): HealthState {
   let worst: HealthState = "normal";
   const rank: Record<HealthState, number> = { normal: 0, warning: 1, fault: 2, offline: 3 };
   for (let i = 0; i < plant.inverterCount; i++) {
-    const { health } = inverterHealth(plant, i, now);
+    const id = inverterId(plant.id, i);
+    const forcedOffline =
+      overrides?.plantDisconnect ||
+      (overrides?.faultedInverterIds?.has(id) ?? false);
+    const health: HealthState = forcedOffline ? "offline" : inverterHealth(plant, i, now).health;
     if (rank[health] > rank[worst]) worst = health;
   }
   return worst;
 }
 
-export function plantLivePowerKw(plant: PlantConfig, now: Date): number {
+export function plantLivePowerKw(plant: PlantConfig, now: Date, overrides?: SldOverrides): number {
   let total = 0;
   for (let i = 0; i < plant.inverterCount; i++) {
-    total += inverterLiveReading(plant, i, now).acPowerKw;
+    const id = inverterId(plant.id, i);
+    const forcedOffline =
+      overrides?.plantDisconnect ||
+      (overrides?.faultedInverterIds?.has(id) ?? false);
+    if (!forcedOffline) total += inverterLiveReading(plant, i, now).acPowerKw;
   }
   return Math.round(total);
 }
 
-export function plantEnergyTodayKwh(plant: PlantConfig, now: Date): number {
+export function plantEnergyTodayKwh(plant: PlantConfig, now: Date, overrides?: SldOverrides): number {
   let total = 0;
   for (let i = 0; i < plant.inverterCount; i++) {
-    total += inverterLiveReading(plant, i, now).energyTodayKwh;
+    const id = inverterId(plant.id, i);
+    const forcedOffline =
+      overrides?.plantDisconnect ||
+      (overrides?.faultedInverterIds?.has(id) ?? false);
+    if (!forcedOffline) total += inverterLiveReading(plant, i, now).energyTodayKwh;
   }
   return Math.round(total);
 }
@@ -343,9 +355,14 @@ export function plantPrPct(plant: PlantConfig, now: Date): number {
   return Math.round((78 + seededRandom(`${plant.id}:pr`, bucket) * 8 - plant.cloudinessSeed * 5) * 10) / 10;
 }
 
-export function plantAvailabilityPct(plant: PlantConfig, now: Date): number {
+export function plantAvailabilityPct(plant: PlantConfig, now: Date, overrides?: SldOverrides): number {
   let running = 0;
   for (let i = 0; i < plant.inverterCount; i++) {
+    const id = inverterId(plant.id, i);
+    const forcedOffline =
+      overrides?.plantDisconnect ||
+      (overrides?.faultedInverterIds?.has(id) ?? false);
+    if (forcedOffline) continue;
     const { status } = inverterHealth(plant, i, now);
     if (status !== "comm_lost" && status !== "fault") running++;
   }
@@ -546,7 +563,9 @@ export function plantSld(plant: PlantConfig, now: Date, overrides?: SldOverrides
   // interconnection breaker should only trip when the entire plant is
   // disconnected (every inverter offline) — a single faulted/offline
   // inverter must not falsely show the whole plant tripped off the grid.
-  const plantHealthStatus = plantHealth(plant, now);
+  // Pass overrides through so the transformer / switchyard status reflects
+  // injected faults rather than the raw deterministic simulation.
+  const plantHealthStatus = plantHealth(plant, now, overrides);
   const plantWarningOrWorse = plantHealthStatus !== "normal";
 
   const arrayId = `${plant.id}-array`;
@@ -647,7 +666,10 @@ export function plantSld(plant: PlantConfig, now: Date, overrides?: SldOverrides
     });
   });
 
-  const totalPowerKw = round1(plantLivePowerKw(plant, now));
+  // Derive total AC power from the already-override-aware inverterReadings
+  // rather than re-calling plantLivePowerKw, which would duplicate the forced-offline
+  // loop — inverterReadings is already authoritative for this function's fault state.
+  const totalPowerKw = round1(inverterReadings.reduce((sum, r) => sum + r.reading.acPowerKw, 0));
   const xfmrCurrentA = round1(threePhaseCurrentA(totalPowerKw, gridVoltageV));
 
   // The grid breaker only trips when every inverter is disconnected — a

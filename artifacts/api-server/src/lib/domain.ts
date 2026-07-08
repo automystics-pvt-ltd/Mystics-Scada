@@ -4,6 +4,7 @@
 import {
   PLANTS,
   type PlantConfig,
+  type SldOverrides,
   inverterId,
   inverterIndex,
   getPlantByInverterId,
@@ -26,6 +27,14 @@ import {
 } from "./simulation";
 import { getFaultedInverterIds, isPlantDisconnected } from "./faultInjection";
 
+/** Build the fault-injection overrides for a given plant. */
+function buildOverrides(plantId: string): SldOverrides {
+  return {
+    faultedInverterIds: getFaultedInverterIds(plantId),
+    plantDisconnect: isPlantDisconnected(plantId),
+  };
+}
+
 const PLANT_COORDS: Record<string, { lat: number; lng: number; region: string }> = {
   "plant-thar": { lat: 26.9157, lng: 70.9083, region: "Rajasthan" },
   "plant-sundarbans": { lat: 21.9497, lng: 88.4337, region: "West Bengal" },
@@ -43,6 +52,7 @@ export function plantSummary(
   alertCounts: Map<string, { critical: number; major: number; minor: number; informational: number }>,
 ) {
   const coords = PLANT_COORDS[plant.id] ?? { lat: 0, lng: 0, region: plant.location };
+  const overrides = buildOverrides(plant.id);
   return {
     id: plant.id,
     name: plant.name,
@@ -50,11 +60,11 @@ export function plantSummary(
     lat: coords.lat,
     lng: coords.lng,
     capacityKw: plant.capacityMw * 1000,
-    currentPowerKw: plantLivePowerKw(plant, now),
-    todayEnergyKwh: plantEnergyTodayKwh(plant, now),
+    currentPowerKw: plantLivePowerKw(plant, now, overrides),
+    todayEnergyKwh: plantEnergyTodayKwh(plant, now, overrides),
     pr: plantPrPct(plant, now),
-    availabilityPct: plantAvailabilityPct(plant, now),
-    healthStatus: plantHealth(plant, now),
+    availabilityPct: plantAvailabilityPct(plant, now, overrides),
+    healthStatus: plantHealth(plant, now, overrides),
     alertCounts: alertCountsForPlant(plant.id, alertCounts),
   };
 }
@@ -65,9 +75,18 @@ export function plantDetail(
   alertCounts: Map<string, { critical: number; major: number; minor: number; informational: number }>,
 ) {
   const summary = plantSummary(plant, now, alertCounts);
+  const overrides = buildOverrides(plant.id);
   const irradiance = plantIrradiance(plant, now);
   let offlineCount = 0;
   for (let i = 0; i < plant.inverterCount; i++) {
+    const id = inverterId(plant.id, i);
+    const forcedOffline =
+      overrides.plantDisconnect ||
+      (overrides.faultedInverterIds?.has(id) ?? false);
+    if (forcedOffline) {
+      offlineCount++;
+      continue;
+    }
     const { status } = inverterHealth(plant, i, now);
     if (status === "comm_lost" || status === "fault") offlineCount++;
   }
