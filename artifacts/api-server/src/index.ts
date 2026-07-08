@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { ensureSeedData } from "./lib/seed";
+import { initFaultStore } from "./lib/initFaultStore";
 
 const rawPort = process.env["PORT"];
 
@@ -16,17 +17,28 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-ensureSeedData()
-  .catch((err) => {
+async function startServer(): Promise<void> {
+  // Seed data first (non-fatal — log and continue)
+  await ensureSeedData().catch((err: unknown) => {
     logger.error({ err }, "Failed to seed initial data");
-  })
-  .finally(() => {
-    app.listen(port, (err) => {
-      if (err) {
-        logger.error({ err }, "Error listening on port");
-        process.exit(1);
-      }
+  });
 
+  // Restore persisted fault simulations BEFORE accepting traffic so that
+  // any request or SSE connection made immediately after startup sees the
+  // correct fault state.  Errors inside initFaultStore are caught and logged.
+  await initFaultStore();
+
+  // Now open the port
+  await new Promise<void>((resolve, reject) => {
+    app.listen(port, (err?: Error) => {
+      if (err) { reject(err); return; }
       logger.info({ port }, "Server listening");
+      resolve();
     });
   });
+}
+
+startServer().catch((err: unknown) => {
+  logger.error({ err }, "Server failed to start");
+  process.exit(1);
+});

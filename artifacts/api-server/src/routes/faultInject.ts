@@ -90,17 +90,17 @@ router.post(
         res.status(400).json({ error: "invalid_inverter", message: "Inverter does not belong to this plant" });
         return;
       }
-      const fault = injectFault(
+      const fault = await injectFault(
         effectiveOrgId,
         plant.id,
         { kind: "inverter", inverterId: parsed.inverterId },
         durationMs,
       );
 
-      // Await alert creation before responding so the alertId is stored on the
-      // fault before any subsequent manual-clear DELETE can arrive.
+      // Await alert creation then persist alertId before responding, so that
+      // any subsequent manual-clear DELETE always has the alertId available.
       const alertId = await createFaultAlert(fault, plant.name);
-      attachAlertToFault(fault.key, alertId);
+      await attachAlertToFault(fault.key, alertId);
       setTimeout(
         () => void resolveFaultAlert(alertId, effectiveOrgId, fault.label, "expired"),
         durationMs + 200,
@@ -116,10 +116,10 @@ router.post(
     }
 
     // target === "plant"
-    const fault = injectFault(effectiveOrgId, plant.id, { kind: "plant" }, durationMs);
+    const fault = await injectFault(effectiveOrgId, plant.id, { kind: "plant" }, durationMs);
 
     const alertId = await createFaultAlert(fault, plant.name);
-    attachAlertToFault(fault.key, alertId);
+    await attachAlertToFault(fault.key, alertId);
     setTimeout(
       () => void resolveFaultAlert(alertId, effectiveOrgId, fault.label, "expired"),
       durationMs + 200,
@@ -145,8 +145,7 @@ router.delete(
       res.status(404).json({ error: "not_found", message: "Plant not found" });
       return;
     }
-    const cleared = clearAllFaults(plant.id);
-    // Resolve alerts for all cleared faults (fire-and-forget)
+    const cleared = await clearAllFaults(plant.id);
     for (const fault of cleared) {
       if (fault.alertId) {
         void resolveFaultAlert(fault.alertId, fault.orgId, fault.label, "manual");
@@ -170,7 +169,7 @@ router.delete(
       return;
     }
     const key = `${plant.id}:${req.params["suffix"]}`;
-    const cleared = clearFault(key);
+    const cleared = await clearFault(key);
     if (cleared?.alertId) {
       void resolveFaultAlert(cleared.alertId, cleared.orgId, cleared.label, "manual");
     }

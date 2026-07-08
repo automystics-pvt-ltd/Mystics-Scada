@@ -11,5 +11,6 @@ export * from "./users";
 export * from "./reports";
 export * from "./devices";
 export * from "./auditLogs";
+export * from "./faultOverrides";
 export * from "./notifications";
 export * from "./reportSchedules";
