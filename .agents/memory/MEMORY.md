@@ -5,3 +5,4 @@
 - [DB row vs API response shape drift](db-row-response-mapping.md) — never `zodResponseSchema.parse(dbRow)` directly; map fields explicitly or codegen'd response validation throws cryptic zod errors.
 - [SLD graph layout & breaker semantics](sld-topology-layout.md) — seed diagram columns from the widest layer with a fallback for empty-children nodes; gate breaker/disconnect state on plant-wide (not single-device) health.
 - [Reporting engine architecture](reporting-engine.md) — on-demand generation at download, pdfkit external in esbuild, /org/** route scoping, duplicate schedule via DB unique constraint.
+- [AI Insights engine](insights-engine.md) — irradiance-gated rules (silent at night except health_decline), day-scoped IDs, dismissal in userPreferences JSONB, WO creation requires maintenance.manage permission.

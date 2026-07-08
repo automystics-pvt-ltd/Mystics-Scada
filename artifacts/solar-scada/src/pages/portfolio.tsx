@@ -1,9 +1,12 @@
 import { useGetPortfolioSummary, useListAlerts, getGetPortfolioSummaryQueryKey, getListAlertsQueryKey } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout";
 import { KpiCard, HealthBadge, LiveValue, GenerationRing, StatCard } from "@/components/ui/scada";
-import { Zap, Activity, AlertTriangle, Battery, Power, ArrowRight, XCircle } from "lucide-react";
+import { Zap, Activity, AlertTriangle, Battery, Power, ArrowRight, XCircle, Brain } from "lucide-react";
 import { Link } from "wouter";
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+
+const BASE = import.meta.env.BASE_URL as string;
 
 /** Synthetic hourly sparkline derived from plant metadata (no extra API call). */
 function plantSparkline(capacityKw: number, currentPowerKw: number): { v: number }[] {
@@ -29,6 +32,17 @@ export default function PortfolioDashboard() {
     { status: "open" },
     { query: { refetchInterval: 15000, queryKey: getListAlertsQueryKey({ status: "open" }) } }
   );
+
+  const { data: insightsSummary } = useQuery<{ total: number; critical: number; warning: number; info: number } | null>({
+    queryKey: ["insights-summary"],
+    queryFn: async () => {
+      const r = await fetch(`${BASE}api/insights/summary`, { credentials: "include" });
+      if (!r.ok) return null;
+      return r.json() as Promise<{ total: number; critical: number; warning: number; info: number }>;
+    },
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
 
   const criticalAlerts = useMemo(() => alerts?.filter(a => a.severity === "critical") ?? [], [alerts]);
   const fleetUtilPct = summary && summary.totalCapacityMw > 0
@@ -63,6 +77,39 @@ export default function PortfolioDashboard() {
               View Alerts →
             </Link>
           </div>
+        )}
+
+        {/* AI Insights summary widget */}
+        {insightsSummary && insightsSummary.total > 0 && (
+          <Link href="/insights">
+            <div className="flex items-center gap-4 bg-card border border-card-border rounded-xl px-4 py-3 cursor-pointer hover:border-primary/40 transition-colors group">
+              <div className="flex items-center gap-2">
+                <Brain className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold">AI Insights</span>
+                <span className="text-xs text-muted-foreground ml-1">{insightsSummary.total} finding{insightsSummary.total !== 1 ? "s" : ""} detected</span>
+              </div>
+              <div className="flex items-center gap-3 ml-2">
+                {insightsSummary.critical > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-status-fault/15 text-status-fault border border-status-fault/20">
+                    {insightsSummary.critical} Critical
+                  </span>
+                )}
+                {insightsSummary.warning > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-status-warning/15 text-status-warning border border-status-warning/20">
+                    {insightsSummary.warning} Warning
+                  </span>
+                )}
+                {insightsSummary.info > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
+                    {insightsSummary.info} Info
+                  </span>
+                )}
+              </div>
+              <span className="ml-auto text-xs text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                Review insights <ArrowRight className="w-3 h-3" />
+              </span>
+            </div>
+          </Link>
         )}
 
         {/* Fleet KPIs */}

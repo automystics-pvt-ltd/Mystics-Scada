@@ -21,6 +21,7 @@ import AnalyticsView from '@/pages/analytics';
 import AlertCenter from '@/pages/alerts';
 import MaintenanceBoard from '@/pages/maintenance';
 import ReportsView from '@/pages/reports';
+import InsightsPage from '@/pages/insights';
 import AdminUsers from '@/pages/admin-users';
 import AdminRoles from '@/pages/admin-roles';
 import Settings from '@/pages/settings';
@@ -54,6 +55,7 @@ function ProtectedRoutes() {
           <Route path="/alerts" component={AlertCenter} />
           <Route path="/maintenance" component={MaintenanceBoard} />
           <Route path="/reports" component={ReportsView} />
+          <Route path="/insights" component={InsightsPage} />
           <Route path="/devices" component={DevicesPage} />
           <Route path="/devices/:id" component={DeviceDetailPage} />
           <Route path="/org" component={OrgProfilePage} />

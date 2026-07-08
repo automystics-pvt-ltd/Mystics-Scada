@@ -11,12 +11,29 @@ import { KpiCard, HealthBadge, LiveValue, GenerationRing } from "@/components/ui
 import { Link, useParams } from "wouter";
 import {
   Sun, Thermometer, Activity, Zap, Network, Cpu, BarChart4, CloudLightning,
-  Wind, Droplets, ArrowLeft, TrendingUp,
+  Wind, Droplets, ArrowLeft, TrendingUp, Brain, ChevronDown, ChevronUp,
+  TrendingDown, AlertTriangle,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ReferenceLine,
 } from "recharts";
+
+const BASE = import.meta.env.BASE_URL as string;
+
+interface PlantInsight {
+  id: string; type: string; severity: "critical" | "warning" | "info";
+  plantId: string; deviceName?: string; title: string;
+  recommendedAction: string; energyImpactKwhPerDay: number;
+}
+
+const PLANT_SEV = {
+  critical: { color: "text-status-fault", bg: "bg-status-fault/10", border: "border-l-status-fault" },
+  warning:  { color: "text-status-warning", bg: "bg-status-warning/10", border: "border-l-[hsl(38,92%,50%)]" },
+  info:     { color: "text-primary", bg: "bg-primary/10", border: "border-l-primary" },
+} as const;
 
 const SUB_NAV = (plantId: string) => [
   { name: "Overview",          href: `/plants/${plantId}`,           icon: null },
@@ -48,6 +65,19 @@ export default function PlantDashboard() {
 
   const { data: inverters } = useListInverters(pid, {
     query: { enabled: !!pid, refetchInterval: 15000, queryKey: getListInvertersQueryKey(pid) }
+  });
+
+  const [insightsExpanded, setInsightsExpanded] = useState(true);
+  const { data: plantInsights = [] } = useQuery<PlantInsight[]>({
+    queryKey: ["insights", pid],
+    queryFn: async () => {
+      const r = await fetch(`${BASE}api/insights?plantId=${pid}`, { credentials: "include" });
+      if (!r.ok) return [];
+      return r.json() as Promise<PlantInsight[]>;
+    },
+    enabled: !!pid,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
   });
 
   if (isError) {
@@ -281,6 +311,62 @@ export default function PlantDashboard() {
             </div>
           </div>
         </div>
+
+        {/* AI Insights panel */}
+        {plantInsights.length > 0 && (
+          <div className="bg-card border border-card-border rounded-xl overflow-hidden">
+            <button
+              onClick={() => setInsightsExpanded(e => !e)}
+              className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/20 transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <Brain className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold">AI Insights</span>
+                <span className="ml-1 flex items-center gap-1.5">
+                  {plantInsights.some(i => i.severity === "critical") && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-status-fault/15 text-status-fault">
+                      {plantInsights.filter(i => i.severity === "critical").length} Critical
+                    </span>
+                  )}
+                  {plantInsights.some(i => i.severity === "warning") && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-status-warning/15 text-status-warning">
+                      {plantInsights.filter(i => i.severity === "warning").length} Warning
+                    </span>
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Link href="/insights" onClick={e => e.stopPropagation()}>
+                  <span className="text-xs text-primary hover:underline">View all →</span>
+                </Link>
+                {insightsExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+              </div>
+            </button>
+
+            {insightsExpanded && (
+              <div className="px-5 pb-5 grid grid-cols-1 md:grid-cols-3 gap-3">
+                {plantInsights.slice(0, 3).map(insight => {
+                  const sev = PLANT_SEV[insight.severity];
+                  return (
+                    <div key={insight.id} className={`border border-card-border border-l-4 ${sev.border} rounded-lg p-3 ${sev.bg}`}>
+                      <div className={`text-[10px] font-bold uppercase tracking-wider ${sev.color} mb-1.5`}>
+                        {insight.severity} · {insight.deviceName ?? "Plant-level"}
+                      </div>
+                      <p className="text-xs font-semibold leading-snug mb-1.5">{insight.title}</p>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{insight.recommendedAction}</p>
+                      {insight.energyImpactKwhPerDay > 0 && (
+                        <div className="mt-2 flex items-center gap-1 text-[10px] text-status-warning">
+                          <Zap className="w-2.5 h-2.5" />
+                          <span className="font-mono font-semibold">{insight.energyImpactKwhPerDay.toLocaleString()} kWh/day</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </AppLayout>

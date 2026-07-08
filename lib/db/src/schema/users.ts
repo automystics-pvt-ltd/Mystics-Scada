@@ -1,4 +1,4 @@
-import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { organizationsTable } from "./organizations";
@@ -38,6 +38,9 @@ export const usersTable = pgTable(
     passwordHash: text("password_hash"),
     isSuperAdmin: boolean("is_super_admin").notNull().default(false),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+    userPreferences: jsonb("user_preferences").$type<{
+      dismissedInsights?: string[];
+    }>().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
