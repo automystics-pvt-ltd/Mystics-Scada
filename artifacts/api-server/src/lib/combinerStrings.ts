@@ -61,6 +61,17 @@ export function combinerStrings(
 
     const invId = inverterId(plant.id, i);
     const { status } = inverterHealth(plant, i, now);
+
+    // Only "running" inverters produce measurable DC current. For standby,
+    // comm_lost, and fault inverters the DC output is zero, but the
+    // simulation's isDegraded flag (5-minute time bucket) can remain set
+    // through transitions, producing spurious "warning" string statuses.
+    // We suppress fault counting for any non-running inverter so operators
+    // never see false alarms at night, during comm outages, or while an
+    // inverter is tripped. Strings are still displayed (for inspection) but
+    // are never flagged as deviating when there is no measurable signal.
+    const isInactive = status !== "running";
+
     const readings = rawStringReadings(plant, i, now);
 
     // Re-compute median for this inverter's string set
@@ -69,9 +80,14 @@ export function combinerStrings(
 
     const strings = readings.map((r) => {
       const deviation =
-        median > 0 ? Math.round(((r.currentA - median) / median) * 1000) / 10 : 0;
-      const isDeviating = Math.abs(deviation) > 15;
-      if (r.status !== "normal" || isDeviating) faultingStrings++;
+        !isInactive && median > 0
+          ? Math.round(((r.currentA - median) / median) * 1000) / 10
+          : 0;
+      // Never flag strings as deviating for inactive inverters.
+      const isDeviating = !isInactive && Math.abs(deviation) > 15;
+      // Only count faults for active inverters (avoids isDegraded bleed-through
+      // at sunset/sunrise transitions and during comm outages).
+      if (!isInactive && (r.status !== "normal" || isDeviating)) faultingStrings++;
       totalStrings++;
       return {
         id: r.stringId,

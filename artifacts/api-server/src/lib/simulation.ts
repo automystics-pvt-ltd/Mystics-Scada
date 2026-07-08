@@ -562,10 +562,12 @@ export function plantSld(plant: PlantConfig, now: Date, overrides?: SldOverrides
       overrides?.plantDisconnect ||
       (overrides?.faultedInverterIds?.has(invId) ?? false);
     if (forcedOffline) {
-      return { health: "offline" as HealthState, reading: ZERO_READING };
+      return { status: "comm_lost" as InverterStatus, health: "offline" as HealthState, reading: ZERO_READING };
     }
+    const inv = inverterHealth(plant, i, now);
     return {
-      health: inverterHealth(plant, i, now).health,
+      status: inv.status,
+      health: inv.health,
       reading: inverterLiveReading(plant, i, now),
     };
   });
@@ -574,8 +576,14 @@ export function plantSld(plant: PlantConfig, now: Date, overrides?: SldOverrides
     combinerPowerKw[i % combinerCount] += reading.dcPowerKw;
   });
 
-  // Tally string faults per combiner (strings with status !== "normal")
+  // Tally string faults per combiner, but only for running inverters.
+  // Standby, comm_lost, and fault inverters all produce zero DC current.
+  // The simulation's isDegraded flag (5-minute bucket) can persist briefly
+  // through status transitions, producing spurious "warning" string statuses
+  // even when there is no measurable string signal.  Restricting the count
+  // to "running" inverters ensures the SLD badge reflects real anomalies only.
   for (let i = 0; i < plant.inverterCount; i++) {
+    if (inverterReadings[i]?.status !== "running") continue;
     const strings = stringReadings(plant, i, now);
     const faults = strings.filter((s) => s.status !== "normal").length;
     combinerStringFaults[i % combinerCount] += faults;
