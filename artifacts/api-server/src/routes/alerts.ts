@@ -1,14 +1,19 @@
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, type SQL } from "drizzle-orm";
 import { db, alertsTable, alertHistoryTable } from "@workspace/db";
 import { ListAlertsQueryParams, ListAlertsResponse, GetAlertResponse, UpdateAlertBody, UpdateAlertResponse, ListAlertHistoryResponse } from "@workspace/api-zod";
+import { resolveOrgId, orgCondition } from "../lib/orgScope";
 
 const router: IRouter = Router();
 
 router.get("/alerts", async (req, res) => {
+  const orgId = resolveOrgId(req);
   const query = ListAlertsQueryParams.parse(req.query);
-  const conditions = [];
+
+  const conditions: SQL[] = [];
+  const oc = orgCondition(alertsTable.orgId, orgId);
+  if (oc) conditions.push(oc);
   if (query.plantId) conditions.push(eq(alertsTable.plantId, query.plantId));
   if (query.severity) conditions.push(eq(alertsTable.severity, query.severity));
   if (query.status) conditions.push(eq(alertsTable.status, query.status));
@@ -24,8 +29,10 @@ router.get("/alerts", async (req, res) => {
 });
 
 router.get("/alerts/:alertId", async (req, res) => {
+  const orgId = resolveOrgId(req);
   const [row] = await db.select().from(alertsTable).where(eq(alertsTable.id, req.params["alertId"] ?? ""));
-  if (!row) {
+  // Return 404 (not 403) on org mismatch to avoid leaking existence
+  if (!row || (orgId !== null && row.orgId !== orgId)) {
     res.status(404).json({ error: "not_found", message: "Alert not found" });
     return;
   }
@@ -33,9 +40,11 @@ router.get("/alerts/:alertId", async (req, res) => {
 });
 
 router.patch("/alerts/:alertId", async (req, res) => {
+  const orgId = resolveOrgId(req);
   const alertId = req.params["alertId"] ?? "";
   const [existing] = await db.select().from(alertsTable).where(eq(alertsTable.id, alertId));
-  if (!existing) {
+  // Return 404 on org mismatch to avoid leaking existence
+  if (!existing || (orgId !== null && existing.orgId !== orgId)) {
     res.status(404).json({ error: "not_found", message: "Alert not found" });
     return;
   }
@@ -106,9 +115,10 @@ router.patch("/alerts/:alertId", async (req, res) => {
 });
 
 router.get("/alerts/:alertId/history", async (req, res) => {
+  const orgId = resolveOrgId(req);
   const alertId = req.params["alertId"] ?? "";
   const [alert] = await db.select().from(alertsTable).where(eq(alertsTable.id, alertId));
-  if (!alert) {
+  if (!alert || (orgId !== null && alert.orgId !== orgId)) {
     res.status(404).json({ error: "not_found", message: "Alert not found" });
     return;
   }

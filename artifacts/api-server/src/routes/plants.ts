@@ -11,7 +11,7 @@ import {
   GetPlantRevenueResponse,
 } from "@workspace/api-zod";
 import {
-  PLANTS,
+  getOrgPlants,
   plantSummary,
   plantDetail,
   sldFor,
@@ -23,30 +23,35 @@ import {
 } from "../lib/domain";
 import { combinerStrings } from "../lib/combinerStrings";
 import { activeAlertCountsByPlant } from "../lib/alertCounts";
+import { resolveOrgId } from "../lib/orgScope";
 
 const router: IRouter = Router();
 
-router.get("/plants", async (_req, res) => {
+router.get("/plants", async (req, res) => {
+  const orgId = resolveOrgId(req);
   const now = new Date();
-  const alertCounts = await activeAlertCountsByPlant();
-  const data = ListPlantsResponse.parse(PLANTS.map((plant) => plantSummary(plant, now, alertCounts)));
+  const alertCounts = await activeAlertCountsByPlant(orgId);
+  const plants = getOrgPlants(orgId);
+  const data = ListPlantsResponse.parse(plants.map((plant) => plantSummary(plant, now, alertCounts)));
   res.json(data);
 });
 
 router.get("/plants/:plantId", async (req, res) => {
-  const plant = PLANTS.find((p) => p.id === req.params["plantId"]);
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {
     res.status(404).json({ error: "not_found", message: "Plant not found" });
     return;
   }
   const now = new Date();
-  const alertCounts = await activeAlertCountsByPlant();
+  const alertCounts = await activeAlertCountsByPlant(orgId);
   const data = GetPlantResponse.parse(plantDetail(plant, now, alertCounts));
   res.json(data);
 });
 
 router.get("/plants/:plantId/sld", (req, res) => {
-  const plant = PLANTS.find((p) => p.id === req.params["plantId"]);
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {
     res.status(404).json({ error: "not_found", message: "Plant not found" });
     return;
@@ -56,7 +61,8 @@ router.get("/plants/:plantId/sld", (req, res) => {
 });
 
 router.get("/plants/:plantId/inverters", (req, res) => {
-  const plant = PLANTS.find((p) => p.id === req.params["plantId"]);
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {
     res.status(404).json({ error: "not_found", message: "Plant not found" });
     return;
@@ -68,7 +74,8 @@ router.get("/plants/:plantId/inverters", (req, res) => {
 });
 
 router.get("/plants/:plantId/weather-stations", (req, res) => {
-  const plant = PLANTS.find((p) => p.id === req.params["plantId"]);
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {
     res.status(404).json({ error: "not_found", message: "Plant not found" });
     return;
@@ -78,7 +85,8 @@ router.get("/plants/:plantId/weather-stations", (req, res) => {
 });
 
 router.get("/plants/:plantId/yield", (req, res) => {
-  const plant = PLANTS.find((p) => p.id === req.params["plantId"]);
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {
     res.status(404).json({ error: "not_found", message: "Plant not found" });
     return;
@@ -89,7 +97,8 @@ router.get("/plants/:plantId/yield", (req, res) => {
 });
 
 router.get("/plants/:plantId/performance", (req, res) => {
-  const plant = PLANTS.find((p) => p.id === req.params["plantId"]);
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {
     res.status(404).json({ error: "not_found", message: "Plant not found" });
     return;
@@ -99,7 +108,8 @@ router.get("/plants/:plantId/performance", (req, res) => {
 });
 
 router.get("/plants/:plantId/revenue", (req, res) => {
-  const plant = PLANTS.find((p) => p.id === req.params["plantId"]);
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {
     res.status(404).json({ error: "not_found", message: "Plant not found" });
     return;
@@ -115,7 +125,8 @@ router.get("/plants/:plantId/revenue", (req, res) => {
  * grouped by inverter. This is what the SLD combiner-node popover links to.
  */
 router.get("/plants/:plantId/combiners/:combinerId/strings", (req, res) => {
-  const plant = PLANTS.find((p) => p.id === req.params["plantId"]);
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {
     res.status(404).json({ error: "not_found", message: "Plant not found" });
     return;

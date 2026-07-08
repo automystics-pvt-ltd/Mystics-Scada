@@ -1,29 +1,40 @@
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter } from "express";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, type SQL } from "drizzle-orm";
 import { db, reportsTable } from "@workspace/db";
 import { ListReportsResponse, GenerateReportBody, GenerateReportResponse } from "@workspace/api-zod";
-import { PLANTS } from "../lib/domain";
+import { getOrgPlants } from "../lib/domain";
+import { resolveOrgId, orgCondition } from "../lib/orgScope";
 
 const router: IRouter = Router();
 
 const SCHEDULED_REPORT_SEED = [
-  { name: "Fleet Daily Generation Summary", type: "daily" as const, plantIds: PLANTS.map((p) => p.id), format: "pdf" as const },
-  { name: "Weekly Performance & PR Review", type: "weekly" as const, plantIds: PLANTS.map((p) => p.id), format: "excel" as const },
-  { name: "Monthly Compliance Report", type: "monthly" as const, plantIds: [PLANTS[0]!.id], format: "pdf" as const },
+  { name: "Fleet Daily Generation Summary", type: "daily" as const, format: "pdf" as const },
+  { name: "Weekly Performance & PR Review", type: "weekly" as const, format: "excel" as const },
+  { name: "Monthly Compliance Report", type: "monthly" as const, format: "pdf" as const },
 ];
 
 async function ensureScheduledReports(orgId: string) {
-  const existing = await db.select().from(reportsTable).limit(1);
+  // Only seed if this org has no reports yet
+  const existing = await db
+    .select()
+    .from(reportsTable)
+    .where(eq(reportsTable.orgId, orgId))
+    .limit(1);
   if (existing.length > 0) return;
+
+  const orgPlants = getOrgPlants(orgId);
+  if (orgPlants.length === 0) return;
+
   await db.insert(reportsTable).values(
-    SCHEDULED_REPORT_SEED.map((r) => ({
+    SCHEDULED_REPORT_SEED.map((r, i) => ({
       id: randomUUID(),
       orgId,
       name: r.name,
       type: r.type,
       format: r.format,
-      plantIds: r.plantIds,
+      // first report covers all plants, subsequent ones scope to the first plant
+      plantIds: i === 0 ? orgPlants.map((p) => p.id) : [orgPlants[0]!.id],
       status: "scheduled",
       requestedBy: null,
       completedAt: null,
@@ -33,8 +44,20 @@ async function ensureScheduledReports(orgId: string) {
 }
 
 router.get("/reports", async (req, res) => {
-  await ensureScheduledReports(req.user!.orgId);
-  const rows = await db.select().from(reportsTable).orderBy(desc(reportsTable.createdAt));
+  const orgId = resolveOrgId(req);
+  // Only seed for concrete orgs (not super-admin "all orgs" queries)
+  if (orgId) await ensureScheduledReports(orgId);
+
+  const conditions: SQL[] = [];
+  const oc = orgCondition(reportsTable.orgId, orgId);
+  if (oc) conditions.push(oc);
+
+  const rows = await db
+    .select()
+    .from(reportsTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(reportsTable.createdAt));
+
   const data = rows.map((r) => ({
     id: r.id,
     name: r.name,
@@ -55,7 +78,7 @@ router.post("/reports/generate", async (req, res) => {
     .insert(reportsTable)
     .values({
       id: randomUUID(),
-      orgId: req.user!.orgId,
+      orgId: req.user!.orgId,   // always stamp the session org
       name: body.name,
       type: "custom",
       format: body.format,

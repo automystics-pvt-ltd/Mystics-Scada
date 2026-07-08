@@ -2,17 +2,20 @@
  * Server-Sent Events (SSE) stream for live IoT telemetry.
  * Pushes a telemetry snapshot every 3 s to every connected client.
  *
- * GET /stream/telemetry          — fleet-wide payload
+ * GET /stream/telemetry          — fleet-wide payload (org-scoped)
  * GET /stream/telemetry/:plantId — plant-specific payload (inverter level)
  *
  * Both streams respect active fault-injection overrides so that power, health,
  * availability, and per-inverter status reflect injected faults in real time —
  * not just the SLD endpoint.
+ *
+ * Org scoping is captured at connection time from `req.user` so a client
+ * cannot see another org's plants mid-stream.
  */
 
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
-  PLANTS,
+  getOrgPlants,
   plantLivePowerKw,
   plantEnergyTodayKwh,
   plantPrPct,
@@ -22,8 +25,9 @@ import {
   inverterLiveReading,
   inverterHealth,
   inverterId,
-} from "../lib/simulation";
+} from "../lib/domain";
 import { getFaultedInverterIds, isPlantDisconnected } from "../lib/faultInjection";
+import { resolveOrgId } from "../lib/orgScope";
 
 const router: IRouter = Router();
 
@@ -51,6 +55,8 @@ function sendKeepalive(res: Response) {
 /* ── Fleet-wide stream ────────────────────────────────────────────────── */
 
 router.get("/stream/telemetry", (req: Request, res: Response) => {
+  // Capture org scope at connection time — cannot be changed mid-stream
+  const orgId = resolveOrgId(req);
   sseHeaders(res);
 
   function pushFleet() {
@@ -59,7 +65,9 @@ router.get("/stream/telemetry", (req: Request, res: Response) => {
     let totalEnergyKwh = 0;
     let totalCapacityMw = 0;
 
-    const plants = PLANTS.map((plant) => {
+    const orgPlants = getOrgPlants(orgId);
+
+    const plants = orgPlants.map((plant) => {
       // Fetch fault overrides for this plant so the stream reflects injected
       // faults in power, health, availability, and offline-inverter counts.
       const overrides = {
@@ -132,7 +140,9 @@ router.get("/stream/telemetry", (req: Request, res: Response) => {
 /* ── Plant-specific stream (inverter-level) ───────────────────────────── */
 
 router.get("/stream/telemetry/:plantId", (req: Request, res: Response) => {
-  const plant = PLANTS.find((p) => p.id === req.params["plantId"]);
+  const orgId = resolveOrgId(req);
+  // Verify the plant belongs to the caller's org
+  const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {
     res.status(404).json({ error: "not_found", message: "Plant not found" });
     return;

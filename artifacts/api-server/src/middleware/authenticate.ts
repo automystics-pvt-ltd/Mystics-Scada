@@ -67,6 +67,7 @@ export async function authenticate(
       roleId: usersTable.roleId,
       name: usersTable.name,
       email: usersTable.email,
+      isSuperAdmin: usersTable.isSuperAdmin,
     })
     .from(usersTable)
     .where(eq(usersTable.id, session.userId))
@@ -85,6 +86,7 @@ export async function authenticate(
     roleId: user.roleId,
     name: user.name,
     email: user.email,
+    isSuperAdmin: user.isSuperAdmin,
   };
   next();
 }

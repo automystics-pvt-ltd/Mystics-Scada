@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq, type SQL } from "drizzle-orm";
 import { db, usersTable, rolesTable } from "@workspace/db";
 import { ListUsersResponse, InviteUserBody, InviteUserResponse, UpdateUserBody, UpdateUserResponse, ListRolesResponse } from "@workspace/api-zod";
+import { resolveOrgId, orgCondition } from "../lib/orgScope";
 
 const router: IRouter = Router();
 
@@ -16,8 +17,17 @@ async function roleIdByName(roleName: string): Promise<string | null> {
   return role?.id ?? null;
 }
 
-router.get("/users", async (_req, res) => {
-  const rows = await db.select().from(usersTable);
+router.get("/users", async (req, res) => {
+  const orgId = resolveOrgId(req);
+  const conditions: SQL[] = [];
+  const oc = orgCondition(usersTable.orgId, orgId);
+  if (oc) conditions.push(oc);
+
+  const rows = await db
+    .select()
+    .from(usersTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined);
+
   const data = await Promise.all(
     rows.map(async (u) => ({
       id: u.id,
@@ -44,7 +54,7 @@ router.post("/users", async (req, res) => {
     .insert(usersTable)
     .values({
       id: randomUUID(),
-      orgId: req.user!.orgId,
+      orgId: req.user!.orgId,   // always stamp the session org
       name: body.name,
       email: body.email,
       roleId,
@@ -70,9 +80,11 @@ router.post("/users", async (req, res) => {
 });
 
 router.patch("/users/:userId", async (req, res) => {
+  const orgId = resolveOrgId(req);
   const userId = req.params["userId"] ?? "";
   const [existing] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-  if (!existing) {
+  // Return 404 on org mismatch to avoid leaking existence
+  if (!existing || (orgId !== null && existing.orgId !== orgId)) {
     res.status(404).json({ error: "not_found", message: "User not found" });
     return;
   }
@@ -110,9 +122,19 @@ router.patch("/users/:userId", async (req, res) => {
   );
 });
 
-router.get("/roles", async (_req, res) => {
+router.get("/roles", async (req, res) => {
+  const orgId = resolveOrgId(req);
   const roles = await db.select().from(rolesTable);
-  const users = await db.select().from(usersTable);
+
+  // Count only users in the caller's org (super admin without filter sees all)
+  const conditions: SQL[] = [];
+  const oc = orgCondition(usersTable.orgId, orgId);
+  if (oc) conditions.push(oc);
+  const users = await db
+    .select()
+    .from(usersTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined);
+
   const data = roles.map((r) => ({
     id: r.id,
     name: r.name,

@@ -12,6 +12,7 @@ declare global {
         roleId: string;
         name: string;
         email: string;
+        isSuperAdmin: boolean;
       };
     }
   }

@@ -1,12 +1,14 @@
 import { Router, type IRouter } from "express";
 import { GetInverterResponse, GetInverterTrendResponse, GetInverterTrendQueryParams, ListStringReadingsResponse } from "@workspace/api-zod";
-import { getPlantByInverterId, inverterIndex, inverterSummary, inverterTrendPoints, stringReadingsFor } from "../lib/domain";
+import { getOrgPlantByInverterId, inverterIndex, inverterSummary, inverterTrendPoints, stringReadingsFor } from "../lib/domain";
+import { resolveOrgId } from "../lib/orgScope";
 
 const router: IRouter = Router();
 
 router.get("/inverters/:inverterId", (req, res) => {
   const id = req.params["inverterId"] ?? "";
-  const plant = getPlantByInverterId(id);
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlantByInverterId(orgId, id);
   const idx = inverterIndex(id);
   if (!plant || idx < 0 || idx >= plant.inverterCount) {
     res.status(404).json({ error: "not_found", message: "Inverter not found" });
@@ -18,7 +20,8 @@ router.get("/inverters/:inverterId", (req, res) => {
 
 router.get("/inverters/:inverterId/trend", (req, res) => {
   const id = req.params["inverterId"] ?? "";
-  const plant = getPlantByInverterId(id);
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlantByInverterId(orgId, id);
   const idx = inverterIndex(id);
   if (!plant || idx < 0 || idx >= plant.inverterCount) {
     res.status(404).json({ error: "not_found", message: "Inverter not found" });
@@ -31,7 +34,8 @@ router.get("/inverters/:inverterId/trend", (req, res) => {
 
 router.get("/inverters/:inverterId/strings", (req, res) => {
   const id = req.params["inverterId"] ?? "";
-  const plant = getPlantByInverterId(id);
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlantByInverterId(orgId, id);
   const idx = inverterIndex(id);
   if (!plant || idx < 0 || idx >= plant.inverterCount) {
     res.status(404).json({ error: "not_found", message: "Inverter not found" });

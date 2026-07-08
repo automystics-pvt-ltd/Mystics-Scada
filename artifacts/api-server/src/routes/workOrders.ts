@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, type SQL } from "drizzle-orm";
 import { db, workOrdersTable } from "@workspace/db";
 import {
   ListWorkOrdersQueryParams,
@@ -11,7 +11,8 @@ import {
   UpdateWorkOrderBody,
   UpdateWorkOrderResponse,
 } from "@workspace/api-zod";
-import { PLANTS } from "../lib/domain";
+import { getOrgPlants } from "../lib/domain";
+import { resolveOrgId, orgCondition } from "../lib/orgScope";
 
 const router: IRouter = Router();
 
@@ -35,8 +36,12 @@ function toWorkOrderResponse(row: typeof workOrdersTable.$inferSelect) {
 }
 
 router.get("/work-orders", async (req, res) => {
+  const orgId = resolveOrgId(req);
   const query = ListWorkOrdersQueryParams.parse(req.query);
-  const conditions = [];
+
+  const conditions: SQL[] = [];
+  const oc = orgCondition(workOrdersTable.orgId, orgId);
+  if (oc) conditions.push(oc);
   if (query.plantId) conditions.push(eq(workOrdersTable.plantId, query.plantId));
   if (query.status) conditions.push(eq(workOrdersTable.status, query.status));
 
@@ -50,8 +55,11 @@ router.get("/work-orders", async (req, res) => {
 });
 
 router.post("/work-orders", async (req, res) => {
+  const orgId = resolveOrgId(req);
   const body = CreateWorkOrderBody.parse(req.body);
-  const plant = PLANTS.find((p) => p.id === body.plantId);
+
+  // Verify the plant exists and belongs to the caller's org
+  const plant = getOrgPlants(orgId).find((p) => p.id === body.plantId);
   if (!plant) {
     res.status(404).json({ error: "not_found", message: "Plant not found" });
     return;
@@ -62,7 +70,7 @@ router.post("/work-orders", async (req, res) => {
     .insert(workOrdersTable)
     .values({
       id: randomUUID(),
-      orgId: req.user!.orgId,
+      orgId: req.user!.orgId,   // always stamp the actual session org (no override)
       plantId: plant.id,
       plantName: plant.name,
       equipment: body.equipment,
@@ -85,8 +93,10 @@ router.post("/work-orders", async (req, res) => {
 });
 
 router.get("/work-orders/:workOrderId", async (req, res) => {
+  const orgId = resolveOrgId(req);
   const [row] = await db.select().from(workOrdersTable).where(eq(workOrdersTable.id, req.params["workOrderId"] ?? ""));
-  if (!row) {
+  // Return 404 on org mismatch to avoid leaking existence
+  if (!row || (orgId !== null && row.orgId !== orgId)) {
     res.status(404).json({ error: "not_found", message: "Work order not found" });
     return;
   }
@@ -94,9 +104,11 @@ router.get("/work-orders/:workOrderId", async (req, res) => {
 });
 
 router.patch("/work-orders/:workOrderId", async (req, res) => {
+  const orgId = resolveOrgId(req);
   const workOrderId = req.params["workOrderId"] ?? "";
   const [existing] = await db.select().from(workOrdersTable).where(eq(workOrdersTable.id, workOrderId));
-  if (!existing) {
+  // Return 404 on org mismatch to avoid leaking existence
+  if (!existing || (orgId !== null && existing.orgId !== orgId)) {
     res.status(404).json({ error: "not_found", message: "Work order not found" });
     return;
   }

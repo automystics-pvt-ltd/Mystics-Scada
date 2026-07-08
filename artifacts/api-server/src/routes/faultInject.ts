@@ -5,7 +5,8 @@ import {
   clearAllFaults,
   getActiveFaults,
 } from "../lib/faultInjection";
-import { PLANTS } from "../lib/domain";
+import { getOrgPlants } from "../lib/domain";
+import { resolveOrgId } from "../lib/orgScope";
 
 const router: IRouter = Router();
 
@@ -33,7 +34,8 @@ function parseInjectBody(body: unknown):
 
 // GET /api/plants/:plantId/fault-inject — list active injected faults
 router.get("/plants/:plantId/fault-inject", (req, res) => {
-  const plant = PLANTS.find((p) => p.id === req.params["plantId"]);
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {
     res.status(404).json({ error: "not_found", message: "Plant not found" });
     return;
@@ -54,7 +56,8 @@ router.get("/plants/:plantId/fault-inject", (req, res) => {
 
 // POST /api/plants/:plantId/fault-inject — inject a new fault
 router.post("/plants/:plantId/fault-inject", (req, res) => {
-  const plant = PLANTS.find((p) => p.id === req.params["plantId"]);
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {
     res.status(404).json({ error: "not_found", message: "Plant not found" });
     return;
@@ -95,7 +98,8 @@ router.post("/plants/:plantId/fault-inject", (req, res) => {
 
 // DELETE /api/plants/:plantId/fault-inject — clear all active faults for plant
 router.delete("/plants/:plantId/fault-inject", (req, res) => {
-  const plant = PLANTS.find((p) => p.id === req.params["plantId"]);
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {
     res.status(404).json({ error: "not_found", message: "Plant not found" });
     return;
@@ -108,7 +112,8 @@ router.delete("/plants/:plantId/fault-inject", (req, res) => {
 // The full fault key is "<plantId>:<suffix>" — the route carries only the
 // suffix (either "plant" or an inverter ID like "plant-thar-inv-3").
 router.delete("/plants/:plantId/fault-inject/by/:suffix", (req, res) => {
-  const plant = PLANTS.find((p) => p.id === req.params["plantId"]);
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {
     res.status(404).json({ error: "not_found", message: "Plant not found" });
     return;

@@ -3,6 +3,8 @@
 
 import {
   PLANTS,
+  PLANT_ORG_MAP,
+  getOrgPlants,
   type PlantConfig,
   type SldOverrides,
   inverterId,
@@ -268,4 +270,35 @@ export function sldFor(plant: PlantConfig, now: Date) {
   };
 }
 
-export { PLANTS, getPlantByInverterId, inverterIndex, inverterId };
+/**
+ * Returns the plant that owns the given inverter ID, but only if that plant
+ * belongs to the specified org. Returns undefined if the plant exists but
+ * belongs to a different org (prevents cross-tenant inverter lookups).
+ */
+export function getOrgPlantByInverterId(
+  orgId: string | null,
+  invId: string,
+): PlantConfig | undefined {
+  const plant = getPlantByInverterId(invId);
+  if (!plant) return undefined;
+  if (orgId !== null && PLANT_ORG_MAP[plant.id] !== orgId) return undefined;
+  return plant;
+}
+
+export {
+  PLANTS,
+  PLANT_ORG_MAP,
+  getOrgPlants,
+  getPlantByInverterId,
+  inverterIndex,
+  inverterId,
+  // Raw simulation primitives re-exported for stream.ts (which needs per-inverter access)
+  plantLivePowerKw,
+  plantEnergyTodayKwh,
+  plantPrPct,
+  plantHealth,
+  plantIrradiance,
+  plantAvailabilityPct,
+  inverterHealth,
+  inverterLiveReading,
+};

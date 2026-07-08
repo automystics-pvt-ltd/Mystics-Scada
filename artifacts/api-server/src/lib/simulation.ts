@@ -23,6 +23,27 @@ export interface PlantConfig {
   cloudinessSeed: number; // 0-1, baseline cloudiness for the region
 }
 
+/**
+ * Maps each plant ID to the organisation that owns it.
+ * In this demo all plants belong to org-1 (Automystics Demo).
+ * When new orgs get plants, add entries here.
+ */
+export const PLANT_ORG_MAP: Record<string, string> = {
+  "plant-thar":       "org-1",
+  "plant-sundarbans": "org-1",
+  "plant-deccan":     "org-1",
+  "plant-coastal":    "org-1",
+};
+
+/**
+ * Returns the plants visible to a given org.
+ * Pass `null` to get all plants (super-admin / internal use).
+ */
+export function getOrgPlants(orgId: string | null): PlantConfig[] {
+  if (orgId === null) return PLANTS;
+  return PLANTS.filter((p) => PLANT_ORG_MAP[p.id] === orgId);
+}
+
 export const PLANTS: PlantConfig[] = [
   {
     id: "plant-thar",
