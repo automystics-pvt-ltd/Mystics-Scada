@@ -1,39 +1,61 @@
-import { 
+import {
   useGetPlant,
-  getGetPlantQueryKey
+  useGetPlantYield,
+  useListInverters,
+  getGetPlantQueryKey,
+  getGetPlantYieldQueryKey,
+  getListInvertersQueryKey,
 } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout";
-import { KpiCard, HealthBadge, LiveValue } from "@/components/ui/scada";
+import { KpiCard, HealthBadge, LiveValue, GenerationRing } from "@/components/ui/scada";
 import { Link, useParams } from "wouter";
-import { 
-  ArrowLeft, 
-  Sun, 
-  Thermometer, 
-  Activity, 
-  Zap,
-  Network,
-  Cpu,
-  BarChart4,
-  CloudLightning
+import {
+  Sun, Thermometer, Activity, Zap, Network, Cpu, BarChart4, CloudLightning,
+  Wind, Droplets, ArrowLeft, TrendingUp,
 } from "lucide-react";
+import {
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, ReferenceLine,
+} from "recharts";
+
+const SUB_NAV = (plantId: string) => [
+  { name: "Overview",          href: `/plants/${plantId}`,           icon: null },
+  { name: "Single Line Diagram", href: `/plants/${plantId}/sld`,     icon: Network },
+  { name: "Inverters",         href: `/plants/${plantId}/inverters`, icon: Cpu },
+  { name: "Weather",           href: `/plants/${plantId}/weather`,   icon: CloudLightning },
+  { name: "Analytics",         href: `/plants/${plantId}/analytics`, icon: BarChart4 },
+];
+
+// InverterStatus → dot color
+const STATUS_DOT: Record<string, string> = {
+  running:   "bg-status-normal",
+  standby:   "bg-status-warning",
+  fault:     "bg-status-fault",
+  comm_lost: "bg-status-offline",
+};
 
 export default function PlantDashboard() {
   const { plantId } = useParams();
-  
-  const { data: plant, isLoading, isError } = useGetPlant(plantId || "", {
-    query: { 
-      enabled: !!plantId,
-      refetchInterval: 10000, 
-      queryKey: getGetPlantQueryKey(plantId || "") 
-    }
+  const pid = plantId || "";
+
+  const { data: plant, isLoading, isError } = useGetPlant(pid, {
+    query: { enabled: !!pid, refetchInterval: 10000, queryKey: getGetPlantQueryKey(pid) }
+  });
+
+  const { data: yieldData } = useGetPlantYield(pid, { period: "daily" }, {
+    query: { enabled: !!pid, queryKey: getGetPlantYieldQueryKey(pid, { period: "daily" }) }
+  });
+
+  const { data: inverters } = useListInverters(pid, {
+    query: { enabled: !!pid, refetchInterval: 15000, queryKey: getListInvertersQueryKey(pid) }
   });
 
   if (isError) {
     return (
       <AppLayout>
         <div className="flex flex-col items-center justify-center h-[60vh]">
-          <div className="text-status-fault mb-4"><Zap className="w-12 h-12" /></div>
-          <h2 className="text-xl font-bold">Failed to load plant data</h2>
+          <Zap className="w-12 h-12 text-status-fault mb-4" />
+          <h2 className="text-xl font-bold">Failed to load plant</h2>
           <p className="text-muted-foreground mt-2">Could not retrieve telemetry for this plant.</p>
           <Link href="/" className="mt-6 text-primary hover:underline flex items-center">
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to Portfolio
@@ -43,52 +65,52 @@ export default function PlantDashboard() {
     );
   }
 
-  const subNav = [
-    { name: "Overview", href: `/plants/${plantId}`, current: true },
-    { name: "Single Line Diagram", href: `/plants/${plantId}/sld`, current: false, icon: Network },
-    { name: "Inverters", href: `/plants/${plantId}/inverters`, current: false, icon: Cpu },
-    { name: "Weather", href: `/plants/${plantId}/weather`, current: false, icon: CloudLightning },
-    { name: "Analytics", href: `/plants/${plantId}/analytics`, current: false, icon: BarChart4 },
-  ];
+  /* Derived data ─────────────────────────────── */
+  const todayKwh  = plant?.todayEnergyKwh ?? 0;
+  const capacityKw = plant?.capacityKw ?? 1;
+  // Simple daily target: capacity × irradiance hours estimate (5 h/day avg)
+  const dailyTargetKwh = capacityKw * 5;
+  const genProgressPct = Math.min(100, (todayKwh / dailyTargetKwh) * 100);
+
+  const chartPoints = yieldData?.points ?? [];
+
+  const now = new Date();
+  const currentHourLabel = `${now.getHours()}:00`;
 
   return (
     <AppLayout>
       <div className="flex flex-col space-y-6">
-        {/* Header & Subnav */}
+
+        {/* Breadcrumb + title */}
         <div>
-          <div className="flex items-center mb-2 text-sm text-muted-foreground">
+          <div className="flex items-center mb-1 text-sm text-muted-foreground gap-2">
             <Link href="/" className="hover:text-foreground transition-colors">Portfolio</Link>
-            <span className="mx-2">/</span>
-            <span className="text-foreground">{plant?.name || "Loading..."}</span>
+            <span>/</span>
+            <span className="text-foreground">{plant?.name ?? "Loading…"}</span>
           </div>
-          
-          <div className="flex justify-between items-start">
-            <div>
-              <div className="flex items-center space-x-3">
-                <h1 className="text-3xl font-bold tracking-tight">{plant?.name || "Plant Dashboard"}</h1>
-                {plant && <HealthBadge status={plant.healthStatus} className="mt-1" />}
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                {plant?.region} • {plant?.capacityKw ? (plant.capacityKw / 1000).toFixed(2) : "--"} MWp Capacity
-              </p>
-            </div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">{plant?.name ?? "Plant Dashboard"}</h1>
+            {plant && <HealthBadge status={plant.healthStatus} className="mt-0.5" />}
           </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            {plant?.region} · {plant?.capacityKw ? (plant.capacityKw / 1000).toFixed(2) : "--"} MWp installed
+          </p>
         </div>
 
-        {/* Tab Navigation */}
+        {/* Sub-nav tabs */}
         <div className="border-b border-border">
-          <nav className="-mb-px flex space-x-6">
-            {subNav.map((item) => (
+          <nav className="-mb-px flex gap-6">
+            {SUB_NAV(pid).map(item => (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm flex items-center ${
-                  item.current
+                className={`whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm flex items-center transition-colors ${
+                  item.href === `/plants/${pid}`
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                 }`}
               >
-                {item.icon && <item.icon className="w-4 h-4 mr-2" />}
+                {item.icon && <item.icon className="w-4 h-4 mr-1.5" />}
                 {item.name}
               </Link>
             ))}
@@ -96,88 +118,166 @@ export default function PlantDashboard() {
         </div>
 
         {/* Live KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard
-            title="Current Power"
-            value={plant?.currentPowerKw}
-            unit="kW"
-            precision={0}
-            icon={Zap}
-            loading={isLoading}
-            className="border-primary/20 bg-primary/5"
-          />
-          <KpiCard
-            title="Today's Energy"
-            value={plant?.todayEnergyKwh}
-            unit="kWh"
-            precision={0}
-            icon={Activity}
-            loading={isLoading}
-          />
-          <KpiCard
-            title="Performance Ratio (PR)"
-            value={plant?.pr}
-            unit="%"
-            precision={1}
-            icon={BarChart4}
-            loading={isLoading}
-          />
-          <KpiCard
-            title="Availability"
-            value={plant?.availabilityPct}
-            unit="%"
-            precision={1}
-            icon={Activity}
-            loading={isLoading}
-          />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard title="Live Power"      value={plant?.currentPowerKw} unit="kW"  precision={0} icon={Zap}      loading={isLoading} className="border-primary/20 bg-primary/5" />
+          <KpiCard title="Today's Energy"  value={plant?.todayEnergyKwh} unit="kWh" precision={0} icon={Activity}  loading={isLoading} />
+          <KpiCard title="Performance Ratio" value={plant?.pr}           unit="%"   precision={1} icon={BarChart4} loading={isLoading} trend={{ value: +(((plant?.pr ?? 0) - 80)).toFixed(1), label: "vs 80% target", positive: (plant?.pr ?? 0) >= 80 }} />
+          <KpiCard title="Availability"    value={plant?.availabilityPct} unit="%"  precision={1} icon={TrendingUp} loading={isLoading} />
         </div>
 
-        {/* Environment & Inverter Status */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-card border border-card-border rounded-lg p-5">
-            <h3 className="text-base font-semibold mb-4 flex items-center"><Sun className="w-4 h-4 mr-2" /> Environment Telemetry</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <span className="text-sm text-muted-foreground">Irradiance (POA)</span>
-                <LiveValue value={plant?.irradiancePoaWm2} unit="W/m²" precision={0} valueClassName="text-xl" />
+        {/* Generation progress + Power chart */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Generation ring */}
+          <div className="bg-card border border-card-border rounded-xl p-6 flex flex-col items-center justify-center gap-3">
+            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Today's Progress</p>
+            <GenerationRing
+              pct={genProgressPct}
+              label={`${todayKwh >= 1000 ? (todayKwh / 1000).toFixed(1) + " MWh" : todayKwh.toFixed(0) + " kWh"}`}
+              sublabel={`est. ${(dailyTargetKwh / 1000).toFixed(1)} MWh target`}
+              size={130}
+              strokeWidth={10}
+              color={genProgressPct >= 60 ? "hsl(142 71% 45%)" : genProgressPct >= 30 ? "hsl(38 92% 50%)" : "hsl(220 9% 46%)"}
+            />
+            <div className="w-full border-t border-border pt-3 grid grid-cols-2 gap-2 text-center text-xs">
+              <div>
+                <div className="text-muted-foreground">Specific Yield</div>
+                <div className="font-mono font-semibold mt-0.5">
+                  {yieldData ? yieldData.specificYieldKwhPerKwp.toFixed(2) : "--"} kWh/kWp
+                </div>
               </div>
-              <div className="space-y-1">
-                <span className="text-sm text-muted-foreground">Irradiance (GHI)</span>
-                <LiveValue value={plant?.irradianceGhiWm2} unit="W/m²" precision={0} valueClassName="text-xl" />
-              </div>
-              <div className="space-y-1">
-                <span className="text-sm text-muted-foreground">Module Temp</span>
-                <LiveValue value={plant?.moduleTempC} unit="°C" precision={1} valueClassName="text-xl text-status-warning" />
-              </div>
-              <div className="space-y-1">
-                <span className="text-sm text-muted-foreground">Ambient Temp</span>
-                <LiveValue value={plant?.ambientTempC} unit="°C" precision={1} valueClassName="text-xl" />
+              <div>
+                <div className="text-muted-foreground">Deviation</div>
+                <div className={`font-mono font-semibold mt-0.5 ${genProgressPct >= 90 ? "text-status-normal" : genProgressPct >= 60 ? "text-status-warning" : "text-muted-foreground"}`}>
+                  {genProgressPct > 0 ? `${(genProgressPct - 100).toFixed(1)}%` : "--"}
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-card border border-card-border rounded-lg p-5 flex flex-col">
-            <h3 className="text-base font-semibold mb-4 flex items-center"><Cpu className="w-4 h-4 mr-2" /> Equipment Status</h3>
-            <div className="flex-1 flex items-center justify-center py-4">
-              <div className="grid grid-cols-3 w-full gap-4 text-center">
-                <div className="flex flex-col items-center">
-                  <span className="text-3xl font-mono text-status-normal mb-1">{isLoading ? "-" : plant?.inverterCount || 0}</span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider">Total<br/>Inverters</span>
-                </div>
-                <div className="flex flex-col items-center border-x border-border">
-                  <span className="text-3xl font-mono text-status-fault mb-1">{isLoading ? "-" : plant?.offlineInverterCount || 0}</span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider">Offline/<br/>Fault</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <span className="text-3xl font-mono text-status-warning mb-1">{isLoading ? "-" : plant?.alertCounts.major || 0}</span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider">Major<br/>Alerts</span>
-                </div>
-              </div>
+          {/* Hourly power chart */}
+          <div className="lg:col-span-2 bg-card border border-card-border rounded-xl p-5 flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold">Hourly Generation — Today</h3>
+              <span className="text-xs text-muted-foreground font-mono">kWh per hour</span>
             </div>
-            <div className="mt-auto pt-4 border-t border-border">
-              <Link href={`/plants/${plantId}/inverters`} className="text-sm text-primary hover:underline w-full text-center block">
-                View All Inverters →
-              </Link>
+            <div className="flex-1 min-h-[180px]">
+              {chartPoints.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                  No data for today yet
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartPoints} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="actualGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="hsl(142 71% 45%)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(142 71% 45%)" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="expectedGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="hsl(221 83% 53%)" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="hsl(221 83% 53%)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                    <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--card-border))", borderRadius: 6, fontSize: 12 }}
+                      labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
+                    />
+                    <ReferenceLine x={currentHourLabel} stroke="hsl(var(--primary))" strokeDasharray="4 2" opacity={0.5} label={{ value: "Now", position: "top", fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
+                    <Area type="monotone" dataKey="expectedKwh" stroke="hsl(221 83% 53%)" strokeWidth={1} fill="url(#expectedGrad)" strokeDasharray="4 2" dot={false} name="Expected" />
+                    <Area type="monotone" dataKey="actualKwh"   stroke="hsl(142 71% 45%)" strokeWidth={2} fill="url(#actualGrad)"   dot={false} name="Actual" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+            <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5"><span className="inline-block w-6 h-0.5 bg-[hsl(142,71%,45%)]" /> Actual</span>
+              <span className="flex items-center gap-1.5"><span className="inline-block w-6 border-t border-dashed border-[hsl(221,83%,53%)]" /> Expected</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Environment + Inverter matrix */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          {/* Environment */}
+          <div className="bg-card border border-card-border rounded-xl p-5">
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Sun className="w-4 h-4 text-status-warning" /> Site Conditions</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: "Irradiance POA", value: plant?.irradiancePoaWm2, unit: "W/m²", icon: Sun, warn: false },
+                { label: "Irradiance GHI", value: plant?.irradianceGhiWm2, unit: "W/m²", icon: Sun, warn: false },
+                { label: "Module Temp",    value: plant?.moduleTempC,       unit: "°C",   icon: Thermometer, warn: (plant?.moduleTempC ?? 0) > 55 },
+                { label: "Ambient Temp",   value: plant?.ambientTempC,      unit: "°C",   icon: Wind,        warn: false },
+              ].map(({ label, value, unit, icon: Icon, warn }) => (
+                <div key={label} className="space-y-1 bg-muted/30 rounded-lg p-3 border border-border/50">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Icon className={`w-3.5 h-3.5 ${warn ? "text-status-warning" : ""}`} />
+                    {label}
+                  </div>
+                  <LiveValue
+                    value={value}
+                    unit={unit}
+                    precision={1}
+                    valueClassName={`text-xl ${warn ? "text-status-warning" : ""}`}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Inverter health matrix */}
+          <div className="bg-card border border-card-border rounded-xl p-5 flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Cpu className="w-4 h-4" /> Inverter Health</h3>
+              <Link href={`/plants/${pid}/inverters`} className="text-xs text-primary hover:underline">View all →</Link>
+            </div>
+
+            {/* Summary row */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {[
+                { label: "Online",  value: (plant?.inverterCount ?? 0) - (plant?.offlineInverterCount ?? 0), cls: "text-status-normal" },
+                { label: "Offline", value: plant?.offlineInverterCount ?? 0,                                  cls: "text-status-fault" },
+                { label: "Alerts",  value: plant?.alertCounts.major ?? 0,                                     cls: "text-status-warning" },
+              ].map(({ label, value, cls }) => (
+                <div key={label} className="bg-muted/30 rounded-lg p-2.5 text-center border border-border/50">
+                  <div className={`text-2xl font-bold font-mono ${cls}`}>{isLoading ? "--" : value}</div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Dot matrix */}
+            <div className="flex-1 overflow-hidden">
+              {inverters && inverters.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {inverters.map(inv => (
+                    <Link key={inv.id} href={`/plants/${pid}/inverters/${inv.id}`}>
+                      <div
+                        title={`${inv.name}: ${inv.status} · ${inv.acPowerKw?.toFixed(0) ?? 0} kW`}
+                        className={`w-6 h-6 rounded-sm border border-white/10 cursor-pointer hover:scale-125 transition-transform ${STATUS_DOT[inv.status] ?? "bg-muted"}`}
+                      />
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-16 text-muted-foreground text-sm">
+                  {isLoading ? "Loading inverters…" : "No inverter data"}
+                </div>
+              )}
+              {inverters && inverters.length > 0 && (
+                <div className="flex gap-4 mt-3 text-[10px] text-muted-foreground flex-wrap">
+                  {(["running","standby","fault","comm_lost"] as const).map(s => (
+                    <span key={s} className="flex items-center gap-1">
+                      <span className={`inline-block w-3 h-3 rounded-sm ${STATUS_DOT[s]}`} />
+                      {s === "comm_lost" ? "Comm Lost" : s.charAt(0).toUpperCase() + s.slice(1)}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
