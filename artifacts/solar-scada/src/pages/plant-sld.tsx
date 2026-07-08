@@ -524,7 +524,7 @@ export default function PlantSld() {
 
   // Load inverter count for fault simulator target list
   const { data: inverterList } = useListInverters(plantId || "", {
-    query: { enabled: !!plantId },
+    query: { queryKey: ["inverters", plantId], enabled: !!plantId },
   });
 
   const [fullscreen, setFullscreen] = useState(false);

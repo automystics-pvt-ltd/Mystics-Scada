@@ -22,6 +22,7 @@ import AlertCenter from '@/pages/alerts';
 import MaintenanceBoard from '@/pages/maintenance';
 import ReportsView from '@/pages/reports';
 import AdminUsers from '@/pages/admin-users';
+import AdminRoles from '@/pages/admin-roles';
 import Settings from '@/pages/settings';
 import NotFound from '@/pages/not-found';
 
@@ -45,6 +46,7 @@ function ProtectedRoutes() {
           <Route path="/maintenance" component={MaintenanceBoard} />
           <Route path="/reports" component={ReportsView} />
           <Route path="/admin/users" component={AdminUsers} />
+          <Route path="/admin/roles" component={AdminRoles} />
           <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
         </Switch>

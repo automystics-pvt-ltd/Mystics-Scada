@@ -12,6 +12,7 @@ import {
 import { eq, isNull } from "drizzle-orm";
 import { logger } from "./logger";
 import { PLANTS } from "./simulation";
+import { DEFAULT_ROLE_PERMISSIONS } from "@workspace/permissions";
 
 // ── Demo organizations ───────────────────────────────────────────────────────
 
@@ -42,35 +43,28 @@ const ROLE_SEED = [
     orgId: "org-1",
     name: "Administrator",
     description: "Full access to all plants, settings, and user management.",
-    permissions: [
-      "manage_users",
-      "manage_roles",
-      "acknowledge_alerts",
-      "manage_work_orders",
-      "generate_reports",
-      "supervisory_control",
-    ],
+    permissions: DEFAULT_ROLE_PERMISSIONS["role-admin"]!,
   },
   {
     id: "role-operator",
     orgId: "org-1",
     name: "Control Room Operator",
     description: "Monitors live telemetry, acknowledges alerts, and raises work orders.",
-    permissions: ["acknowledge_alerts", "manage_work_orders", "generate_reports"],
+    permissions: DEFAULT_ROLE_PERMISSIONS["role-operator"]!,
   },
   {
     id: "role-technician",
     orgId: "org-1",
     name: "O&M Technician",
     description: "Executes and closes out maintenance work orders in the field.",
-    permissions: ["manage_work_orders"],
+    permissions: DEFAULT_ROLE_PERMISSIONS["role-technician"]!,
   },
   {
     id: "role-viewer",
     orgId: "org-1",
     name: "Viewer",
     description: "Read-only access to dashboards and reports.",
-    permissions: ["generate_reports"],
+    permissions: DEFAULT_ROLE_PERMISSIONS["role-viewer"]!,
   },
 ];
 
@@ -297,6 +291,30 @@ export async function ensureSeedData(): Promise<void> {
       USER_SEED.map((u) => ({ ...u, lastLoginAt: pastDate(Math.random() * 1000) })),
     );
     logger.info("Seeded roles and users");
+  } else {
+    // ── Permissions migration ─────────────────────────────────────────────
+    // Migrate each built-in role individually: if any of its permissions still
+    // use the old underscore format, replace the full set with the canonical
+    // dot-notation defaults.  Checking per-role avoids skipping roles that
+    // were already partially migrated.
+    let migrated = 0;
+    for (const [roleId, perms] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
+      const [role] = await db
+        .select({ permissions: rolesTable.permissions })
+        .from(rolesTable)
+        .where(eq(rolesTable.id, roleId))
+        .limit(1);
+      if (role && role.permissions.some((p) => p.includes("_"))) {
+        await db
+          .update(rolesTable)
+          .set({ permissions: [...perms] })
+          .where(eq(rolesTable.id, roleId));
+        migrated++;
+      }
+    }
+    if (migrated > 0) {
+      logger.info({ count: migrated }, "Migrated role permissions to dot-notation format");
+    }
   }
 
   const existingAlerts = await db.select().from(alertsTable).limit(1);

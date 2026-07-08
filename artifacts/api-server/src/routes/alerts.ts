@@ -4,6 +4,7 @@ import { and, desc, eq, type SQL } from "drizzle-orm";
 import { db, alertsTable, alertHistoryTable } from "@workspace/db";
 import { ListAlertsQueryParams, ListAlertsResponse, GetAlertResponse, UpdateAlertBody, UpdateAlertResponse, ListAlertHistoryResponse } from "@workspace/api-zod";
 import { resolveOrgId, orgCondition } from "../lib/orgScope";
+import { requirePermission } from "../middleware/requirePermission";
 
 const router: IRouter = Router();
 
@@ -30,7 +31,7 @@ router.get("/alerts", async (req, res) => {
 
 router.get("/alerts/:alertId", async (req, res) => {
   const orgId = resolveOrgId(req);
-  const [row] = await db.select().from(alertsTable).where(eq(alertsTable.id, req.params["alertId"] ?? ""));
+  const [row] = await db.select().from(alertsTable).where(eq(alertsTable.id, (req.params["alertId"] as string) ?? ""));
   // Return 404 (not 403) on org mismatch to avoid leaking existence
   if (!row || (orgId !== null && row.orgId !== orgId)) {
     res.status(404).json({ error: "not_found", message: "Alert not found" });
@@ -39,9 +40,9 @@ router.get("/alerts/:alertId", async (req, res) => {
   res.json(GetAlertResponse.parse(row));
 });
 
-router.patch("/alerts/:alertId", async (req, res) => {
+router.patch("/alerts/:alertId", requirePermission("alarm.acknowledge"), async (req, res) => {
   const orgId = resolveOrgId(req);
-  const alertId = req.params["alertId"] ?? "";
+  const alertId = String(req.params["alertId"] ?? "");
   const [existing] = await db.select().from(alertsTable).where(eq(alertsTable.id, alertId));
   // Return 404 on org mismatch to avoid leaking existence
   if (!existing || (orgId !== null && existing.orgId !== orgId)) {
@@ -116,7 +117,7 @@ router.patch("/alerts/:alertId", async (req, res) => {
 
 router.get("/alerts/:alertId/history", async (req, res) => {
   const orgId = resolveOrgId(req);
-  const alertId = req.params["alertId"] ?? "";
+  const alertId = (req.params["alertId"] as string) ?? "";
   const [alert] = await db.select().from(alertsTable).where(eq(alertsTable.id, alertId));
   if (!alert || (orgId !== null && alert.orgId !== orgId)) {
     res.status(404).json({ error: "not_found", message: "Alert not found" });

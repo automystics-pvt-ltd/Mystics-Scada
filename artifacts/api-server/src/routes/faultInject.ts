@@ -7,6 +7,7 @@ import {
 } from "../lib/faultInjection";
 import { getOrgPlants } from "../lib/domain";
 import { resolveOrgId } from "../lib/orgScope";
+import { requirePermission } from "../middleware/requirePermission";
 
 const router: IRouter = Router();
 
@@ -55,7 +56,7 @@ router.get("/plants/:plantId/fault-inject", (req, res) => {
 });
 
 // POST /api/plants/:plantId/fault-inject — inject a new fault
-router.post("/plants/:plantId/fault-inject", (req, res) => {
+router.post("/plants/:plantId/fault-inject", requirePermission("plant.manage"), (req, res) => {
   const orgId = resolveOrgId(req);
   const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {
@@ -97,7 +98,7 @@ router.post("/plants/:plantId/fault-inject", (req, res) => {
 });
 
 // DELETE /api/plants/:plantId/fault-inject — clear all active faults for plant
-router.delete("/plants/:plantId/fault-inject", (req, res) => {
+router.delete("/plants/:plantId/fault-inject", requirePermission("plant.manage"), (req, res) => {
   const orgId = resolveOrgId(req);
   const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {
@@ -111,7 +112,7 @@ router.delete("/plants/:plantId/fault-inject", (req, res) => {
 // DELETE /api/plants/:plantId/fault-inject/by/:suffix — clear a specific fault
 // The full fault key is "<plantId>:<suffix>" — the route carries only the
 // suffix (either "plant" or an inverter ID like "plant-thar-inv-3").
-router.delete("/plants/:plantId/fault-inject/by/:suffix", (req, res) => {
+router.delete("/plants/:plantId/fault-inject/by/:suffix", requirePermission("plant.manage"), (req, res) => {
   const orgId = resolveOrgId(req);
   const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
   if (!plant) {

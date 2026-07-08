@@ -75,6 +75,7 @@
     "zod": "catalog:"
   },
   "dependencies": {
-    "@xyflow/react": "^12.11.2"
+    "@xyflow/react": "^12.11.2",
+    "@workspace/permissions": "workspace:*"
   }
 }

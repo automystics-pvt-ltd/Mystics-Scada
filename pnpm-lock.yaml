@@ -176,6 +176,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
+      '@workspace/permissions':
+        specifier: workspace:*
+        version: link:../../lib/permissions
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -197,6 +200,9 @@ importers:
       pino-http:
         specifier: ^10.5.0
         version: 10.5.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
     devDependencies:
       '@types/bcryptjs':
         specifier: ^3.0.0
@@ -411,6 +417,9 @@ importers:
 
   artifacts/solar-scada:
     dependencies:
+      '@workspace/permissions':
+        specifier: workspace:*
+        version: link:../../lib/permissions
       '@xyflow/react':
         specifier: ^12.11.2
         version: 12.11.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -647,6 +656,8 @@ importers:
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.10
+
+  lib/permissions: {}
 
   scripts:
     devDependencies:

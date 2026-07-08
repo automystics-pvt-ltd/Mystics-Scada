@@ -6,6 +6,7 @@ import {
   FileText,
   Settings,
   Users,
+  Shield,
   Zap,
   Radio,
   WifiOff,
@@ -52,8 +53,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   ];
 
   const adminNav = [
-    { name: "Users & Roles", href: "/admin/users", icon: Users    },
-    { name: "Settings",      href: "/settings",    icon: Settings },
+    { name: "Users",    href: "/admin/users",  icon: Users   },
+    { name: "Roles",    href: "/admin/roles",  icon: Shield  },
+    { name: "Settings", href: "/settings",     icon: Settings },
   ];
 
   function getInitials(name: string) {

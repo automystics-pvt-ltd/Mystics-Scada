@@ -5,6 +5,7 @@ import { db, reportsTable } from "@workspace/db";
 import { ListReportsResponse, GenerateReportBody, GenerateReportResponse } from "@workspace/api-zod";
 import { getOrgPlants } from "../lib/domain";
 import { resolveOrgId, orgCondition } from "../lib/orgScope";
+import { requirePermission } from "../middleware/requirePermission";
 
 const router: IRouter = Router();
 
@@ -71,7 +72,7 @@ router.get("/reports", async (req, res) => {
   res.json(ListReportsResponse.parse(data));
 });
 
-router.post("/reports/generate", async (req, res) => {
+router.post("/reports/generate", requirePermission("reports.export"), async (req, res) => {
   const body = GenerateReportBody.parse(req.body);
   const now = new Date();
   const [created] = await db
