@@ -218,3 +218,12 @@
 .animate-ping-once {
   animation: ping-once 0.6s ease-out;
 }
+
+/* Utility: hide scrollbar while keeping scroll behaviour */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

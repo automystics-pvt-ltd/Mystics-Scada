@@ -48,8 +48,8 @@ export default function InverterList() {
           </div>
         </div>
 
-        <div className="bg-card border border-card-border rounded-lg overflow-hidden">
-          <table className="w-full text-sm text-left">
+        <div className="bg-card border border-card-border rounded-lg overflow-x-auto">
+          <table className="w-full text-sm text-left min-w-[640px]">
             <thead className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wider border-b border-card-border">
               <tr>
                 <th className="px-4 py-3 font-medium">Inverter ID</th>

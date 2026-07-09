@@ -227,7 +227,7 @@ export default function AlertCenter() {
       <div className="flex flex-col h-full space-y-4">
 
         {/* Header */}
-        <div className="flex justify-between items-end">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
               <AlertTriangle className="w-6 h-6 text-status-fault" />
@@ -236,7 +236,7 @@ export default function AlertCenter() {
             <p className="text-sm text-muted-foreground mt-1">Fleet-wide event monitoring · live updates every 10 s</p>
           </div>
           {/* Filters */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <div className="flex items-center gap-2 bg-card border border-border rounded-md px-3 py-1.5 text-sm">
               <Filter className="w-3.5 h-3.5 text-muted-foreground" />
               <select className="bg-transparent border-none outline-none text-foreground text-sm" value={filterStatus ?? ""} onChange={e => setFilterStatus(e.target.value ? e.target.value as AlertStatus : undefined)}>
@@ -268,11 +268,13 @@ export default function AlertCenter() {
           <StatCard label="Resolved"        value={stats.resolved} icon={CheckCircle2}   accent="success" loading={isLoading} />
         </div>
 
-        {/* Split: list + detail */}
-        <div className="flex-1 min-h-0 flex gap-4" style={{ height: "calc(100vh - 280px)" }}>
+        {/* Split: list + detail — mobile shows one panel at a time */}
+        <div className="flex-1 min-h-0 flex gap-4 overflow-hidden" style={{ minHeight: "300px" }}>
 
-          {/* Alert list */}
-          <div className={`flex flex-col bg-card border border-card-border rounded-xl overflow-hidden transition-all ${selectedAlert ? "w-[55%]" : "flex-1"}`}>
+          {/* Alert list — hidden on mobile when detail is open */}
+          <div className={`flex flex-col bg-card border border-card-border rounded-xl overflow-hidden transition-all ${
+            selectedAlert ? "hidden md:flex md:w-[55%]" : "flex-1"
+          }`}>
             <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between flex-shrink-0">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {sorted.length} {sorted.length === 1 ? "Alert" : "Alerts"}
@@ -332,7 +334,7 @@ export default function AlertCenter() {
             </div>
           </div>
 
-          {/* Detail panel */}
+          {/* Detail panel — full-width on mobile, flex-1 on desktop */}
           {selectedAlert && (
             <div className="flex-1 min-w-0 rounded-xl overflow-hidden">
               <AlertDetail

@@ -58,7 +58,7 @@ export default function AnalyticsView() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Yield Chart */}
           <div className="xl:col-span-2 bg-card border border-card-border rounded-lg p-5">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
               <div>
                 <h3 className="text-base font-semibold">Generation vs Expected</h3>
                 <p className="text-xs text-muted-foreground mt-1">Specific Yield: <span className="font-mono text-foreground">{yieldData?.specificYieldKwhPerKwp.toFixed(2)}</span> kWh/kWp</p>

@@ -301,7 +301,7 @@ export default function DevicesPage() {
             />
           </div>
           <Select value={filterPlant} onValueChange={setFilterPlant}>
-            <SelectTrigger className="h-9 w-44"><SelectValue placeholder="All plants" /></SelectTrigger>
+            <SelectTrigger className="h-9 min-w-[130px]"><SelectValue placeholder="All plants" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All plants</SelectItem>
               {Object.entries(PLANT_NAMES).map(([id, name]) => (
@@ -310,7 +310,7 @@ export default function DevicesPage() {
             </SelectContent>
           </Select>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="h-9 w-32"><SelectValue placeholder="All statuses" /></SelectTrigger>
+            <SelectTrigger className="h-9 min-w-[110px]"><SelectValue placeholder="All statuses" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
               <SelectItem value="online">Online</SelectItem>
@@ -319,7 +319,7 @@ export default function DevicesPage() {
             </SelectContent>
           </Select>
           <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="h-9 w-40"><SelectValue placeholder="All types" /></SelectTrigger>
+            <SelectTrigger className="h-9 min-w-[120px]"><SelectValue placeholder="All types" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All types</SelectItem>
               {DEVICE_TYPES.map((t) => (

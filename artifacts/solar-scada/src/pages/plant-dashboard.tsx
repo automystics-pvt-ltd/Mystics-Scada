@@ -142,14 +142,14 @@ export default function PlantDashboard() {
           </p>
         </div>
 
-        {/* Sub-nav tabs */}
-        <div className="border-b border-border">
-          <nav className="-mb-px flex gap-6">
+        {/* Sub-nav tabs — scrollable on mobile */}
+        <div className="border-b border-border -mx-4 px-4 md:mx-0 md:px-0">
+          <nav className="-mb-px flex gap-5 overflow-x-auto scrollbar-none">
             {SUB_NAV(pid).map(item => (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm flex items-center transition-colors ${
+                className={`flex-shrink-0 whitespace-nowrap pb-3 px-1 border-b-2 font-medium text-sm flex items-center transition-colors ${
                   item.href === `/plants/${pid}`
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"

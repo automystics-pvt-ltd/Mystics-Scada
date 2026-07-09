@@ -284,7 +284,7 @@ export default function MaintenanceBoard() {
         <div className="flex flex-col h-full space-y-5">
 
           {/* Header */}
-          <div className="flex justify-between items-start">
+          <div className="flex flex-wrap justify-between items-start gap-3">
             <div>
               <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
                 <Wrench className="w-6 h-6 text-primary" />
