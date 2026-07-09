@@ -9,7 +9,7 @@ import {
 import { AppLayout } from "@/components/layout";
 import { Link, useParams } from "wouter";
 import { BarChart4, PieChart, DollarSign, Leaf } from "lucide-react";
-import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ComposedChart } from "recharts";
+import { SvgComposedChart } from "@/components/ui/svg-charts";
 import { KpiCard, LiveValue } from "@/components/ui/scada";
 import { useState } from "react";
 
@@ -80,21 +80,14 @@ export default function AnalyticsView() {
             
             <div className="h-[350px] w-full">
               {yieldData && yieldData.points.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={yieldData.points} margin={{ top: 20, right: 0, bottom: 0, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                    <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={12} tickMargin={10} />
-                    <YAxis yAxisId="left" stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={v => `${v/1000}k`} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}
-                      itemStyle={{ color: 'hsl(var(--foreground))' }}
-                      formatter={(val: number) => [`${val} kWh`, '']}
-                    />
-                    <Legend />
-                    <Bar yAxisId="left" dataKey="actualKwh" name="Actual Generation" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
-                    <Line yAxisId="left" type="step" dataKey="expectedKwh" name="Expected Generation" stroke="hsl(var(--status-normal))" strokeWidth={2} dot={false} strokeDasharray="5 5" />
-                  </ComposedChart>
-                </ResponsiveContainer>
+                <SvgComposedChart
+                  data={yieldData.points as unknown as Record<string, unknown>[]}
+                  xKey="label"
+                  bars={[{ key: "actualKwh", name: "Actual Generation", color: "hsl(var(--primary))" }]}
+                  lines={[{ key: "expectedKwh", name: "Expected Generation", color: "hsl(var(--status-normal))", dashed: true }]}
+                  height={280}
+                  yFmt={(v) => `${Math.round(v / 1000)}k`}
+                />
               ) : (
                 <div className="h-full flex items-center justify-center text-muted-foreground">Loading chart data...</div>
               )}

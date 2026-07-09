@@ -9,7 +9,7 @@ import { AppLayout } from "@/components/layout";
 import { Link, useParams } from "wouter";
 import { Cpu, Activity, Thermometer, Zap, Layers, ArrowRight } from "lucide-react";
 import { LiveValue, KpiCard } from "@/components/ui/scada";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { SvgLineChart } from "@/components/ui/svg-charts";
 import { useState } from "react";
 
 function StatusBadge({ status }: { status: InverterStatus }) {
@@ -108,21 +108,17 @@ export default function InverterDetail() {
             </div>
             <div className="h-[300px] w-full">
               {trend && trend.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trend} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                    <XAxis dataKey="timestamp" tickFormatter={formatXAxis} stroke="hsl(var(--muted-foreground))" fontSize={12} tickMargin={10} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(val) => `${val} kW`} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}
-                      itemStyle={{ color: 'hsl(var(--foreground))' }}
-                      labelFormatter={formatXAxis}
-                    />
-                    <Legend />
-                    <Line type="monotone" dataKey="acPowerKw" name="AC Power" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                    <Line type="monotone" dataKey="dcPowerKw" name="DC Power" stroke="hsl(var(--status-warning))" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
+                <SvgLineChart
+                  data={(trend ?? []) as unknown as Record<string, unknown>[]}
+                  xKey="timestamp"
+                  lines={[
+                    { key: "acPowerKw", name: "AC Power", color: "hsl(var(--primary))" },
+                    { key: "dcPowerKw", name: "DC Power", color: "hsl(var(--status-warning))" },
+                  ]}
+                  height={240}
+                  xFmt={formatXAxis}
+                  yFmt={(v) => `${v.toFixed(0)} kW`}
+                />
               ) : (
                 <div className="h-full flex items-center justify-center text-muted-foreground">No trend data available</div>
               )}

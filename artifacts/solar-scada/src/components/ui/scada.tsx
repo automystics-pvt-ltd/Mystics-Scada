@@ -5,7 +5,6 @@ import {
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { AreaChart, Area, ResponsiveContainer, Tooltip } from "recharts";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { computeHealthScore as _computeHealthScore, healthScoreColor, healthScoreLabel } from "@/lib/plantHierarchy";
@@ -102,7 +101,26 @@ export function LiveValue({
   );
 }
 
-/* ── Sparkline (tiny area chart) ─────────────────────────────────────── */
+/* ── Sparkline (pure SVG — avoids Recharts createRef on React 19) ────── */
+
+function buildSparklinePath(
+  values: number[],
+  W = 100,
+  H = 100,
+): { line: string; area: string } {
+  if (values.length < 2) return { line: "", area: "" };
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const pts = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * W;
+    const y = H - ((v - min) / range) * (H * 0.9) - H * 0.05;
+    return [x, y] as [number, number];
+  });
+  const line = pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const area = `${line} L${W},${H} L0,${H} Z`;
+  return { line, area };
+}
 
 export function Sparkline({
   data,
@@ -116,28 +134,21 @@ export function Sparkline({
   className?: string;
 }) {
   if (!data || data.length === 0) return null;
+  const values = data.map((d) => (d[dataKey] as number) ?? 0);
+  const gradId = `sg-${dataKey}-${color.replace(/[^a-z0-9]/gi, "")}`;
+  const { line, area } = buildSparklinePath(values);
   return (
     <div className={cn("w-full h-12", className)}>
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id={`sg-${color.replace(/\W/g, "")}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor={color} stopOpacity={0.25} />
-              <stop offset="95%" stopColor={color} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <Area
-            type="monotone"
-            dataKey={dataKey}
-            stroke={color}
-            strokeWidth={1.5}
-            fill={`url(#sg-${color.replace(/\W/g, "")})`}
-            dot={false}
-            isAnimationActive={false}
-          />
-          <Tooltip contentStyle={{ display: "none" }} cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: "3 3" }} />
-        </AreaChart>
-      </ResponsiveContainer>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%"  stopColor={color} stopOpacity={0.25} />
+            <stop offset="95%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <path d={area} fill={`url(#${gradId})`} />
+        <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
     </div>
   );
 }
@@ -379,19 +390,8 @@ export function DrillDownCard({
           </div>
         )}
         {sparklineData && sparklineData.length > 0 && (
-          <div className="mt-2 h-8 -mx-1 opacity-50 group-hover:opacity-100 transition-opacity">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={sparklineData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id={`ddc-${title.replace(/\W/g, "")}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={color} stopOpacity={0.25} />
-                    <stop offset="95%" stopColor={color} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <Area type="monotone" dataKey="v" stroke={color} strokeWidth={1.5}
-                  fill={`url(#ddc-${title.replace(/\W/g, "")})`} dot={false} isAnimationActive={false} />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="mt-2 -mx-1 opacity-50 group-hover:opacity-100 transition-opacity">
+            <Sparkline data={sparklineData} dataKey="v" color={color} className="h-8" />
           </div>
         )}
         <div className="mt-1.5 flex justify-end">

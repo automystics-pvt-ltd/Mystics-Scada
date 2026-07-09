@@ -30,6 +30,9 @@ const FieldDefSchema = z.object({
   multiplier:   z.number().optional(),
   offset:       z.number().optional(),
   jsonPath:     z.string().max(200).optional(),
+  alarmHigh:    z.number().optional(),
+  alarmLow:     z.number().optional(),
+  readWrite:    z.boolean().optional(),
 });
 
 const CreateTemplateBody = z.object({

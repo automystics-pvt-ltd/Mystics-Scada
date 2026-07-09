@@ -18,10 +18,7 @@ import { computeHealthScore, healthScoreColor, syntheticSparkline } from "@/lib/
 import { HealthScoreGauge } from "@/components/ui/scada";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ReferenceLine,
-} from "recharts";
+import { SvgAreaChart } from "@/components/ui/svg-charts";
 
 const BASE = import.meta.env.BASE_URL as string;
 
@@ -215,30 +212,16 @@ export default function PlantDashboard() {
                   No data for today yet
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartPoints} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="actualGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="hsl(142 71% 45%)" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(142 71% 45%)" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="expectedGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="hsl(221 83% 53%)" stopOpacity={0.15} />
-                        <stop offset="95%" stopColor="hsl(221 83% 53%)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
-                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                    <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
-                    <Tooltip
-                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--card-border))", borderRadius: 6, fontSize: 12 }}
-                      labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
-                    />
-                    <ReferenceLine x={currentHourLabel} stroke="hsl(var(--primary))" strokeDasharray="4 2" opacity={0.5} label={{ value: "Now", position: "top", fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
-                    <Area type="monotone" dataKey="expectedKwh" stroke="hsl(221 83% 53%)" strokeWidth={1} fill="url(#expectedGrad)" strokeDasharray="4 2" dot={false} name="Expected" />
-                    <Area type="monotone" dataKey="actualKwh"   stroke="hsl(142 71% 45%)" strokeWidth={2} fill="url(#actualGrad)"   dot={false} name="Actual" />
-                  </AreaChart>
-                </ResponsiveContainer>
+                <SvgAreaChart
+                  data={chartPoints as unknown as Record<string, unknown>[]}
+                  xKey="label"
+                  series={[
+                    { key: "expectedKwh", name: "Expected", color: "hsl(221 83% 53%)", dashed: true },
+                    { key: "actualKwh",   name: "Actual",   color: "hsl(142 71% 45%)" },
+                  ]}
+                  height={180}
+                  refX={currentHourLabel}
+                />
               )}
             </div>
             <div className="flex gap-4 mt-3 text-xs text-muted-foreground">

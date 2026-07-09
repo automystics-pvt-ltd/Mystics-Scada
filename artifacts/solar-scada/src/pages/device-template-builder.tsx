@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown,
   Save, Cpu, CheckCircle2, AlertCircle, GripVertical,
+  Upload, Calculator, AlertTriangle,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";

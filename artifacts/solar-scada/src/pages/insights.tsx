@@ -7,10 +7,7 @@ import {
   TrendingDown, Thermometer, Activity, Wind, Filter,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import {
-  ResponsiveContainer, LineChart, Line, BarChart, Bar,
-  AreaChart, Area, XAxis, YAxis, ReferenceLine, Tooltip,
-} from "recharts";
+import { MiniBarChart, MiniAreaChart, MiniLineChart } from "@/components/ui/svg-charts";
 
 const BASE = import.meta.env.BASE_URL as string;
 
@@ -65,64 +62,13 @@ function SeverityBadge({ severity }: { severity: Insight["severity"] }) {
 
 function InsightSparklineChart({ sparkline, severity }: { sparkline: InsightSparkline; severity: Insight["severity"] }) {
   const color = severity === "critical" ? "hsl(0 84% 60%)" : severity === "warning" ? "hsl(38 92% 50%)" : "hsl(221 83% 53%)";
-  const refColor = "hsl(var(--muted-foreground))";
-  const tooltipStyle = {
-    background: "hsl(var(--card))", border: "1px solid hsl(var(--card-border))",
-    borderRadius: 6, fontSize: 10,
-  };
-  const axisStyle = { fontSize: 9, fill: "hsl(var(--muted-foreground))" };
-
   if (sparkline.type === "bar") {
-    return (
-      <ResponsiveContainer width="100%" height={70}>
-        <BarChart data={sparkline.points} margin={{ top: 2, right: 2, left: -30, bottom: 0 }}>
-          <XAxis dataKey="label" tick={axisStyle} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-          <YAxis tick={axisStyle} tickLine={false} axisLine={false} />
-          {sparkline.points[0]?.ref !== undefined && (
-            <ReferenceLine y={sparkline.points[0].ref} stroke={refColor} strokeDasharray="3 2" strokeWidth={1} />
-          )}
-          <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} formatter={(v: number) => [`${v} ${sparkline.unit}`, sparkline.metric]} />
-          <Bar dataKey="value" fill={color} radius={[2, 2, 0, 0]} maxBarSize={12} />
-        </BarChart>
-      </ResponsiveContainer>
-    );
+    return <MiniBarChart points={sparkline.points} color={color} unit={sparkline.unit} metric={sparkline.metric} />;
   }
-
   if (sparkline.type === "area") {
-    return (
-      <ResponsiveContainer width="100%" height={70}>
-        <AreaChart data={sparkline.points} margin={{ top: 2, right: 2, left: -30, bottom: 0 }}>
-          <defs>
-            <linearGradient id={`ag-${severity}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={color} stopOpacity={0.25} />
-              <stop offset="95%" stopColor={color} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <XAxis dataKey="label" tick={axisStyle} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-          <YAxis tick={axisStyle} tickLine={false} axisLine={false} />
-          <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`${v.toLocaleString()} ${sparkline.unit}`, sparkline.metric]} />
-          {sparkline.points[0]?.ref !== undefined && (
-            <Area type="monotone" dataKey="ref" stroke={refColor} strokeWidth={1} strokeDasharray="3 2" fill="none" dot={false} name="Expected" />
-          )}
-          <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2} fill={`url(#ag-${severity})`} dot={false} name="Actual" />
-        </AreaChart>
-      </ResponsiveContainer>
-    );
+    return <MiniAreaChart points={sparkline.points} color={color} unit={sparkline.unit} metric={sparkline.metric} />;
   }
-
-  return (
-    <ResponsiveContainer width="100%" height={70}>
-      <LineChart data={sparkline.points} margin={{ top: 2, right: 2, left: -30, bottom: 0 }}>
-        <XAxis dataKey="label" tick={axisStyle} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-        <YAxis tick={axisStyle} tickLine={false} axisLine={false} />
-        <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`${v} ${sparkline.unit}`, sparkline.metric]} />
-        {sparkline.points[0]?.ref !== undefined && (
-          <Line type="monotone" dataKey="ref" stroke={refColor} strokeWidth={1} strokeDasharray="3 2" dot={false} name="Threshold" />
-        )}
-        <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} name={sparkline.metric} />
-      </LineChart>
-    </ResponsiveContainer>
-  );
+  return <MiniLineChart points={sparkline.points} color={color} unit={sparkline.unit} metric={sparkline.metric} />;
 }
 
 // ── Insight Card ──────────────────────────────────────────────────────────────
