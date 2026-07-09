@@ -8,7 +8,8 @@ export interface AlertCounts {
   informational: number;
 }
 
-const ACTIVE_STATUSES = ["open", "acknowledged", "assigned"] as const;
+/** Exported so test suites can assert the exact set of statuses that count as "active". */
+export const ACTIVE_STATUSES = ["open", "acknowledged", "assigned"] as const;
 
 /** Active (not resolved/closed) alert counts by severity, grouped per plant.
  *  Pass `orgId` to scope to a single organisation; pass `null` for all orgs
