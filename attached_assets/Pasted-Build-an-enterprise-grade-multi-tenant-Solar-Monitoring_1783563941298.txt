@@ -1,0 +1,229 @@
+Build an enterprise-grade, multi-tenant Solar Monitoring, SCADA, Device Integration, Operations, and Maintenance SaaS Platform focused on rapid customer onboarding, universal device connectivity, and long-term scalability.
+
+The primary objective is to create a platform where I can onboard any solar customer, regardless of the devices, gateways, SCADA systems, or monitoring systems they currently use. The platform must allow me to connect, configure, collect, monitor, analyze, and report data from any source without requiring software development for each new customer.
+
+The platform must include a Universal Device & Data Integration Engine that supports direct device connectivity, third-party gateways, vendor cloud platforms, existing SCADA systems, utility systems, APIs, MQTT brokers, databases, FTP/SFTP servers, CSV/Excel imports, and custom data sources.
+
+When onboarding a new customer, I should be able to:
+
+- Create customer account.
+- Create one or multiple solar plants.
+- Configure devices, gateways, or external data sources.
+- Map incoming data fields to platform parameters.
+- Start automatic data collection.
+- Generate dashboards, alarms, reports, and analytics automatically.
+- Complete onboarding entirely through configuration without writing code.
+
+The Device Integration Framework must support:
+
+- RS485
+- Modbus RTU
+- Modbus TCP
+- MQTT
+- HTTP APIs
+- REST APIs
+- WebSocket
+- OPC-UA
+- SNMP
+- TCP/IP
+- Serial Communication
+
+Support popular market devices and gateways such as Teltonika, Moxa, Advantech, Siemens, Schneider Electric, Huawei, Sungrow, Solis, ABB, Delta, Fronius, Growatt, and any future vendor through configurable templates.
+
+Create a No-Code Device Template Manager where administrators can:
+
+- Create device profiles.
+- Configure Modbus registers.
+- Configure MQTT topics.
+- Configure API payload structures.
+- Define scaling factors.
+- Define engineering units.
+- Configure alarm mappings.
+- Configure calculated parameters.
+- Create reusable templates.
+
+The platform must include a Universal Data Mapping Engine where incoming fields from any source can be mapped to platform parameters through a visual interface.
+
+Examples:
+Power_Output → Current Power
+Daily_Energy → Daily Yield
+Grid_Voltage → Grid Voltage
+Inverter_Temp → Inverter Temperature
+
+Support:
+- Field mapping
+- Unit conversion
+- Formula calculations
+- Aggregations
+- Derived KPIs
+- Data validation
+- Data transformation
+
+The platform must automatically fetch, validate, normalize, process, and store data from configured sources with retry mechanisms, fault tolerance, duplicate prevention, health monitoring, and automatic recovery.
+
+Real-Time Monitoring Features:
+
+- Current Power
+- Daily Yield
+- Monthly Yield
+- Yearly Yield
+- Lifetime Yield
+- Specific Yield
+- Performance Ratio
+- Availability
+- Revenue
+- CO₂ Savings
+- Grid Import/Export
+- Inverter Parameters
+- Weather Parameters
+- Energy Meter Data
+
+Provide real-time dashboards, fleet monitoring dashboards, plant dashboards, inverter dashboards, device dashboards, and geographic map views.
+
+Develop a professional SCADA module that supports:
+
+- Interactive Single Line Diagram (SLD)
+- Real-time equipment visualization
+- Inverter monitoring
+- Transformer monitoring
+- Breaker monitoring
+- Meter monitoring
+- Weather station monitoring
+- Grid synchronization monitoring
+- Utility-scale solar plant visualization
+
+Design the architecture so customers can upgrade from basic monitoring to full SCADA without system redesign.
+
+Future-proof the platform for SLDC and utility integration including:
+
+- SLDC reporting
+- Grid scheduling
+- Forecasting integration
+- Utility compliance reporting
+- Regulatory reporting
+- Export/import energy reporting
+
+Implement enterprise alarm and event management:
+
+- Device offline
+- Gateway offline
+- Communication failure
+- Inverter faults
+- Low generation
+- High temperature
+- Grid failures
+- Voltage abnormalities
+- Frequency abnormalities
+
+Provide:
+- Alarm acknowledgment
+- Alarm escalation
+- Alarm assignment
+- Alarm history
+- Root cause analysis
+- Alarm analytics
+
+Include a complete notification engine supporting:
+
+- Email
+- WhatsApp
+- SMS
+- Mobile Push Notifications
+
+Allow notifications based on:
+- Customer
+- Plant
+- Device
+- Alarm severity
+- User role
+- Schedules
+
+Build a comprehensive reporting engine capable of generating:
+
+- Daily Reports
+- Weekly Reports
+- Monthly Reports
+- Yearly Reports
+- Custom Date Reports
+- Inverter Reports
+- Downtime Reports
+- Availability Reports
+- Alarm Reports
+- Performance Reports
+- Revenue Reports
+- Executive Reports
+- SCADA Reports
+
+Export formats:
+- PDF
+- Excel
+- CSV
+
+Include a complete Maintenance and Field Service Management Module:
+
+- Ticket Management
+- Work Orders
+- Preventive Maintenance
+- Corrective Maintenance
+- SLA Tracking
+- Issue Tracking
+- Escalation Workflows
+- Engineer Assignment
+- Site Visit Tracking
+- GPS Tracking
+- Photo Uploads
+- Service Reports
+- Digital Signatures
+
+Implement granular Role-Based Access Control:
+
+- Platform Admin
+- Customer Admin
+- Monitoring Team
+- SCADA Team
+- Operations Team
+- Maintenance Team
+- Field Engineers
+- Management Users
+- Read-Only Users
+
+Permissions should be configurable at:
+- Customer level
+- Plant level
+- Device level
+- Feature level
+
+Architecture Requirements:
+
+- Multi-tenant SaaS architecture
+- High availability
+- Horizontal scalability
+- Microservices architecture
+- API-first design
+- Event-driven architecture
+- Real-time streaming architecture
+- Time-series data storage
+- Audit logs
+- Security logs
+- Full activity tracking
+
+The system must support thousands of customers, tens of thousands of plants, hundreds of thousands of devices, and millions of telemetry records per day while maintaining enterprise-grade reliability and performance.
+
+Generate:
+1. Complete system architecture.
+2. Database schema.
+3. Multi-tenant design.
+4. Device integration architecture.
+5. Universal connector framework.
+6. No-code device onboarding system.
+7. SCADA architecture.
+8. SLDC-ready architecture.
+9. API specifications.
+10. UI/UX wireframes.
+11. Production-ready folder structure.
+12. Deployment architecture.
+13. Security model.
+14. Development roadmap.
+15. Production-ready source code with best practices and scalability considerations.
+
+The final product should be a commercial, white-label Solar Monitoring, SCADA, Device Integration, Asset Management, Alarm Management, Reporting, Operations, and Maintenance SaaS platform where new customers, devices, gateways, SCADA systems, and external data sources can be onboarded entirely through configuration with no code changes.

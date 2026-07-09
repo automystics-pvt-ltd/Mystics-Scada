@@ -1,0 +1,179 @@
+Enhance the platform with a highly flexible and scalable Device Integration Framework that allows onboarding any solar plant, inverter, meter, weather station, gateway, data logger, SCADA source, or third-party monitoring system without requiring code changes.
+
+The Device Integration Module must be one of the core platform components and support multiple methods of data acquisition:
+
+1. Direct Device Connectivity
+- RS485
+- Modbus RTU
+- Modbus TCP
+- MQTT
+- OPC-UA
+- SNMP
+- HTTP/HTTPS APIs
+- WebSocket
+- TCP/IP Socket
+- Serial Communication
+
+2. Third-Party Gateway Integration
+Support integration with gateways and data loggers from any manufacturer including:
+- Teltonika
+- Moxa
+- Advantech
+- Siemens
+- Schneider Electric
+- Huawei
+- Sungrow
+- Solis
+- ABB
+- Delta
+- Fronius
+- Growatt
+- Custom OEM Gateways
+
+3. Third-Party Server Data Integration
+Many customers may already have monitoring systems or cloud platforms. The system must allow fetching data from:
+- Customer cloud servers
+- Vendor cloud platforms
+- Utility platforms
+- Existing SCADA systems
+- Existing monitoring portals
+- REST APIs
+- FTP/SFTP files
+- CSV uploads
+- Excel uploads
+- MQTT brokers
+- OPC servers
+- Database replication
+
+The platform must include a Universal Data Connector where an administrator can configure:
+- API URL
+- Authentication method
+- Polling interval
+- Data mapping
+- Device mapping
+- Plant mapping
+- Data transformation rules
+- Timezone settings
+- Error handling rules
+
+Once configured, the system should automatically fetch, validate, transform, and store incoming data without further development effort.
+
+4. Device Template & Protocol Engine
+Create a no-code Device Configuration Module where administrators can:
+- Create new device templates
+- Define Modbus registers
+- Define MQTT topics
+- Define API payload mappings
+- Define telemetry fields
+- Define alarm mappings
+- Define scaling factors
+- Define engineering units
+
+New device integrations should be possible entirely through configuration.
+
+5. Data Mapping Engine
+Provide drag-and-drop mapping between:
+- Source field
+- Device parameter
+- Platform parameter
+
+Examples:
+Vendor Field → Platform Field
+
+Power_Output → Current Power
+Daily_Energy → Daily Yield
+Grid_Voltage → Grid Voltage
+Inverter_Temp → Inverter Temperature
+
+Support:
+- Formula calculations
+- Data conversions
+- Unit conversions
+- Aggregations
+- Derived parameters
+
+6. Auto Provisioning
+When a new customer is onboarded:
+- Create customer account
+- Create plant
+- Assign devices
+- Configure data source
+- Apply templates
+- Start data collection automatically
+- Create dashboards automatically
+- Create reports automatically
+- Create alarm rules automatically
+
+Target onboarding time:
+Less than 30 minutes per new customer.
+
+7. Enterprise Stability Requirements
+The platform must be designed for 99.9%+ uptime and enterprise-scale operation.
+
+Features:
+- Queue-based ingestion architecture
+- Retry mechanisms
+- Fault tolerance
+- High availability
+- Auto-recovery
+- Health monitoring
+- Audit logs
+- Data validation
+- Duplicate data prevention
+- Missing data detection
+- Data reconciliation
+
+8. SCADA Expansion Ready
+The platform should be designed so that any customer can later upgrade to advanced SCADA functionality without rebuilding the system.
+
+Future-ready SCADA features:
+- Single Line Diagram (SLD)
+- Grid synchronization monitoring
+- Transformer monitoring
+- Breaker status monitoring
+- Protection relay integration
+- Remote command capabilities
+- Control room dashboards
+- Utility-scale monitoring
+- Multi-site control center
+
+9. SLDC / Utility Integration Ready
+Design the architecture so future integration with State Load Dispatch Centers (SLDC), Utility Grid Operators, and Regulatory Reporting Systems can be enabled through configurable modules.
+
+Future capabilities:
+- SLDC reporting
+- Grid scheduling
+- Forecasting integration
+- Utility reporting
+- Regulatory compliance reports
+- Grid export/import analytics
+
+10. Team-Based Operations
+Provide granular access control and workflow management.
+
+Teams:
+- Platform Admin
+- Customer Admin
+- Operations Team
+- Monitoring Team
+- SCADA Team
+- Maintenance Team
+- Field Engineers
+- Management Team
+- Read-Only Users
+
+Features:
+- Role-based permissions
+- Plant-level permissions
+- Device-level permissions
+- Alarm assignment
+- Ticket assignment
+- Maintenance assignment
+- Approval workflows
+- Activity tracking
+- Audit trails
+
+11. Commercial SaaS Objective
+The platform should function as a white-label commercial Solar Monitoring, SCADA, Device Management, Reporting, Alarm Management, Operations Management, and Maintenance Management platform where onboarding a new customer, plant, gateway, server source, API source, or device source requires only configuration and no software development.
+
+The goal is to support thousands of customers, tens of thousands of devices, multiple data sources, utility-scale solar plants, future SCADA deployments, and future SLDC integrations from a single centralized cloud platform.

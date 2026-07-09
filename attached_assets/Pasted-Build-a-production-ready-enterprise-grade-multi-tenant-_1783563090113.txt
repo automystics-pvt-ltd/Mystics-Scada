@@ -1,0 +1,169 @@
+Build a production-ready, enterprise-grade, multi-tenant Solar Monitoring & SCADA SaaS Platform that allows a Super Admin to onboard and manage unlimited customers, solar plants, and IoT devices from a centralized cloud platform.
+
+The platform should support solar plants of any capacity (rooftop, commercial, industrial, utility-scale, 100 kW to 100 MW+) and provide real-time monitoring, analytics, reporting, alarm management, maintenance management, and customer access.
+
+Key Requirements:
+
+- Multi-tenant SaaS architecture with complete customer data isolation.
+- User roles: Super Admin, Customer Admin, Plant Manager, Operations Team, Maintenance Engineer, Read-Only User.
+- Support onboarding unlimited solar plants and projects.
+- Each plant can contain multiple inverters, meters, weather stations, transformers, breakers, sensors, and gateways.
+
+IoT & Device Integration:
+- Support RS485 communication.
+- Support Modbus RTU, Modbus TCP, MQTT, HTTP APIs, WebSockets.
+- Support third-party gateways and devices such as Teltonika, Moxa, Advantech, Siemens, Schneider Electric, Delta, Huawei, Sungrow, Solis, Growatt, Fronius, ABB, and any custom device.
+- Create a flexible Device Template Engine that allows onboarding new device models without code changes.
+- Device auto-discovery, mapping, diagnostics, online/offline monitoring, health monitoring, firmware tracking, and communication status.
+
+Real-Time Monitoring:
+- Live telemetry updates every few seconds.
+- Real-time dashboards with WebSocket-based streaming.
+- Monitor:
+  - Current Power (kW)
+  - Daily Yield (kWh)
+  - Monthly Yield
+  - Yearly Yield
+  - Lifetime Yield
+  - Performance Ratio (PR)
+  - Specific Yield
+  - Plant Availability
+  - Revenue Estimation
+  - CO₂ Savings
+  - Grid Import/Export
+- Inverter monitoring:
+  - AC/DC Voltage
+  - AC/DC Current
+  - Power
+  - Frequency
+  - Temperature
+  - Efficiency
+- Weather monitoring:
+  - Irradiance
+  - Ambient Temperature
+  - Module Temperature
+  - Wind Speed
+  - Humidity
+  - Rainfall
+
+SCADA Module:
+- Interactive Single Line Diagram (SLD).
+- Real-time equipment visualization.
+- Inverter, transformer, breaker, meter, weather station, and grid monitoring.
+- Color-coded health status indicators (Normal, Warning, Critical).
+- Plant overview and detailed SCADA screens.
+
+Data Platform:
+- Store raw telemetry, processed telemetry, alarms, events, logs, and maintenance records.
+- High-performance time-series architecture capable of handling millions of records daily.
+- Historical data retention and aggregation.
+- Real-time and historical trend analysis.
+
+Alarm & Fault Management:
+- Automatic alarm generation.
+- Device offline detection.
+- Gateway offline detection.
+- Communication failure alerts.
+- Inverter fault alerts.
+- Low generation alerts.
+- Grid failure alerts.
+- Voltage/frequency abnormalities.
+- Alarm acknowledgment, escalation, history, analytics, and root-cause tracking.
+
+Notification System:
+- Email notifications.
+- WhatsApp notifications.
+- SMS notifications.
+- Push notifications.
+- Rule-based notification engine by severity, customer, plant, and device.
+- Daily, weekly, monthly automated report delivery.
+
+Advanced Reporting:
+- PDF, Excel, and CSV exports.
+- Daily generation reports.
+- Weekly reports.
+- Monthly reports.
+- Yearly reports.
+- Custom date-range reports.
+- Inverter performance reports.
+- Alarm reports.
+- Downtime reports.
+- Availability reports.
+- Revenue reports.
+- Weather reports.
+- Performance ratio reports.
+- Loss analysis reports.
+- Executive summary reports.
+- White-label customer reports.
+
+Maintenance & Service Management:
+- Complete CMMS module.
+- Preventive maintenance scheduling.
+- Corrective maintenance workflows.
+- Ticket management.
+- Work order management.
+- SLA tracking.
+- Issue escalation.
+- Engineer assignment.
+- Maintenance history.
+
+Field Service Module:
+- Mobile-friendly interface.
+- GPS-based site visit tracking.
+- Photo uploads.
+- Service report uploads.
+- Digital signatures.
+- Engineer activity tracking.
+- Work completion verification.
+
+Customer Portal:
+- Customer login with role-based access.
+- Real-time plant monitoring.
+- Report downloads.
+- Alarm visibility.
+- Ticket creation and tracking.
+- Maintenance tracking.
+- Notification preferences.
+
+Analytics & Intelligence:
+- Plant performance benchmarking.
+- Plant-to-plant comparison.
+- Predictive maintenance.
+- Fault prediction.
+- Generation forecasting.
+- Energy loss analysis.
+- Anomaly detection.
+
+API & Integration Layer:
+- REST APIs.
+- WebSocket APIs.
+- Secure authentication and authorization.
+- Third-party integration support.
+- External data ingestion APIs.
+- Device onboarding APIs.
+
+UI/UX Requirements:
+- Modern enterprise dashboard.
+- Responsive design for desktop, tablet, and mobile.
+- Dark and light themes.
+- Interactive charts and analytics.
+- Geographic map view of all plants.
+- Fleet management dashboard.
+- Real-time KPI widgets.
+
+Generate:
+1. Complete software architecture.
+2. Database schema and ER diagram.
+3. Multi-tenant architecture design.
+4. IoT ingestion architecture.
+5. Device onboarding workflow.
+6. SCADA module architecture.
+7. Notification engine architecture.
+8. Maintenance management workflow.
+9. API documentation.
+10. Frontend UI/UX wireframes.
+11. Production-ready code structure.
+12. Deployment architecture using Docker and Kubernetes.
+13. Security, scalability, and performance best practices.
+
+The final solution should be a commercial-grade Solar Monitoring, SCADA, Asset Management, Reporting, Alarm Management, and Field Service SaaS Platform capable of managing thousands of solar plants and millions of real-time telemetry data points across multiple customers from a single centralized platform.

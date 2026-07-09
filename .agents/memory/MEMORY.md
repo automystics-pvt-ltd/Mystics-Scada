@@ -9,3 +9,4 @@
 - [Plant drill-down hierarchy](plant-hierarchy-frontend.md) — Zone/Array grouping, health score formula, string hook signature, control room mode, route ordering for wouter.
 - [Notifications architecture](notifications-architecture.md) — in-app notificationsTable, in-memory org→SSE registry, createNotification() fire-and-forget, webhook signing requires tenant secret or header is omitted.
 - [Recharts 2.x + React 19 ref incompatibility](recharts-react19-ref.md) — recharts internal createRef() on <path> SVG elements crashes React 19 after Vite HMR reconnects; replace sparklines with pure SVG.
+- [SSE stream testing with supertest](sse-stream-testing.md) — use custom .parse() to read first event then res.destroy(); isSuperAdmin:false safer than true in mocks.

@@ -1,0 +1,68 @@
+Comprehensive Device Integration & Future-Ready SCADA/SLDC Framework
+
+The platform must include a highly flexible, enterprise-grade Device Integration Framework that enables rapid onboarding of new customers without requiring any custom software development. The objective is that whenever a new customer is added, I should be able to connect their devices, gateways, existing SCADA systems, vendor cloud platforms, or third-party servers through configuration only.
+
+The system must support multiple methods of data acquisition, including direct device communication (RS485, Modbus RTU, Modbus TCP, MQTT, OPC-UA, SNMP, TCP/IP), third-party gateways (Teltonika, Moxa, Advantech, Siemens, Schneider Electric, Huawei, Sungrow, Solis, ABB, Delta, Fronius, Growatt, and others), vendor cloud APIs, existing monitoring platforms, SCADA servers, FTP/SFTP sources, databases, REST APIs, WebSockets, and custom data feeds.
+
+A Universal Data Connector Engine must allow administrators to configure:
+- API endpoints and authentication methods
+- MQTT brokers and topics
+- Database connections
+- File-based integrations (CSV, Excel, XML, JSON)
+- Polling frequency and data collection schedules
+- Device-to-plant mapping
+- Parameter mapping and transformation rules
+- Unit conversions and scaling factors
+- Alarm mappings and event definitions
+
+Once configured, the platform should automatically fetch, validate, normalize, transform, and store incoming data without additional development effort. The onboarding process for a new customer should be configuration-driven and completed within minutes.
+
+The platform must include a No-Code Device Template Manager where administrators can create reusable templates for any inverter, energy meter, weather station, data logger, gateway, sensor, or custom device. New devices should be onboarded simply by selecting or creating a template and mapping the incoming parameters.
+
+The system must be designed for enterprise-level reliability and stability, including:
+- High-availability architecture
+- Automatic failover and recovery
+- Queue-based data ingestion
+- Data buffering during communication failures
+- Retry mechanisms
+- Duplicate data prevention
+- Missing data detection
+- Data reconciliation
+- Real-time health monitoring
+- Audit logging and diagnostics
+- 99.9%+ uptime target
+
+Role-based access control must allow different teams to access only the information relevant to them, including:
+- Platform Administrators
+- Customer Administrators
+- Monitoring Teams
+- SCADA Operators
+- Operations Teams
+- Maintenance Teams
+- Field Engineers
+- Management Users
+
+The platform must support assignment of plants, devices, alarms, reports, tickets, and dashboards to specific teams and users.
+
+The architecture must be future-ready for advanced SCADA deployments. Customers who initially use basic monitoring should be able to upgrade to full SCADA functionality without redesigning the platform. Future SCADA capabilities should include:
+- Interactive Single Line Diagram (SLD)
+- Real-time equipment visualization
+- Inverter monitoring
+- Transformer monitoring
+- Breaker status monitoring
+- Protection relay integration
+- Control room dashboards
+- Utility-scale plant monitoring
+- Multi-site operations center
+
+Additionally, the platform architecture must be designed to support future SLDC (State Load Dispatch Centre) and utility integrations, including:
+- SLDC reporting
+- Grid scheduling and compliance
+- Forecasting data exchange
+- Utility reporting requirements
+- Regulatory compliance reporting
+- Export/import energy reporting
+- Grid synchronization monitoring
+- Renewable energy compliance requirements
+
+The ultimate goal is to create a scalable, commercial-grade Solar Monitoring, SCADA, Device Integration, Operations, and Maintenance platform where any new customer, plant, device, gateway, cloud source, SCADA source, or utility integration can be onboarded entirely through configuration, ensuring long-term scalability, operational stability, and future expansion into advanced SCADA and SLDC services.

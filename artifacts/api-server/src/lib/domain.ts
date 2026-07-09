@@ -7,6 +7,7 @@ import {
   getOrgPlants,
   type PlantConfig,
   type SldOverrides,
+  type InverterStatus,
   inverterId,
   inverterIndex,
   getPlantByInverterId,
@@ -107,27 +108,41 @@ export function plantDetail(
 
 export function inverterSummary(plant: PlantConfig, idx: number, now: Date) {
   const id = inverterId(plant.id, idx);
-  const { status } = inverterHealth(plant, idx, now);
-  const reading = inverterLiveReading(plant, idx, now);
+
+  // Apply fault-injection overrides so this endpoint agrees with the SLD and
+  // plant overview — a forced-offline inverter must show comm_lost here too.
+  const overrides = buildOverrides(plant.id);
+  const forcedOffline: boolean =
+    (overrides.plantDisconnect ?? false) ||
+    (overrides.faultedInverterIds?.has(id) ?? false);
+
+  const status: InverterStatus = forcedOffline
+    ? "comm_lost"
+    : inverterHealth(plant, idx, now).status;
+
+  const reading = forcedOffline ? null : inverterLiveReading(plant, idx, now);
+
   return {
     id,
     plantId: plant.id,
     name: `Inverter ${idx + 1}`,
     status,
-    acPowerKw: reading.acPowerKw,
-    dcPowerKw: reading.dcPowerKw,
-    acVoltageV: Math.round(reading.acVoltageV * 10) / 10,
-    acCurrentA: Math.round(reading.acCurrentA * 10) / 10,
-    dcVoltageV: Math.round(reading.dcVoltageV * 10) / 10,
-    dcCurrentA: reading.dcVoltageV > 0 ? Math.round(((reading.dcPowerKw * 1000) / reading.dcVoltageV) * 10) / 10 : 0,
-    frequencyHz: Math.round(reading.frequencyHz * 100) / 100,
-    efficiencyPct: reading.efficiencyPct,
-    temperatureC: reading.temperatureC,
-    powerFactor: reading.acPowerKw > 0 ? 0.98 : 0,
-    dailyEnergyKwh: reading.energyTodayKwh,
-    monthlyEnergyKwh: Math.round(reading.energyTodayKwh * 22),
-    lifetimeEnergyMwh: reading.energyLifetimeMwh,
-    lastUpdated: now,
+    acPowerKw:         reading?.acPowerKw        ?? 0,
+    dcPowerKw:         reading?.dcPowerKw        ?? 0,
+    acVoltageV:        Math.round((reading?.acVoltageV  ?? 0) * 10) / 10,
+    acCurrentA:        Math.round((reading?.acCurrentA  ?? 0) * 10) / 10,
+    dcVoltageV:        Math.round((reading?.dcVoltageV  ?? 0) * 10) / 10,
+    dcCurrentA:        reading && reading.dcVoltageV > 0
+                         ? Math.round(((reading.dcPowerKw * 1000) / reading.dcVoltageV) * 10) / 10
+                         : 0,
+    frequencyHz:       Math.round((reading?.frequencyHz  ?? 0) * 100) / 100,
+    efficiencyPct:     reading?.efficiencyPct    ?? 0,
+    temperatureC:      reading?.temperatureC     ?? 0,
+    powerFactor:       (reading?.acPowerKw ?? 0) > 0 ? 0.98 : 0,
+    dailyEnergyKwh:    reading?.energyTodayKwh   ?? 0,
+    monthlyEnergyKwh:  Math.round((reading?.energyTodayKwh   ?? 0) * 22),
+    lifetimeEnergyMwh: reading?.energyLifetimeMwh ?? 0,
+    lastUpdated:       now,
   };
 }
 
