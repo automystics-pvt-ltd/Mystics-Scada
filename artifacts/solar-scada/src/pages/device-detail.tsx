@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import {
@@ -17,6 +17,9 @@ import {
   FlaskConical,
   Radio,
   X,
+  Upload,
+  FileText,
+  Loader2,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -190,6 +193,11 @@ export default function DeviceDetailPage() {
   const [confirmSync, setConfirmSync] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<ConnectionTestResult | null>(null);
+
+  // CSV import state
+  const csvFileRef = useRef<HTMLInputElement>(null);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; columns: string[] } | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Config edit state
   const [editing, setEditing] = useState(false);
@@ -771,6 +779,81 @@ export default function DeviceDetailPage() {
                         ? "Once a real device connects and sends data, readings will appear here."
                         : "Waiting for the first poll cycle to complete."}
                     </p>
+                  </div>
+                )}
+
+                {/* CSV Import */}
+                {canManage && (
+                  <div className="rounded-lg border border-border bg-muted/5 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Import Historical Readings</span>
+                      <span className="text-xs text-muted-foreground ml-auto">CSV only · max 10 MB</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Upload a CSV with a <code className="bg-muted px-1 rounded">timestamp</code> column and one column per parameter.
+                      Existing readings for the same timestamps are skipped.
+                    </p>
+
+                    {importResult && (
+                      <div className="flex items-center gap-2 text-xs bg-green-500/5 border border-green-500/20 rounded-lg px-3 py-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-400 shrink-0" />
+                        <span>
+                          Imported <strong>{importResult.imported}</strong> rows
+                          {importResult.skipped > 0 ? `, ${importResult.skipped} skipped` : ""}
+                          {" "}· columns: {importResult.columns.join(", ")}
+                        </span>
+                        <button className="ml-auto text-muted-foreground hover:text-foreground"
+                          onClick={() => setImportResult(null)}><X className="h-3 w-3" /></button>
+                      </div>
+                    )}
+                    {importError && (
+                      <div className="flex items-center gap-2 text-xs bg-red-500/5 border border-red-500/20 rounded-lg px-3 py-2">
+                        <AlertCircle className="h-3.5 w-3.5 text-red-400 shrink-0" />
+                        <span>{importError}</span>
+                        <button className="ml-auto text-muted-foreground hover:text-foreground"
+                          onClick={() => setImportError(null)}><X className="h-3 w-3" /></button>
+                      </div>
+                    )}
+
+                    <input
+                      ref={csvFileRef}
+                      type="file"
+                      accept=".csv,text/csv"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setImportResult(null);
+                        setImportError(null);
+                        try {
+                          const text = await file.text();
+                          const r = await fetch(`${BASE}api/devices/${deviceId}/import-readings`, {
+                            method: "POST",
+                            credentials: "include",
+                            headers: { "Content-Type": "text/csv" },
+                            body: text,
+                          });
+                          if (!r.ok) {
+                            const err = await r.json() as { message?: string };
+                            throw new Error(err.message ?? "Import failed");
+                          }
+                          const data = await r.json() as { imported: number; skipped: number; columns: string[] };
+                          setImportResult(data);
+                          void queryClient.invalidateQueries({ queryKey: ["device-readings", deviceId] });
+                        } catch (err) {
+                          setImportError(err instanceof Error ? err.message : "Import failed");
+                        } finally {
+                          if (csvFileRef.current) csvFileRef.current.value = "";
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="outline" size="sm" className="gap-2"
+                      onClick={() => csvFileRef.current?.click()}
+                    >
+                      <Upload className="h-3.5 w-3.5" /> Choose CSV File
+                    </Button>
                   </div>
                 )}
               </div>

@@ -32,6 +32,9 @@ import SuperAdminOrgDetail from '@/pages/superadmin-org-detail';
 import DevicesPage from '@/pages/devices';
 import DeviceDetailPage from '@/pages/device-detail';
 import DeviceTemplatesPage from '@/pages/device-templates';
+import DeviceTemplateBuilderPage from '@/pages/device-template-builder';
+import DriverHealthPage from '@/pages/driver-health';
+import DataConnectorWizardPage from '@/pages/data-connector-wizard';
 import OrgProfilePage from '@/pages/org-profile';
 import OrgUsersPage from '@/pages/org-users';
 import OrgNotificationsPage from '@/pages/org-notifications';
@@ -69,6 +72,10 @@ function ProtectedRoutes() {
           <Route path="/devices" component={DevicesPage} />
           <Route path="/devices/:id" component={DeviceDetailPage} />
           <Route path="/device-templates" component={DeviceTemplatesPage} />
+          <Route path="/device-templates/new" component={DeviceTemplateBuilderPage} />
+          <Route path="/device-templates/:id/edit" component={DeviceTemplateBuilderPage} />
+          <Route path="/driver-health" component={DriverHealthPage} />
+          <Route path="/connect-data-source" component={DataConnectorWizardPage} />
           <Route path="/org" component={OrgProfilePage} />
           <Route path="/org/users" component={OrgUsersPage} />
           <Route path="/org/notifications" component={OrgNotificationsPage} />

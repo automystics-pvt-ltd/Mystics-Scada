@@ -8,13 +8,14 @@
  * - Updates devices.status and devices.last_seen_at on each reading
  * - Restarts a driver when its device config changes
  * - Prunes old readings / comm logs to keep the DB bounded
+ * - Exposes per-driver health stats (status, RTT, counts, last reading)
  */
 
 import { randomUUID } from "node:crypto";
 import { eq, and, lt, sql } from "drizzle-orm";
 import { db, devicesTable, deviceReadingsTable, deviceCommLogsTable, deviceTemplatesTable } from "@workspace/db";
 import { logger } from "../logger.js";
-import type { IDriver, DriverConfig, FieldDef } from "./types.js";
+import type { IDriver, DriverConfig, DriverStatus, FieldDef } from "./types.js";
 import { ModbusTcpDriver } from "./ModbusTcpDriver.js";
 import { MqttDriver } from "./MqttDriver.js";
 import { HttpDriver } from "./HttpDriver.js";
@@ -24,6 +25,8 @@ const MAX_READINGS_PER_DEVICE = 2_000;
 const MAX_COMM_LOGS_PER_DEVICE = 1_000;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+type DeviceRow = typeof devicesTable.$inferSelect;
 
 type DeviceConfig = {
   ipAddress?: string;
@@ -35,6 +38,32 @@ type DeviceConfig = {
   pollingIntervalSec?: number;
   [key: string]: unknown;
 };
+
+export interface DriverHealthStat {
+  deviceId: string;
+  deviceName: string;
+  protocol: string;
+  orgId: string;
+  plantId: string;
+  status: DriverStatus | "no_driver";
+  startedAt: Date | null;
+  lastReadingAt: Date | null;
+  lastRttMs: number | null;
+  readingCount: number;
+  errorCount: number;
+}
+
+interface InternalStat {
+  deviceName: string;
+  protocol: string;
+  orgId: string;
+  plantId: string;
+  startedAt: Date;
+  lastReadingAt: Date | null;
+  lastRttMs: number | null;
+  readingCount: number;
+  errorCount: number;
+}
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
 
@@ -58,24 +87,14 @@ function makeDriver(cfg: DriverConfig): IDriver | null {
   }
 }
 
-// ─── Normalize protocol string ─────────────────────────────────────────────
-
 function normalizeProtocol(raw: string): DriverConfig["protocol"] | null {
   switch (raw.toLowerCase()) {
-    case "modbus":
-    case "modbus_tcp":
-      return "modbus_tcp";
-    case "modbus_rtu":
-      return "modbus_rtu";
-    case "mqtt":
-      return "mqtt";
-    case "http":
-      return "http";
-    case "websocket":
-    case "ws":
-      return "websocket";
-    default:
-      return null;
+    case "modbus": case "modbus_tcp": return "modbus_tcp";
+    case "modbus_rtu": return "modbus_rtu";
+    case "mqtt": return "mqtt";
+    case "http": return "http";
+    case "websocket": case "ws": return "websocket";
+    default: return null;
   }
 }
 
@@ -83,30 +102,60 @@ function normalizeProtocol(raw: string): DriverConfig["protocol"] | null {
 
 class DriverRegistry {
   private _drivers = new Map<string, IDriver>();
+  private _stats   = new Map<string, InternalStat>();
+  /** All device rows that were loaded at init (includes those without drivers) */
+  private _allDevices: DeviceRow[] = [];
 
   async init(): Promise<void> {
     logger.info("DriverRegistry: initializing drivers for all configured devices");
     try {
-      const devices = await db
-        .select()
-        .from(devicesTable);
-
+      this._allDevices = await db.select().from(devicesTable);
       let started = 0;
-      for (const device of devices) {
+      for (const device of this._allDevices) {
         const launched = await this._launchDriver(device);
         if (launched) started++;
       }
-      logger.info({ started, total: devices.length }, "DriverRegistry: initialization complete");
+      logger.info({ started, total: this._allDevices.length }, "DriverRegistry: initialization complete");
     } catch (err) {
       logger.error({ err }, "DriverRegistry: failed to load devices on init");
     }
+  }
+
+  /** Returns per-driver health stats for the monitoring dashboard */
+  async getHealthStats(): Promise<DriverHealthStat[]> {
+    // Refresh device list to pick up devices registered after boot
+    const devices = await db.select().from(devicesTable).catch(() => this._allDevices);
+
+    return devices.map((d) => {
+      const driver = this._drivers.get(d.id);
+      const stat   = this._stats.get(d.id);
+      return {
+        deviceId:      d.id,
+        deviceName:    d.name,
+        protocol:      d.protocol,
+        orgId:         d.orgId,
+        plantId:       d.plantId,
+        status:        driver ? driver.status : "no_driver",
+        startedAt:     stat?.startedAt ?? null,
+        lastReadingAt: stat?.lastReadingAt ?? null,
+        lastRttMs:     stat?.lastRttMs ?? null,
+        readingCount:  stat?.readingCount ?? 0,
+        errorCount:    stat?.errorCount ?? 0,
+      };
+    });
   }
 
   /** Call this after a device's config or template changes */
   async restartDevice(deviceId: string): Promise<void> {
     await this._stopDriver(deviceId);
     const [device] = await db.select().from(devicesTable).where(eq(devicesTable.id, deviceId));
-    if (device) await this._launchDriver(device);
+    if (device) {
+      // Keep it in the device list
+      const idx = this._allDevices.findIndex((d) => d.id === deviceId);
+      if (idx >= 0) this._allDevices[idx] = device;
+      else this._allDevices.push(device);
+      await this._launchDriver(device);
+    }
   }
 
   /** Used by connection-test endpoint — instantiates a throw-away driver */
@@ -116,8 +165,8 @@ class DriverRegistry {
 
   // ── Private ─────────────────────────────────────────────────────────────────
 
-  private async _launchDriver(device: typeof devicesTable.$inferSelect): Promise<boolean> {
-    const rawCfg = (device.config ?? {}) as DeviceConfig;
+  private async _launchDriver(device: DeviceRow): Promise<boolean> {
+    const rawCfg   = (device.config ?? {}) as DeviceConfig;
     const protocol = normalizeProtocol(device.protocol);
     if (!protocol) return false;
 
@@ -132,7 +181,7 @@ class DriverRegistry {
     }
 
     const driverCfg: DriverConfig = {
-      deviceId: device.id,
+      deviceId:        device.id,
       protocol,
       ipAddress:       rawCfg.ipAddress,
       port:            rawCfg.port,
@@ -148,6 +197,17 @@ class DriverRegistry {
     if (!driver) return false;
 
     this._drivers.set(device.id, driver);
+    this._stats.set(device.id, {
+      deviceName:    device.name,
+      protocol:      device.protocol,
+      orgId:         device.orgId,
+      plantId:       device.plantId,
+      startedAt:     new Date(),
+      lastReadingAt: null,
+      lastRttMs:     null,
+      readingCount:  0,
+      errorCount:    0,
+    });
     this._wire(driver, device.orgId);
     driver.start();
     return true;
@@ -159,6 +219,7 @@ class DriverRegistry {
       await existing.stop().catch(() => undefined);
       this._drivers.delete(deviceId);
     }
+    // Keep stats — cleared on re-launch
   }
 
   private _wire(driver: IDriver, orgId: string): void {
@@ -173,10 +234,21 @@ class DriverRegistry {
     });
 
     driver.on("log", (eventType: string, message: string, rttMs?: number) => {
+      // Update health stats for READ_OK events
+      if (eventType === "READ_OK") {
+        const stat = this._stats.get(deviceId);
+        if (stat) {
+          stat.lastReadingAt = new Date();
+          stat.readingCount  += 1;
+          if (rttMs !== undefined) stat.lastRttMs = rttMs;
+        }
+      }
       void this._writeCommLog(deviceId, eventType, message, rttMs);
     });
 
     driver.on("error", (err: Error) => {
+      const stat = this._stats.get(deviceId);
+      if (stat) stat.errorCount += 1;
       logger.warn({ deviceId, err: err.message }, "Driver error");
     });
   }
@@ -196,13 +268,11 @@ class DriverRegistry {
         params,
       });
 
-      // Update last_seen_at + status on the device row
       await db
         .update(devicesTable)
         .set({ lastSeenAt: now, status: "online", updatedAt: now })
         .where(eq(devicesTable.id, deviceId));
 
-      // Prune oldest readings beyond the cap
       await db.execute(sql`
         DELETE FROM device_readings
         WHERE device_id = ${deviceId}
@@ -246,7 +316,6 @@ class DriverRegistry {
         occurredAt: new Date(),
       });
 
-      // Prune oldest comm logs beyond the cap
       await db.execute(sql`
         DELETE FROM device_comm_logs
         WHERE device_id = ${deviceId}

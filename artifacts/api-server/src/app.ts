@@ -36,6 +36,8 @@ app.use(
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// Accept CSV payloads for the bulk import endpoint
+app.use(express.text({ type: "text/csv", limit: "10mb" }));
 // Signed cookies — SESSION_SECRET is validated above
 app.use(cookieParser(process.env.SESSION_SECRET));
 

@@ -12,3 +12,5 @@
 - [Notifications architecture](notifications-architecture.md) — in-app notificationsTable, in-memory org→SSE registry, createNotification() fire-and-forget, webhook signing requires tenant secret or header is omitted.
 - [Recharts 2.x + React 19 ref incompatibility](recharts-react19-ref.md) — recharts internal createRef() on <path> SVG elements crashes React 19 after Vite HMR reconnects; replace sparklines with pure SVG.
 - [SSE stream testing with supertest](sse-stream-testing.md) — use custom .parse() to read first event then res.destroy(); isSuperAdmin:false safer than true in mocks.
+- [SSRF guard scope](ssrf-guard-scope.md) — SSRF checks must cover create/update/restart paths, not just connection-test; drivers start from any device registration.
+- [CSV RFC 4180 parser](csv-rfc4180-parser.md) — naive split(",") corrupts quoted fields; use a stateful tokeniser that tracks inQuotes and re-joins quoted newlines before splitting lines.

@@ -21,6 +21,68 @@ import { driverRegistry } from "../lib/drivers/registry.js";
 import { assertNotSsrfTarget, SsrfBlockedError } from "../lib/drivers/ssrf.js";
 import type { DriverConfig, FieldDef } from "../lib/drivers/types.js";
 
+// ── CSV parser (RFC 4180 — handles quoted fields with embedded commas/newlines) ─
+
+function parseCsv(text: string): { headers: string[]; rows: Record<string, string>[] } {
+  /** Parse a single CSV value token, stripping surrounding quotes and unescaping "". */
+  function parseField(raw: string): string {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+      return trimmed.slice(1, -1).replace(/""/g, '"');
+    }
+    return trimmed;
+  }
+
+  /** Tokenise a CSV line respecting RFC 4180 quoting; returns field strings. */
+  function tokeniseLine(line: string): string[] {
+    const fields: string[] = [];
+    let cur = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i]!;
+      if (inQuotes) {
+        if (ch === '"') {
+          if (line[i + 1] === '"') { cur += '"'; i++; }    // escaped quote
+          else inQuotes = false;
+        } else { cur += ch; }
+      } else {
+        if (ch === '"') { inQuotes = true; }
+        else if (ch === ",") { fields.push(cur); cur = ""; }
+        else { cur += ch; }
+      }
+    }
+    fields.push(cur);
+    return fields;
+  }
+
+  // Normalise line endings, then split — but handle quoted newlines by re-joining
+  const normalised = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  // Re-assemble lines that contain quoted newlines
+  const rawLines: string[] = [];
+  let buf = "";
+  let inQ = false;
+  for (let i = 0; i < normalised.length; i++) {
+    const ch = normalised[i]!;
+    if (ch === '"') { inQ = !inQ; buf += ch; }
+    else if (ch === "\n" && !inQ) { rawLines.push(buf); buf = ""; }
+    else { buf += ch; }
+  }
+  if (buf) rawLines.push(buf);
+
+  const nonEmpty = rawLines.filter((l) => l.trim());
+  if (nonEmpty.length < 2) return { headers: [], rows: [] };
+
+  const headers = tokeniseLine(nonEmpty[0]!).map(parseField);
+  const rows: Record<string, string>[] = [];
+  for (let i = 1; i < nonEmpty.length; i++) {
+    const cols = tokeniseLine(nonEmpty[i]!).map(parseField);
+    const row: Record<string, string> = {};
+    headers.forEach((h, idx) => { row[h] = cols[idx] ?? ""; });
+    rows.push(row);
+  }
+  return { headers, rows };
+}
+
 const router: IRouter = Router();
 
 // ── Zod schemas ───────────────────────────────────────────────────────────────
@@ -130,6 +192,16 @@ function toDriverProtocol(raw: string): DriverConfig["protocol"] | null {
   }
 }
 
+// ── GET /devices/health-stats ─────────────────────────────────────────────────
+
+router.get("/devices/health-stats", requirePermission("device.view"), async (req, res) => {
+  const orgId = resolveOrgId(req);
+  const stats = await driverRegistry.getHealthStats();
+  // Scope to org if not super-admin
+  const filtered = orgId ? stats.filter((s) => s.orgId === orgId) : stats;
+  res.json(filtered);
+});
+
 // ── GET /devices ──────────────────────────────────────────────────────────────
 
 router.get("/devices", requirePermission("device.view"), async (req, res) => {
@@ -175,6 +247,19 @@ router.post("/devices", requirePermission("device.manage"), async (req, res) => 
     if (!tmpl || (tmpl.orgId && tmpl.orgId !== orgId)) {
       res.status(400).json({ error: "invalid_template", message: "Template not found" });
       return;
+    }
+  }
+
+  // SSRF guard — block loopback/metadata targets before persisting or starting a driver
+  const targetUrl = body.url ?? (body.ipAddress ? `tcp://${body.ipAddress}:${body.port ?? 502}` : null)
+                  ?? body.brokerUrl ?? null;
+  if (targetUrl) {
+    try { assertNotSsrfTarget(targetUrl); }
+    catch (err) {
+      if (err instanceof SsrfBlockedError) {
+        res.status(400).json({ error: "ssrf_blocked", message: err.message });
+        return;
+      }
     }
   }
 
@@ -271,6 +356,20 @@ router.patch("/devices/:id", requirePermission("device.manage"), async (req, res
     if (!tmpl || (tmpl.orgId && orgId !== null && tmpl.orgId !== orgId)) {
       res.status(400).json({ error: "invalid_template", message: "Template not found" });
       return;
+    }
+  }
+
+  // SSRF guard on updated network targets
+  const patchUrl = body.url
+    ?? (body.ipAddress ? `tcp://${body.ipAddress}:${body.port ?? 502}` : null)
+    ?? body.brokerUrl ?? null;
+  if (patchUrl) {
+    try { assertNotSsrfTarget(patchUrl); }
+    catch (err) {
+      if (err instanceof SsrfBlockedError) {
+        res.status(400).json({ error: "ssrf_blocked", message: err.message });
+        return;
+      }
     }
   }
 
@@ -381,6 +480,130 @@ router.get("/devices/:id/logs", requirePermission("device.view"), async (req, re
   const simLogs = deviceLogs(deviceId, count, new Date());
   res.json(simLogs);
 });
+
+// ── POST /devices/:id/import-readings ─────────────────────────────────────────
+
+router.post(
+  "/devices/:id/import-readings",
+  requirePermission("device.manage"),
+  async (req, res) => {
+    const orgId    = resolveOrgId(req);
+    const deviceId = (req.params["id"] as string) ?? "";
+    const [row]    = await db.select().from(devicesTable).where(eq(devicesTable.id, deviceId));
+    if (!row || (orgId !== null && row.orgId !== orgId)) {
+      res.status(404).json({ error: "not_found", message: "Device not found" });
+      return;
+    }
+
+    // Accept text/csv body
+    const body = req.body as unknown;
+    if (typeof body !== "string" || !body.trim()) {
+      res.status(400).json({ error: "bad_request", message: "Send CSV data as text/csv body" });
+      return;
+    }
+
+    const { headers, rows } = parseCsv(body);
+    if (headers.length === 0) {
+      res.status(400).json({ error: "bad_request", message: "CSV has no headers" });
+      return;
+    }
+
+    // First column must be timestamp-ish
+    const tsCol = headers.find((h) =>
+      /^(timestamp|ts|time|datetime|date_time)$/i.test(h),
+    ) ?? headers[0]!;
+    const paramCols = headers.filter((h) => h !== tsCol);
+
+    if (paramCols.length === 0) {
+      res.status(400).json({ error: "bad_request", message: "CSV must have at least one parameter column beyond the timestamp" });
+      return;
+    }
+
+    // Cap to 10 000 rows per upload to bound memory and DB impact
+    const MAX_IMPORT_ROWS = 10_000;
+    if (rows.length > MAX_IMPORT_ROWS) {
+      res.status(400).json({
+        error: "too_many_rows",
+        message: `CSV has ${rows.length} data rows — maximum is ${MAX_IMPORT_ROWS} per upload. Split into smaller files.`,
+      });
+      return;
+    }
+
+    let imported = 0;
+    let skippedInvalid = 0;
+    let skippedDuplicate = 0;
+
+    // Batch-insert in chunks of 500; check existing timestamps to handle deduplication
+    // without a DB unique constraint. Collect valid rows first.
+    const toInsert: { ts: Date; params: Record<string, number | string> }[] = [];
+    const parseErrors: string[] = [];
+
+    for (const r of rows) {
+      const raw = r[tsCol];
+      if (!raw?.trim()) continue;
+      const ts = new Date(raw.trim());
+      if (isNaN(ts.getTime())) {
+        parseErrors.push(`Invalid timestamp: ${raw}`);
+        skippedInvalid++;
+        continue;
+      }
+      const params: Record<string, number | string> = {};
+      for (const col of paramCols) {
+        const val = r[col];
+        if (val !== undefined && val !== "") {
+          const num = Number(val);
+          params[col] = isNaN(num) ? val : num;
+        }
+      }
+      if (Object.keys(params).length === 0) { skippedInvalid++; continue; }
+      toInsert.push({ ts, params });
+    }
+
+    // Batch insert in chunks; count actual inserts via returning()
+    const CHUNK = 500;
+    for (let i = 0; i < toInsert.length; i += CHUNK) {
+      const chunk = toInsert.slice(i, i + CHUNK);
+      const values = chunk.map((c) => ({
+        id:       randomUUID(),
+        deviceId,
+        orgId:    row.orgId,
+        ts:       c.ts,
+        params:   c.params,
+      }));
+      // Use INSERT … ON CONFLICT DO NOTHING; count rows actually inserted via returning
+      const inserted = await db
+        .insert(deviceReadingsTable)
+        .values(values)
+        .onConflictDoNothing()
+        .returning({ id: deviceReadingsTable.id });
+      imported        += inserted.length;
+      skippedDuplicate += chunk.length - inserted.length;
+    }
+
+    // Apply same bounded-retention policy as live driver ingestion
+    if (imported > 0) {
+      await db.execute(sql`
+        DELETE FROM device_readings
+        WHERE device_id = ${deviceId}
+          AND id NOT IN (
+            SELECT id FROM device_readings
+            WHERE device_id = ${deviceId}
+            ORDER BY ts DESC
+            LIMIT 2000
+          )
+      `);
+    }
+
+    req.log.info({ deviceId, imported, skippedInvalid, skippedDuplicate }, "CSV readings imported");
+    res.json({
+      ok: true,
+      imported,
+      skipped:  skippedInvalid + skippedDuplicate,
+      columns:  paramCols,
+      errors:   parseErrors.slice(0, 10),
+    });
+  },
+);
 
 // ── GET /devices/:id/readings ─────────────────────────────────────────────────
 

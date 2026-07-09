@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   BookOpen, Search, Plus, Copy, ChevronRight, Cpu, X, Check,
-  Radio, Globe, Zap, Wifi,
+  Radio, Globe, Zap, Wifi, Pencil,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -183,9 +183,14 @@ export default function DeviceTemplatesPage() {
             </p>
           </div>
           {canManage && (
-            <Button size="sm" className="gap-2" onClick={() => navigate("/devices")}>
-              <Plus className="h-4 w-4" /> Register Device
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="gap-2" onClick={() => navigate("/devices")}>
+                <Cpu className="h-4 w-4" /> Register Device
+              </Button>
+              <Button size="sm" className="gap-2" onClick={() => navigate("/device-templates/new")}>
+                <Plus className="h-4 w-4" /> Create Template
+              </Button>
+            </div>
           )}
         </div>
 
@@ -316,6 +321,20 @@ export default function DeviceTemplatesPage() {
                   >
                     <Copy className="h-3.5 w-3.5" />
                     {cloneMutation.isPending ? "Cloning…" : "Clone to Custom"}
+                  </Button>
+                )}
+                {selected.orgId !== null && canManage && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => {
+                      setSelected(null);
+                      navigate(`/device-templates/${selected.id}/edit`);
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit Template
                   </Button>
                 )}
                 <Button

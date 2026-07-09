@@ -21,6 +21,8 @@ import {
   Moon,
   Monitor,
   BookOpen,
+  Activity,
+  Database,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -80,9 +82,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { name: "AI Insights",  href: "/insights",    icon: Brain           },
     { name: "Alert Center", href: "/alerts",      icon: AlertTriangle   },
     { name: "Work Orders",  href: "/maintenance", icon: Wrench          },
-    { name: "Devices",      href: "/devices",          icon: Cpu      },
-    { name: "Dev Templates", href: "/device-templates", icon: BookOpen },
-    { name: "Reports",      href: "/reports",          icon: FileText },
+    { name: "Devices",         href: "/devices",              icon: Cpu      },
+    { name: "Dev Templates",   href: "/device-templates",     icon: BookOpen },
+    { name: "Driver Health",   href: "/driver-health",        icon: Activity },
+    { name: "Connect Source",  href: "/connect-data-source",  icon: Database },
+    { name: "Reports",         href: "/reports",              icon: FileText },
   ];
 
   const orgNav = [
