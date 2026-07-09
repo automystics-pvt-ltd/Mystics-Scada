@@ -19,11 +19,12 @@ import {
   combinerStrings,
   type CombinerStringsPayload,
 } from "../lib/combinerStrings";
+import { calcCombinerCount } from "../lib/combinerUtils";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function combinerCount(plant: PlantConfig): number {
-  return Math.max(2, Math.ceil(plant.inverterCount / 4));
+  return calcCombinerCount(plant.inverterCount);
 }
 
 /** Extract the zero-based inverter index from an ID like "plant-thar-inv-3". */

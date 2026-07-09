@@ -9,6 +9,7 @@ import {
   inverterHealth,
   stringReadings as rawStringReadings,
 } from "./simulation";
+import { calcCombinerCount } from "./combinerUtils";
 
 /** Parse the zero-based combiner index from an ID like "plant-thar-comb-2". */
 export function combinerIndexFromId(combinerId: string): number {
@@ -47,7 +48,7 @@ export function combinerStrings(
   combinerId: string,
   now: Date,
 ): CombinerStringsPayload {
-  const combinerCount = Math.max(2, Math.ceil(plant.inverterCount / 4));
+  const combinerCount = calcCombinerCount(plant.inverterCount);
   const combinerIndex = combinerIndexFromId(combinerId);
   const combinerLabel = `Combiner Box ${combinerIndex + 1}`;
 

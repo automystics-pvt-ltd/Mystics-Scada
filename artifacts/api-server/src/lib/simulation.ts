@@ -4,6 +4,8 @@
 // second are stable and the whole fleet "streams" convincingly without a
 // database or background workers.
 
+import { calcCombinerCount } from "./combinerUtils";
+
 export type HealthState = "normal" | "warning" | "fault" | "offline";
 export type InverterStatus = "running" | "standby" | "fault" | "comm_lost";
 export type TrackerType = "fixed_tilt" | "single_axis_tracker";
@@ -718,7 +720,7 @@ export function plantSld(plant: PlantConfig, now: Date, overrides?: SldOverrides
   const arrayId = `${plant.id}-array`;
   nodes.push({ id: arrayId, label: "PV Array", type: "panel_array", status: "normal" });
 
-  const combinerCount = Math.max(2, Math.ceil(plant.inverterCount / 4));
+  const combinerCount = calcCombinerCount(plant.inverterCount);
   const combinerPowerKw = new Array<number>(combinerCount).fill(0);
   // null = no active inverters feeding this combiner; readings are not meaningful.
   const combinerStringFaults = new Array<number | null>(combinerCount).fill(null);

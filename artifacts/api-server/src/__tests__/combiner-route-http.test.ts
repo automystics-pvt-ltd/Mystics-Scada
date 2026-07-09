@@ -24,6 +24,7 @@
 import { describe, it, expect, vi } from "vitest";
 import crypto from "node:crypto";
 import request, { type Test as SupertestTest } from "supertest";
+import { calcCombinerCount } from "../lib/combinerUtils";
 
 // ── 1. Mock @workspace/db ─────────────────────────────────────────────────────
 // The authenticate middleware runs a drizzle query:
@@ -99,9 +100,9 @@ function withAuth(req: SupertestTest) {
   return req.set("Cookie", `${SESSION_COOKIE}=${encodeURIComponent(validCookieValue)}`);
 }
 
-// ── 4. Combiner count helper (mirrors route logic) ────────────────────────────
+// ── 4. Combiner count helper ──────────────────────────────────────────────────
 function combinerCount(inverterCount: number): number {
-  return Math.max(2, Math.ceil(inverterCount / 4));
+  return calcCombinerCount(inverterCount);
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

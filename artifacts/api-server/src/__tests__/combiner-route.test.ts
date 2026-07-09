@@ -55,6 +55,7 @@ import express from "express";
 import supertest from "supertest";
 import plantsRouter from "../routes/plants";
 import { PLANTS, type PlantConfig } from "../lib/simulation";
+import { calcCombinerCount } from "../lib/combinerUtils";
 
 // ── Minimal test Express app ─────────────────────────────────────────────────
 
@@ -83,7 +84,7 @@ beforeAll(() => {
 // ── Helpers (same as combiner-drill-down.test.ts) ────────────────────────────
 
 function combinerCount(plant: PlantConfig): number {
-  return Math.max(2, Math.ceil(plant.inverterCount / 4));
+  return calcCombinerCount(plant.inverterCount);
 }
 
 function expectedTotalStrings(plant: PlantConfig, combinerIndex: number): number {

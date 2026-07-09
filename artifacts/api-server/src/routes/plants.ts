@@ -22,6 +22,7 @@ import {
   revenueData,
 } from "../lib/domain";
 import { combinerStrings } from "../lib/combinerStrings";
+import { calcCombinerCount } from "../lib/combinerUtils";
 import { activeAlertCountsByPlant } from "../lib/alertCounts";
 import { resolveOrgId } from "../lib/orgScope";
 
@@ -143,7 +144,7 @@ router.get("/plants/:plantId/combiners/:combinerId/strings", (req, res) => {
 
   const suffix = combinerId.slice(expectedPrefix.length);
   const combinerIndex = Number.parseInt(suffix, 10);
-  const combinerCount = Math.max(2, Math.ceil(plant.inverterCount / 4));
+  const combinerCount = calcCombinerCount(plant.inverterCount);
 
   if (
     Number.isNaN(combinerIndex) ||
