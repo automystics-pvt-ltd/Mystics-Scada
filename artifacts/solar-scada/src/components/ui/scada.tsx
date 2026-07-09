@@ -111,10 +111,13 @@ function buildSparklinePath(
   if (values.length < 2) return { line: "", area: "" };
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const range = max - min || 1;
+  const range = max - min;
   const pts = values.map((v, i) => {
     const x = (i / (values.length - 1)) * W;
-    const y = H - ((v - min) / range) * (H * 0.9) - H * 0.05;
+    // Flat/constant series: render at vertical midpoint, not bottom
+    const y = range === 0
+      ? H * 0.5
+      : H - ((v - min) / range) * (H * 0.9) - H * 0.05;
     return [x, y] as [number, number];
   });
   const line = pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");

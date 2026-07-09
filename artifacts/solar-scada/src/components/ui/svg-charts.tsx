@@ -53,11 +53,15 @@ function yTicks(lo: number, hi: number, count = 4): number[] {
   return Array.from({ length: count }, (_, i) => lo + i * step);
 }
 
-function xSubset(labels: string[], maxCount = 6): string[] {
-  if (labels.length <= maxCount) return labels;
-  const step = Math.ceil(labels.length / (maxCount - 1));
-  const result = labels.filter((_, i) => i === 0 || i % step === 0 || i === labels.length - 1);
-  return result.slice(0, maxCount);
+/** Returns index-stable {label, idx} pairs so tick placement is always correct,
+ *  even when the label list contains duplicate strings. */
+function xSubset(labels: string[], maxCount = 6): { label: string; idx: number }[] {
+  const all = labels.map((label, idx) => ({ label, idx }));
+  if (all.length <= maxCount) return all;
+  const step = Math.ceil(all.length / (maxCount - 1));
+  return all
+    .filter(({ idx }) => idx === 0 || idx % step === 0 || idx === all.length - 1)
+    .slice(0, maxCount);
 }
 
 function fmtNum(v: number): string {
@@ -110,14 +114,13 @@ function Axes({
           </text>
         );
       })}
-      {/* X-axis labels */}
-      {xLabels.map((lbl) => {
-        const idx = labels.indexOf(lbl);
-        const x   = mapX(idx, labels.length, x0, w);
+      {/* X-axis labels — use pre-computed idx to avoid indexOf duplicate-label bugs */}
+      {xLabels.map(({ label, idx }) => {
+        const x = mapX(idx, labels.length, x0, w);
         return (
-          <text key={lbl} x={x} y={y0 + h + 14} textAnchor="middle"
+          <text key={idx} x={x} y={y0 + h + 14} textAnchor="middle"
             fontSize={9} fill="hsl(var(--muted-foreground))">
-            {lbl}
+            {label}
           </text>
         );
       })}
@@ -367,13 +370,10 @@ export function MiniLineChart({
       {/* light gridline */}
       <line x1={x0} x2={x0 + w} y1={y0 + h / 2} y2={y0 + h / 2}
         stroke="hsl(var(--border))" strokeOpacity={0.4} strokeDasharray="3 3" />
-      {labels.map((lbl) => {
-        const idx = points.findIndex((p) => p.label === lbl);
-        return (
-          <text key={lbl} x={mapX(idx, points.length, x0, w)} y={H - 2}
-            textAnchor="middle" fontSize={8} fill="hsl(var(--muted-foreground))">{lbl}</text>
-        );
-      })}
+      {labels.map(({ label, idx }) => (
+        <text key={idx} x={mapX(idx, points.length, x0, w)} y={H - 2}
+          textAnchor="middle" fontSize={8} fill="hsl(var(--muted-foreground))">{label}</text>
+      ))}
       {points[0]?.ref !== undefined && (
         <path d={miniPts(points, "ref", lo, hi, W, H, pad)} fill="none"
           stroke={refColor} strokeWidth={1} strokeDasharray="3 2" />
@@ -406,13 +406,10 @@ export function MiniBarChart({
         <line x1={x0} x2={x0 + w} y1={refY} y2={refY}
           stroke={refColor} strokeWidth={1} strokeDasharray="3 2" />
       )}
-      {labels.map((lbl) => {
-        const idx = points.findIndex((p) => p.label === lbl);
-        return (
-          <text key={lbl} x={mapX(idx, points.length, x0, w)} y={H - 2}
-            textAnchor="middle" fontSize={8} fill="hsl(var(--muted-foreground))">{lbl}</text>
-        );
-      })}
+      {labels.map(({ label, idx }) => (
+        <text key={idx} x={mapX(idx, points.length, x0, w)} y={H - 2}
+          textAnchor="middle" fontSize={8} fill="hsl(var(--muted-foreground))">{label}</text>
+      ))}
       {points.map((p, i) => {
         const bx = barX(i, points.length, x0, w, barW);
         const by = mapY(p.value, lo, hi, y0, h);
@@ -444,13 +441,10 @@ export function MiniAreaChart({
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
       style={{ width: "100%", height: H }} aria-hidden>
       <defs><AreaGrad id={gradId} color={color} /></defs>
-      {labels.map((lbl) => {
-        const idx = points.findIndex((p) => p.label === lbl);
-        return (
-          <text key={lbl} x={mapX(idx, points.length, x0, w)} y={H - 2}
-            textAnchor="middle" fontSize={8} fill="hsl(var(--muted-foreground))">{lbl}</text>
-        );
-      })}
+      {labels.map(({ label, idx }) => (
+        <text key={idx} x={mapX(idx, points.length, x0, w)} y={H - 2}
+          textAnchor="middle" fontSize={8} fill="hsl(var(--muted-foreground))">{label}</text>
+      ))}
       {points[0]?.ref !== undefined && (
         <path d={miniPts(points, "ref", lo, hi, W, H, pad)} fill="none"
           stroke={refColor} strokeWidth={1} strokeDasharray="3 2" />
