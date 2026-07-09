@@ -186,8 +186,8 @@ export default function DriverHealthPage() {
         {isLoading ? (
           <p className="text-muted-foreground text-center py-12">Loading driver stats…</p>
         ) : (
-          <div className="rounded-lg border border-border overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="rounded-lg border border-border overflow-x-auto">
+            <table className="w-full text-sm min-w-[640px]">
               <thead>
                 <tr className="bg-muted/30 border-b border-border">
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Device</th>
@@ -262,7 +262,7 @@ export default function DriverHealthPage() {
                         <td className="px-4 py-3">
                           <Button
                             variant="ghost" size="sm"
-                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                            className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
                             title="Restart driver"
                             onClick={() => restartMutation.mutate(s.deviceId)}
                             disabled={restartMutation.isPending}

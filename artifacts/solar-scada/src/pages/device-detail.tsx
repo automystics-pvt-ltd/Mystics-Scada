@@ -419,7 +419,7 @@ export default function DeviceDetailPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left — live status panel */}
           <div className="space-y-4">
             {/* Status card */}
@@ -490,14 +490,14 @@ export default function DeviceDetailPage() {
           </div>
 
           {/* Right — tabs */}
-          <div className="col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-4">
             {/* Tab bar */}
-            <div className="flex border-b border-border">
+            <div className="flex border-b border-border overflow-x-auto scrollbar-none">
               {(["config", "logs", "history", "live-data"] as Tab[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2.5 text-sm font-medium transition-colors capitalize border-b-2 -mb-px flex items-center gap-1.5 ${
+                  className={`px-3 sm:px-4 py-2.5 text-sm font-medium transition-colors capitalize border-b-2 -mb-px flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                     activeTab === tab
                       ? "border-primary text-foreground"
                       : "border-transparent text-muted-foreground hover:text-foreground"
@@ -544,7 +544,7 @@ export default function DeviceDetailPage() {
                   <div className="rounded-lg border border-border p-4 space-y-4">
                     {configForm && (
                       <>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {device.protocol === "modbus" && (
                             <>
                               <div>
@@ -566,12 +566,12 @@ export default function DeviceDetailPage() {
                           )}
                           {device.protocol === "mqtt" && (
                             <>
-                              <div className="col-span-2">
+                              <div className="col-span-1 sm:col-span-2">
                                 <Label>Broker URL</Label>
                                 <Input className="mt-1" value={configForm.brokerUrl}
                                   onChange={(e) => setConfigForm((f) => f && ({ ...f, brokerUrl: e.target.value }))} />
                               </div>
-                              <div className="col-span-2">
+                              <div className="col-span-1 sm:col-span-2">
                                 <Label>Topic</Label>
                                 <Input className="mt-1" value={configForm.topic}
                                   onChange={(e) => setConfigForm((f) => f && ({ ...f, topic: e.target.value }))} />

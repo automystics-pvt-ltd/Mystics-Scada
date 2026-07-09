@@ -276,7 +276,7 @@ export default function DevicesPage() {
         </div>
 
         {/* KPI strip */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-3 gap-3 sm:gap-4">
           {[
             { label: "Online",  count: counts.online,  color: "text-status-normal",   bg: "bg-status-normal/10" },
             { label: "Offline", count: counts.offline, color: "text-muted-foreground", bg: "bg-muted/30" },
@@ -338,8 +338,8 @@ export default function DevicesPage() {
         </div>
 
         {/* Table */}
-        <div className="rounded-lg border border-border overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="rounded-lg border border-border overflow-x-auto">
+          <table className="w-full text-sm min-w-[700px]">
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wide">Name</th>
@@ -426,8 +426,8 @@ export default function DevicesPage() {
             <DialogTitle>Register New Device</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="col-span-1 sm:col-span-2">
                 <Label>Device Template <span className="text-muted-foreground font-normal">(optional — auto-fills protocol &amp; register map)</span></Label>
                 <Select value={form.templateId || "none"} onValueChange={(v) => onTemplateChange(v === "none" ? "" : v)}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="No template (custom)" /></SelectTrigger>
@@ -441,7 +441,7 @@ export default function DevicesPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-2">
+              <div className="col-span-1 sm:col-span-2">
                 <Label>Device Name</Label>
                 <Input
                   className="mt-1"
@@ -468,7 +468,7 @@ export default function DevicesPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-2">
+              <div className="col-span-1 sm:col-span-2">
                 <Label>Plant Assignment</Label>
                 <Select value={form.plantId} onValueChange={(v) => setForm((f) => ({ ...f, plantId: v }))}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
@@ -502,12 +502,12 @@ export default function DevicesPage() {
               )}
               {form.protocol === "mqtt" && (
                 <>
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <Label>Broker URL</Label>
                     <Input className="mt-1" placeholder="mqtt://10.0.1.50:1883" value={form.brokerUrl}
                       onChange={(e) => setForm((f) => ({ ...f, brokerUrl: e.target.value }))} />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <Label>Topic</Label>
                     <Input className="mt-1" placeholder="plant/thar/wx/0/data" value={form.topic}
                       onChange={(e) => setForm((f) => ({ ...f, topic: e.target.value }))} />
@@ -526,7 +526,7 @@ export default function DevicesPage() {
                     <Input className="mt-1" type="number" value={form.port}
                       onChange={(e) => setForm((f) => ({ ...f, port: e.target.value }))} />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <Label>Endpoint URL <span className="text-muted-foreground font-normal">(overrides IP/port if set)</span></Label>
                     <Input className="mt-1" placeholder="https://device.local/api/data" value={form.url}
                       onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))} />
@@ -534,7 +534,7 @@ export default function DevicesPage() {
                 </>
               )}
               {form.protocol === "websocket" && (
-                <div className="col-span-2">
+                <div className="col-span-1 sm:col-span-2">
                   <Label>WebSocket URL</Label>
                   <Input className="mt-1" placeholder="ws://10.0.1.30:8080/data" value={form.url}
                     onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))} />

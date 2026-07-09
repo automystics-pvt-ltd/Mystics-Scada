@@ -358,53 +358,55 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
         </div>
       )}
 
-      {/* Mapping rows */}
+      {/* Mapping rows — horizontally scrollable on mobile */}
       {state.mappings.length > 0 && (
-        <div className="space-y-2">
-          {/* Header */}
-          <div className="grid grid-cols-[1fr_1fr_1fr_80px_60px_28px] gap-2 px-1">
-            {["Source Field", "Param Key", "Display Label", "Unit", "Scale ×", ""].map((h) => (
-              <span key={h} className="text-[10px] font-medium text-muted-foreground uppercase">{h}</span>
+        <div className="overflow-x-auto -mx-1 px-1">
+          <div className="space-y-2 min-w-[520px]">
+            {/* Header */}
+            <div className="grid grid-cols-[1fr_1fr_1fr_80px_60px_28px] gap-2 px-1">
+              {["Source Field", "Param Key", "Display Label", "Unit", "Scale ×", ""].map((h) => (
+                <span key={h} className="text-[10px] font-medium text-muted-foreground uppercase">{h}</span>
+              ))}
+            </div>
+            {state.mappings.map((m, idx) => (
+              <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_80px_60px_28px] gap-2 items-center">
+                <Input
+                  className="h-8 text-xs font-mono"
+                  placeholder="source_field"
+                  value={m.sourceField}
+                  onChange={(e) => updateMapping(idx, { sourceField: e.target.value })}
+                />
+                <Input
+                  className="h-8 text-xs font-mono"
+                  placeholder="param_key"
+                  value={m.paramKey}
+                  onChange={(e) => updateMapping(idx, { paramKey: e.target.value.toLowerCase().replace(/\s+/g, "_") })}
+                />
+                <Input
+                  className="h-8 text-xs"
+                  placeholder="AC Power"
+                  value={m.paramLabel}
+                  onChange={(e) => updateMapping(idx, { paramLabel: e.target.value })}
+                />
+                <Input
+                  className="h-8 text-xs"
+                  placeholder="W"
+                  value={m.unit}
+                  onChange={(e) => updateMapping(idx, { unit: e.target.value })}
+                />
+                <Input
+                  className="h-8 text-xs"
+                  placeholder="1"
+                  value={m.multiplier}
+                  onChange={(e) => updateMapping(idx, { multiplier: e.target.value })}
+                />
+                <button onClick={() => removeMapping(idx)}
+                  className="text-muted-foreground hover:text-red-400 transition-colors">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
             ))}
           </div>
-          {state.mappings.map((m, idx) => (
-            <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_80px_60px_28px] gap-2 items-center">
-              <Input
-                className="h-8 text-xs font-mono"
-                placeholder="source_field"
-                value={m.sourceField}
-                onChange={(e) => updateMapping(idx, { sourceField: e.target.value })}
-              />
-              <Input
-                className="h-8 text-xs font-mono"
-                placeholder="param_key"
-                value={m.paramKey}
-                onChange={(e) => updateMapping(idx, { paramKey: e.target.value.toLowerCase().replace(/\s+/g, "_") })}
-              />
-              <Input
-                className="h-8 text-xs"
-                placeholder="AC Power"
-                value={m.paramLabel}
-                onChange={(e) => updateMapping(idx, { paramLabel: e.target.value })}
-              />
-              <Input
-                className="h-8 text-xs"
-                placeholder="W"
-                value={m.unit}
-                onChange={(e) => updateMapping(idx, { unit: e.target.value })}
-              />
-              <Input
-                className="h-8 text-xs"
-                placeholder="1"
-                value={m.multiplier}
-                onChange={(e) => updateMapping(idx, { multiplier: e.target.value })}
-              />
-              <button onClick={() => removeMapping(idx)}
-                className="text-muted-foreground hover:text-red-400 transition-colors">
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))}
         </div>
       )}
 

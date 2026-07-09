@@ -128,7 +128,7 @@ function FieldEditor({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Parameter Key <span className="text-red-400">*</span></Label>
               <Input
@@ -385,7 +385,7 @@ export default function DeviceTemplateBuilderPage() {
         {/* Template metadata */}
         <div className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-sm font-semibold">Device Identity</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label>Manufacturer <span className="text-red-400">*</span></Label>
               <Input className="mt-1" placeholder="Huawei, Sungrow, Custom…" value={manufacturer}
@@ -410,7 +410,7 @@ export default function DeviceTemplateBuilderPage() {
               <Input className="mt-1" type="number" min={5} max={3600} value={pollInterval}
                 onChange={(e) => setPollInterval(Number(e.target.value) || 30)} />
             </div>
-            <div className="col-span-2">
+            <div className="col-span-1 sm:col-span-2">
               <Label>Firmware Version Parameter Key <span className="text-muted-foreground font-normal">(optional)</span></Label>
               <Input className="mt-1 font-mono text-sm" placeholder="firmware_version"
                 value={fwParam} onChange={(e) => setFwParam(e.target.value)} />
@@ -447,8 +447,8 @@ export default function DeviceTemplateBuilderPage() {
               <p className="text-xs text-muted-foreground mt-1">Click "Add Field" to define your first parameter.</p>
             </div>
           ) : (
-            <div className="rounded-lg border border-border overflow-hidden">
-              <table className="w-full text-xs">
+            <div className="rounded-lg border border-border overflow-x-auto">
+              <table className="w-full text-xs min-w-[560px]">
                 <thead>
                   <tr className="bg-muted/30 border-b border-border">
                     <th className="w-6 px-2 py-2" />
