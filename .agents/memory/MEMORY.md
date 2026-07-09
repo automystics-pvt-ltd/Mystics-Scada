@@ -1,4 +1,6 @@
 - [Orval Params-type collision](orval-params-collision.md) — mixed path+query ops need explicit re-exports in api-zod index to avoid TS2308 name clash.
+- [DB package composite build](db-package-composite-build.md) — new tables invisible to dependents until `pnpm --filter @workspace/db exec tsc --build` is run.
+- [Modbus TCP reconnect guard](modbus-reconnect-guard.md) — socket.destroy() triggers "close" re-entry; guard with a _reconnecting flag to prevent duplicate reconnect timers.
 - [cookie-parser signed cookies](cookie-parser-signed.md) — res.cookie() requires explicit signed:true; missing it stores plain JSON and req.signedCookies can't find it.
 - [bcrypt timing dummy hash](bcrypt-timing-dummy.md) — use bcrypt.hashSync at module init for a valid dummy; an invalid fake hash makes compare() return instantly, leaking account existence.
 - [Simulated telemetry vs persisted state](simulated-vs-persisted-telemetry.md) — SCADA-style demos: compute read-heavy live telemetry in-memory, persist only mutable/CRUD state in DB.

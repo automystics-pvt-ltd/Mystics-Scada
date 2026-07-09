@@ -1,16 +1,25 @@
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter } from "express";
-import { and, eq, type SQL } from "drizzle-orm";
+import { and, desc, eq, type SQL } from "drizzle-orm";
 import { z } from "zod/v4";
-import { db, devicesTable } from "@workspace/db";
-import { resolveOrgId, orgCondition } from "../lib/orgScope";
-import { requirePermission } from "../middleware/requirePermission";
-import { getOrgPlants } from "../lib/domain";
+import {
+  db,
+  devicesTable,
+  deviceReadingsTable,
+  deviceCommLogsTable,
+  deviceTemplatesTable,
+} from "@workspace/db";
+import { resolveOrgId, orgCondition } from "../lib/orgScope.js";
+import { requirePermission } from "../middleware/requirePermission.js";
+import { getOrgPlants } from "../lib/domain.js";
 import {
   deviceStatus,
   deviceLogs,
   deviceConnectivityTimeline,
-} from "../lib/simulation";
+} from "../lib/simulation.js";
+import { driverRegistry } from "../lib/drivers/registry.js";
+import { assertNotSsrfTarget, SsrfBlockedError } from "../lib/drivers/ssrf.js";
+import type { DriverConfig, FieldDef } from "../lib/drivers/types.js";
 
 const router: IRouter = Router();
 
@@ -21,32 +30,36 @@ const DEVICE_TYPES = [
   "weather_station", "tracker_controller", "sensor", "gateway",
 ] as const;
 
-const PROTOCOLS = ["modbus", "mqtt", "http", "opcua"] as const;
+const PROTOCOLS = ["modbus", "mqtt", "http", "opcua", "websocket"] as const;
 
 const RegisterDeviceBody = z.object({
-  name:              z.string().min(1).max(120),
-  type:              z.enum(DEVICE_TYPES),
-  protocol:          z.enum(PROTOCOLS),
-  plantId:           z.string().min(1),
-  ipAddress:         z.string().optional(),
-  port:              z.number().int().min(1).max(65535).optional(),
-  modbusUnitId:      z.number().int().min(1).max(247).optional(),
-  brokerUrl:         z.string().optional(),
-  topic:             z.string().optional(),
+  name:               z.string().min(1).max(120),
+  type:               z.enum(DEVICE_TYPES),
+  protocol:           z.enum(PROTOCOLS),
+  plantId:            z.string().min(1),
+  templateId:         z.string().optional(),
+  ipAddress:          z.string().optional(),
+  port:               z.number().int().min(1).max(65535).optional(),
+  modbusUnitId:       z.number().int().min(1).max(247).optional(),
+  brokerUrl:          z.string().optional(),
+  topic:              z.string().optional(),
+  url:                z.string().optional(),
   pollingIntervalSec: z.number().int().min(5).max(3600).default(30),
 });
 
 const UpdateDeviceBody = z.object({
-  name:              z.string().min(1).max(120).optional(),
-  ipAddress:         z.string().optional(),
-  port:              z.number().int().min(1).max(65535).optional(),
-  modbusUnitId:      z.number().int().min(1).max(247).optional(),
-  brokerUrl:         z.string().optional(),
-  topic:             z.string().optional(),
+  name:               z.string().min(1).max(120).optional(),
+  templateId:         z.string().nullable().optional(),
+  ipAddress:          z.string().optional(),
+  port:               z.number().int().min(1).max(65535).optional(),
+  modbusUnitId:       z.number().int().min(1).max(247).optional(),
+  brokerUrl:          z.string().optional(),
+  topic:              z.string().optional(),
+  url:                z.string().optional(),
   pollingIntervalSec: z.number().int().min(5).max(3600).optional(),
 });
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 type DeviceRow = typeof devicesTable.$inferSelect;
 type DeviceConfig = {
@@ -55,6 +68,7 @@ type DeviceConfig = {
   modbusUnitId?: number;
   brokerUrl?: string;
   topic?: string;
+  url?: string;
   pollingIntervalSec?: number;
   pendingDeploy?: boolean;
 };
@@ -67,6 +81,12 @@ function parseConfig(raw: unknown): DeviceConfig {
 function toDeviceResponse(row: DeviceRow, now: Date) {
   const sim = deviceStatus(row.id, now);
   const cfg = parseConfig(row.config);
+  // Use real status from DB if available; otherwise fall through to simulation
+  const liveStatus = (row.status as string | undefined);
+  const status = liveStatus && liveStatus !== "offline" ? liveStatus : sim.status;
+  const lastSeenAt = row.lastSeenAt ? row.lastSeenAt.toISOString() : sim.lastSeenAt;
+  const firmwareVersion = row.firmwareVersion ?? sim.firmwareVersion;
+
   return {
     id: row.id,
     orgId: row.orgId,
@@ -74,16 +94,20 @@ function toDeviceResponse(row: DeviceRow, now: Date) {
     name: row.name,
     type: row.type,
     protocol: row.protocol,
-    status: sim.status,
+    templateId: row.templateId ?? null,
+    status,
     signalStrengthPct: sim.signalStrengthPct,
-    lastSeenAt: sim.lastSeenAt,
-    firmwareVersion: sim.firmwareVersion,
+    lastSeenAt,
+    firmwareVersion,
+    // dataSource: "live" when we have a real lastSeenAt within 3x polling interval
+    dataSource: row.lastSeenAt ? "live" : "simulated",
     config: {
       ipAddress:          cfg.ipAddress ?? null,
       port:               cfg.port ?? null,
       modbusUnitId:       cfg.modbusUnitId ?? null,
       brokerUrl:          cfg.brokerUrl ?? null,
       topic:              cfg.topic ?? null,
+      url:                cfg.url ?? null,
       pollingIntervalSec: cfg.pollingIntervalSec ?? 30,
     },
     pendingDeploy: cfg.pendingDeploy ?? false,
@@ -92,12 +116,25 @@ function toDeviceResponse(row: DeviceRow, now: Date) {
   };
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Normalize protocol string to DriverConfig.protocol */
+function toDriverProtocol(raw: string): DriverConfig["protocol"] | null {
+  switch (raw.toLowerCase()) {
+    case "modbus": case "modbus_tcp": return "modbus_tcp";
+    case "modbus_rtu": return "modbus_rtu";
+    case "mqtt": return "mqtt";
+    case "http": return "http";
+    case "websocket": case "ws": return "websocket";
+    default: return null;
+  }
+}
+
 // ── GET /devices ──────────────────────────────────────────────────────────────
 
 router.get("/devices", requirePermission("device.view"), async (req, res) => {
   const orgId = resolveOrgId(req);
   const now = new Date();
-
   const conditions: SQL[] = [];
   const oc = orgCondition(devicesTable.orgId, orgId);
   if (oc) conditions.push(oc);
@@ -123,11 +160,22 @@ router.post("/devices", requirePermission("device.manage"), async (req, res) => 
 
   const body = RegisterDeviceBody.parse(req.body);
 
-  // Verify plant belongs to org
   const plants = getOrgPlants(orgId);
   if (!plants.find((p) => p.id === body.plantId)) {
     res.status(404).json({ error: "not_found", message: "Plant not found" });
     return;
+  }
+
+  // Validate template if provided
+  if (body.templateId) {
+    const [tmpl] = await db
+      .select()
+      .from(deviceTemplatesTable)
+      .where(eq(deviceTemplatesTable.id, body.templateId));
+    if (!tmpl || (tmpl.orgId && tmpl.orgId !== orgId)) {
+      res.status(400).json({ error: "invalid_template", message: "Template not found" });
+      return;
+    }
   }
 
   const config: DeviceConfig = {
@@ -136,28 +184,35 @@ router.post("/devices", requirePermission("device.manage"), async (req, res) => 
     modbusUnitId:       body.modbusUnitId,
     brokerUrl:          body.brokerUrl,
     topic:              body.topic,
+    url:                body.url,
     pollingIntervalSec: body.pollingIntervalSec,
     pendingDeploy:      false,
   };
 
   const now = new Date();
+  const deviceId = randomUUID();
   const [created] = await db
     .insert(devicesTable)
     .values({
-      id:       randomUUID(),
+      id: deviceId,
       orgId,
-      plantId:  body.plantId,
-      name:     body.name,
-      type:     body.type,
-      protocol: body.protocol,
-      status:   "offline",
+      plantId:    body.plantId,
+      name:       body.name,
+      type:       body.type,
+      protocol:   body.protocol,
+      templateId: body.templateId ?? null,
+      status:     "offline",
       config,
       createdAt: now,
       updatedAt: now,
     })
     .returning();
 
-  req.log.info({ deviceId: created?.id }, "Device registered");
+  req.log.info({ deviceId }, "Device registered");
+
+  // Start driver if connection info is present
+  await driverRegistry.restartDevice(deviceId).catch(() => undefined);
+
   res.status(201).json(toDeviceResponse(created!, now));
 });
 
@@ -174,8 +229,19 @@ router.get("/devices/:id", requirePermission("device.view"), async (req, res) =>
   const now = new Date();
   const timeline = deviceConnectivityTimeline(row.id, now);
 
+  // Fetch template info if assigned
+  let template = null;
+  if (row.templateId) {
+    const [tmpl] = await db
+      .select()
+      .from(deviceTemplatesTable)
+      .where(eq(deviceTemplatesTable.id, row.templateId));
+    if (tmpl) template = { id: tmpl.id, manufacturer: tmpl.manufacturer, model: tmpl.model, fieldMap: tmpl.fieldMap };
+  }
+
   res.json({
     ...toDeviceResponse(row, now),
+    template,
     connectivityTimeline: timeline.map((p) => ({
       timestamp: p.timestamp,
       status: p.status,
@@ -195,29 +261,46 @@ router.patch("/devices/:id", requirePermission("device.manage"), async (req, res
   }
 
   const body = UpdateDeviceBody.parse(req.body);
-  const currentCfg = parseConfig(existing.config);
 
-  // Merge config changes; set pendingDeploy = true so UI shows "deploy pending"
+  // Validate new template if changing
+  if (body.templateId) {
+    const [tmpl] = await db
+      .select()
+      .from(deviceTemplatesTable)
+      .where(eq(deviceTemplatesTable.id, body.templateId));
+    if (!tmpl || (tmpl.orgId && orgId !== null && tmpl.orgId !== orgId)) {
+      res.status(400).json({ error: "invalid_template", message: "Template not found" });
+      return;
+    }
+  }
+
+  const currentCfg = parseConfig(existing.config);
   const newCfg: DeviceConfig = {
     ...currentCfg,
-    ...(body.ipAddress !== undefined && { ipAddress: body.ipAddress }),
-    ...(body.port !== undefined && { port: body.port }),
-    ...(body.modbusUnitId !== undefined && { modbusUnitId: body.modbusUnitId }),
-    ...(body.brokerUrl !== undefined && { brokerUrl: body.brokerUrl }),
-    ...(body.topic !== undefined && { topic: body.topic }),
+    ...(body.ipAddress !== undefined          && { ipAddress:          body.ipAddress }),
+    ...(body.port !== undefined               && { port:               body.port }),
+    ...(body.modbusUnitId !== undefined       && { modbusUnitId:       body.modbusUnitId }),
+    ...(body.brokerUrl !== undefined          && { brokerUrl:          body.brokerUrl }),
+    ...(body.topic !== undefined              && { topic:              body.topic }),
+    ...(body.url !== undefined                && { url:                body.url }),
     ...(body.pollingIntervalSec !== undefined && { pollingIntervalSec: body.pollingIntervalSec }),
     pendingDeploy: true,
   };
 
   const now = new Date();
   const updates: Partial<typeof devicesTable.$inferInsert> = {
-    config: newCfg,
+    config:    newCfg,
     updatedAt: now,
   };
-  if (body.name) updates.name = body.name;
+  if (body.name)                         updates.name       = body.name;
+  if (body.templateId !== undefined)     updates.templateId = body.templateId ?? null;
 
   const [updated] = await db.update(devicesTable).set(updates).where(eq(devicesTable.id, deviceId)).returning();
   req.log.info({ deviceId }, "Device config updated — pending deploy");
+
+  // Restart the driver to pick up new config/template
+  await driverRegistry.restartDevice(deviceId).catch(() => undefined);
+
   res.json(toDeviceResponse(updated!, now));
 });
 
@@ -233,8 +316,8 @@ router.post("/devices/:id/restart", requirePermission("device.manage"), async (r
   }
 
   req.log.info({ deviceId }, "Device restart requested");
-  // Simulate restart: update updatedAt so "last action" timestamp changes
   await db.update(devicesTable).set({ updatedAt: new Date() }).where(eq(devicesTable.id, deviceId));
+  await driverRegistry.restartDevice(deviceId).catch(() => undefined);
   res.json({ ok: true, message: "Restart command sent to device" });
 });
 
@@ -249,7 +332,6 @@ router.post("/devices/:id/sync", requirePermission("device.manage"), async (req,
     return;
   }
 
-  // Clear pendingDeploy — config acknowledged by device
   const cfg = parseConfig(row.config);
   cfg.pendingDeploy = false;
   const [updated] = await db
@@ -274,8 +356,122 @@ router.get("/devices/:id/logs", requirePermission("device.view"), async (req, re
   }
 
   const count = Math.min(Number(req.query["count"] ?? 100), 200);
-  const logs = deviceLogs(deviceId, count, new Date());
-  res.json(logs);
+
+  // Return real comm logs if they exist, otherwise simulation
+  const realLogs = await db
+    .select()
+    .from(deviceCommLogsTable)
+    .where(eq(deviceCommLogsTable.deviceId, deviceId))
+    .orderBy(desc(deviceCommLogsTable.occurredAt))
+    .limit(count);
+
+  if (realLogs.length > 0) {
+    res.json(realLogs.map((l) => ({
+      timestamp: l.occurredAt,
+      level:     l.eventType === "READ_OK" || l.eventType === "CONNECT" ? "INFO"
+               : l.eventType === "PARSE_ERROR" ? "WARN" : "ERROR",
+      message:   `[${l.eventType}] ${l.message ?? ""}${l.rttMs != null ? ` (${l.rttMs}ms)` : ""}`,
+      eventType: l.eventType,
+      rttMs:     l.rttMs,
+    })));
+    return;
+  }
+
+  // Fallback to simulation
+  const simLogs = deviceLogs(deviceId, count, new Date());
+  res.json(simLogs);
+});
+
+// ── GET /devices/:id/readings ─────────────────────────────────────────────────
+
+router.get("/devices/:id/readings", requirePermission("device.view"), async (req, res) => {
+  const orgId = resolveOrgId(req);
+  const deviceId = (req.params["id"] as string) ?? "";
+  const [row] = await db.select().from(devicesTable).where(eq(devicesTable.id, deviceId));
+  if (!row || (orgId !== null && row.orgId !== orgId)) {
+    res.status(404).json({ error: "not_found", message: "Device not found" });
+    return;
+  }
+
+  const limit = Math.min(Number(req.query["limit"] ?? 1), 100);
+  const readings = await db
+    .select()
+    .from(deviceReadingsTable)
+    .where(eq(deviceReadingsTable.deviceId, deviceId))
+    .orderBy(desc(deviceReadingsTable.ts))
+    .limit(limit);
+
+  res.json(readings.map((r) => ({ ts: r.ts, params: r.params })));
+});
+
+// ── GET /devices/:id/connection-test ──────────────────────────────────────────
+
+router.get("/devices/:id/connection-test", requirePermission("device.manage"), async (req, res) => {
+  const orgId = resolveOrgId(req);
+  const deviceId = (req.params["id"] as string) ?? "";
+  const [row] = await db.select().from(devicesTable).where(eq(devicesTable.id, deviceId));
+  if (!row || (orgId !== null && row.orgId !== orgId)) {
+    res.status(404).json({ error: "not_found", message: "Device not found" });
+    return;
+  }
+
+  const cfg = parseConfig(row.config);
+  const protocol = toDriverProtocol(row.protocol);
+  if (!protocol) {
+    res.status(400).json({ error: "unsupported_protocol", message: `Protocol '${row.protocol}' is not supported by the driver framework` });
+    return;
+  }
+
+  // Resolve field map from template
+  let fieldMap: FieldDef[] = [];
+  if (row.templateId) {
+    const [tmpl] = await db
+      .select()
+      .from(deviceTemplatesTable)
+      .where(eq(deviceTemplatesTable.id, row.templateId));
+    if (tmpl?.fieldMap) fieldMap = tmpl.fieldMap as FieldDef[];
+  }
+
+  const driverCfg: DriverConfig = {
+    deviceId,
+    protocol,
+    ipAddress:       cfg.ipAddress,
+    port:            cfg.port,
+    modbusUnitId:    cfg.modbusUnitId,
+    brokerUrl:       cfg.brokerUrl,
+    topic:           cfg.topic,
+    url:             cfg.url,
+    pollingIntervalS: cfg.pollingIntervalSec ?? 30,
+    fieldMap,
+  };
+
+  // SSRF guard — block loopback / link-local / metadata targets
+  try {
+    assertNotSsrfTarget(driverCfg.ipAddress);
+    assertNotSsrfTarget(driverCfg.brokerUrl);
+    assertNotSsrfTarget(driverCfg.url);
+  } catch (e) {
+    if (e instanceof SsrfBlockedError) {
+      res.status(400).json({ ok: false, error: "ssrf_blocked", message: e.message });
+      return;
+    }
+    throw e;
+  }
+
+  const driver = driverRegistry.makeTestDriver(driverCfg);
+  if (!driver) {
+    res.status(400).json({
+      ok: false,
+      error: "no_connection_info",
+      message: "Device has no connection parameters configured (IP address, broker URL, or endpoint URL required)",
+    });
+    return;
+  }
+
+  req.log.info({ deviceId, protocol }, "Connection test initiated");
+  const result = await driver.test(5_000);
+  req.log.info({ deviceId, ok: result.ok, latencyMs: result.latencyMs }, "Connection test complete");
+  res.json(result);
 });
 
 export default router;

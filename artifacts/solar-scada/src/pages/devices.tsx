@@ -38,6 +38,14 @@ const BASE = import.meta.env.BASE_URL;
 
 type DeviceStatus = "online" | "offline" | "error";
 
+interface Template {
+  id: string;
+  manufacturer: string;
+  model: string;
+  protocol: string;
+  defaultPollIntervalS: number;
+}
+
 interface Device {
   id: string;
   orgId: string;
@@ -45,10 +53,12 @@ interface Device {
   name: string;
   type: string;
   protocol: string;
+  templateId: string | null;
   status: DeviceStatus;
   signalStrengthPct: number;
   lastSeenAt: string;
   firmwareVersion: string;
+  dataSource: "live" | "simulated";
   pendingDeploy: boolean;
   config: {
     ipAddress: string | null;
@@ -64,7 +74,7 @@ const DEVICE_TYPES = [
   "RTU", "PLC", "data_logger", "smart_meter", "inverter",
   "weather_station", "tracker_controller", "sensor", "gateway",
 ];
-const PROTOCOLS = ["modbus", "mqtt", "http", "opcua"];
+const PROTOCOLS = ["modbus", "mqtt", "http", "opcua", "websocket"];
 
 const PLANT_NAMES: Record<string, string> = {
   "plant-thar":       "Thar Desert Solar Farm",
@@ -137,8 +147,9 @@ export default function DevicesPage() {
   // Register form state
   const [form, setForm] = useState({
     name: "", type: "RTU", protocol: "modbus", plantId: "plant-thar",
+    templateId: "",
     ipAddress: "", port: "502", modbusUnitId: "1", pollingIntervalSec: "30",
-    brokerUrl: "", topic: "",
+    brokerUrl: "", topic: "", url: "",
   });
 
   const { data: devices = [], isLoading } = useQuery<Device[]>({
@@ -149,6 +160,15 @@ export default function DevicesPage() {
       return r.json() as Promise<Device[]>;
     },
     refetchInterval: 30_000,
+  });
+
+  const { data: templates = [] } = useQuery<Template[]>({
+    queryKey: ["device-templates"],
+    queryFn: async () => {
+      const r = await fetch(`${BASE}api/device-templates`, { credentials: "include" });
+      if (!r.ok) return [];
+      return r.json() as Promise<Template[]>;
+    },
   });
 
   const registerMutation = useMutation({
@@ -169,12 +189,29 @@ export default function DevicesPage() {
       void queryClient.invalidateQueries({ queryKey: ["devices"] });
       setShowRegister(false);
       setForm({ name: "", type: "RTU", protocol: "modbus", plantId: "plant-thar",
+        templateId: "",
         ipAddress: "", port: "502", modbusUnitId: "1", pollingIntervalSec: "30",
-        brokerUrl: "", topic: "" });
+        brokerUrl: "", topic: "", url: "" });
       toast({ title: "Device registered", description: "New device added to the registry." });
     },
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
+
+  function onTemplateChange(templateId: string) {
+    const tmpl = templates.find((t) => t.id === templateId);
+    if (!tmpl) {
+      setForm((f) => ({ ...f, templateId: "" }));
+      return;
+    }
+    // Normalise protocol for the form dropdown
+    const proto = tmpl.protocol.replace("modbus_tcp", "modbus").replace("modbus_rtu", "modbus") as string;
+    setForm((f) => ({
+      ...f,
+      templateId,
+      protocol: PROTOCOLS.includes(proto as typeof PROTOCOLS[number]) ? proto : "modbus",
+      pollingIntervalSec: String(tmpl.defaultPollIntervalS),
+    }));
+  }
 
   function handleRegister() {
     const body: Record<string, unknown> = {
@@ -184,6 +221,7 @@ export default function DevicesPage() {
       plantId: form.plantId,
       pollingIntervalSec: Number(form.pollingIntervalSec) || 30,
     };
+    if (form.templateId) body.templateId = form.templateId;
     if (form.protocol === "modbus") {
       if (form.ipAddress) body.ipAddress = form.ipAddress;
       if (form.port) body.port = Number(form.port);
@@ -191,9 +229,12 @@ export default function DevicesPage() {
     } else if (form.protocol === "mqtt") {
       if (form.brokerUrl) body.brokerUrl = form.brokerUrl;
       if (form.topic) body.topic = form.topic;
+    } else if (form.protocol === "websocket") {
+      if (form.url) body.url = form.url;
     } else {
       if (form.ipAddress) body.ipAddress = form.ipAddress;
       if (form.port) body.port = Number(form.port);
+      if (form.url) body.url = form.url;
     }
     registerMutation.mutate(body);
   }
@@ -387,6 +428,20 @@ export default function DevicesPage() {
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
+                <Label>Device Template <span className="text-muted-foreground font-normal">(optional — auto-fills protocol &amp; register map)</span></Label>
+                <Select value={form.templateId || "none"} onValueChange={(v) => onTemplateChange(v === "none" ? "" : v)}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="No template (custom)" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No template (custom)</SelectItem>
+                    {templates.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.manufacturer} — {t.model}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
                 <Label>Device Name</Label>
                 <Input
                   className="mt-1"
@@ -471,7 +526,19 @@ export default function DevicesPage() {
                     <Input className="mt-1" type="number" value={form.port}
                       onChange={(e) => setForm((f) => ({ ...f, port: e.target.value }))} />
                   </div>
+                  <div className="col-span-2">
+                    <Label>Endpoint URL <span className="text-muted-foreground font-normal">(overrides IP/port if set)</span></Label>
+                    <Input className="mt-1" placeholder="https://device.local/api/data" value={form.url}
+                      onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))} />
+                  </div>
                 </>
+              )}
+              {form.protocol === "websocket" && (
+                <div className="col-span-2">
+                  <Label>WebSocket URL</Label>
+                  <Input className="mt-1" placeholder="ws://10.0.1.30:8080/data" value={form.url}
+                    onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))} />
+                </div>
               )}
 
               <div>

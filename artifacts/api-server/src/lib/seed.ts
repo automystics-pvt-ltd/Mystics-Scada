@@ -9,8 +9,10 @@ import {
   usersTable,
   rolesTable,
   devicesTable,
+  deviceTemplatesTable,
 } from "@workspace/db";
 import { eq, isNull } from "drizzle-orm";
+import { SYSTEM_TEMPLATES } from "./systemTemplates";
 import { logger } from "./logger";
 import { PLANTS } from "./simulation";
 import { DEFAULT_ROLE_PERMISSIONS } from "@workspace/permissions";
@@ -473,6 +475,32 @@ export async function ensureSeedData(): Promise<void> {
     await db.insert(devicesTable).values(devices);
     logger.info({ count: devices.length }, "Seeded IoT devices");
   }
+
+  // ── System device templates (idempotent — keyed by stable IDs) ────────────
+  const now = new Date();
+  for (const t of SYSTEM_TEMPLATES) {
+    const [existing] = await db
+      .select({ id: deviceTemplatesTable.id })
+      .from(deviceTemplatesTable)
+      .where(eq(deviceTemplatesTable.id, t.id))
+      .limit(1);
+    if (!existing) {
+      await db.insert(deviceTemplatesTable).values({
+        id: t.id,
+        orgId: null,
+        manufacturer: t.manufacturer,
+        model: t.model,
+        protocol: t.protocol,
+        fieldMap: t.fieldMap,
+        defaultPollIntervalS: t.defaultPollIntervalS,
+        firmwareVersionParam: t.firmwareVersionParam ?? null,
+        status: "active",
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  }
+  logger.info({ count: SYSTEM_TEMPLATES.length }, "System device templates ensured");
 
   // ── Demo credentials ──────────────────────────────────────────────────────
   // Gate strictly to non-production environments.  In production the demo

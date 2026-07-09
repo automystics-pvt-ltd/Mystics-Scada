@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { ensureSeedData } from "./lib/seed";
 import { initFaultStore } from "./lib/initFaultStore";
+import { driverRegistry } from "./lib/drivers/registry";
 
 const rawPort = process.env["PORT"];
 
@@ -27,6 +28,12 @@ async function startServer(): Promise<void> {
   // any request or SSE connection made immediately after startup sees the
   // correct fault state.  Errors inside initFaultStore are caught and logged.
   await initFaultStore();
+
+  // Start IoT protocol drivers for all configured devices.
+  // Non-fatal — log and continue if any driver fails to start.
+  await driverRegistry.init().catch((err: unknown) => {
+    logger.error({ err }, "DriverRegistry: failed to initialize");
+  });
 
   // Now open the port
   await new Promise<void>((resolve, reject) => {

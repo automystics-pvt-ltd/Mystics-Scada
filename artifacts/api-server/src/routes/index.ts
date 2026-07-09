@@ -13,6 +13,7 @@ import usersRouter from "./users";
 import streamRouter from "./stream";
 import faultInjectRouter from "./faultInject";
 import devicesRouter from "./devices";
+import deviceTemplatesRouter from "./deviceTemplates";
 import orgRouter from "./org";
 import notificationsRouter from "./notifications";
 import superadminRouter from "./superadmin";
@@ -68,6 +69,7 @@ router.use(usersRouter);
 router.use(streamRouter);
 router.use(faultInjectRouter);
 router.use(devicesRouter);
+router.use(deviceTemplatesRouter);
 router.use(orgRouter);
 router.use(notificationsRouter);
 

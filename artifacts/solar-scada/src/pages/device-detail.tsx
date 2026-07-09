@@ -13,6 +13,10 @@ import {
   CheckCircle2,
   Clock,
   Signal,
+  Activity,
+  FlaskConical,
+  Radio,
+  X,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -37,26 +41,46 @@ const BASE = import.meta.env.BASE_URL;
 type DeviceStatus = "online" | "offline" | "error";
 type LogLevel = "INFO" | "WARN" | "ERROR";
 
+interface FieldDef { key: string; label: string; unit: string; }
+
+interface Template { id: string; manufacturer: string; model: string; fieldMap: FieldDef[]; }
+
 interface Device {
   id: string;
   plantId: string;
   name: string;
   type: string;
   protocol: string;
+  templateId: string | null;
   status: DeviceStatus;
   signalStrengthPct: number;
   lastSeenAt: string;
   firmwareVersion: string;
+  dataSource: "live" | "simulated";
   pendingDeploy: boolean;
+  template: Template | null;
   config: {
     ipAddress: string | null;
     port: number | null;
     modbusUnitId: number | null;
     brokerUrl: string | null;
     topic: string | null;
+    url: string | null;
     pollingIntervalSec: number;
   };
   connectivityTimeline: { timestamp: string; status: DeviceStatus }[];
+}
+
+interface Reading {
+  ts: string;
+  params: Record<string, number | string | boolean | null>;
+}
+
+interface ConnectionTestResult {
+  ok: boolean;
+  latencyMs: number;
+  error?: string;
+  sampleParams?: Record<string, number | string>;
 }
 
 interface LogEntry {
@@ -150,7 +174,7 @@ function LogLevelBadge({ level }: { level: LogLevel }) {
   );
 }
 
-type Tab = "config" | "logs" | "history";
+type Tab = "config" | "logs" | "history" | "live-data";
 
 export default function DeviceDetailPage() {
   const [, params] = useRoute("/devices/:id");
@@ -164,6 +188,8 @@ export default function DeviceDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>("config");
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [confirmSync, setConfirmSync] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [testResult, setTestResult] = useState<ConnectionTestResult | null>(null);
 
   // Config edit state
   const [editing, setEditing] = useState(false);
@@ -192,6 +218,32 @@ export default function DeviceDetailPage() {
     enabled: activeTab === "logs",
     refetchInterval: 60_000,
   });
+
+  const { data: latestReading } = useQuery<Reading | null>({
+    queryKey: ["device-readings", deviceId],
+    queryFn: async () => {
+      const r = await fetch(`${BASE}api/devices/${deviceId}/readings?limit=1`, { credentials: "include" });
+      if (!r.ok) return null;
+      const arr = await r.json() as Reading[];
+      return arr[0] ?? null;
+    },
+    enabled: activeTab === "live-data",
+    refetchInterval: 15_000,
+  });
+
+  async function runConnectionTest() {
+    setTestingConnection(true);
+    setTestResult(null);
+    try {
+      const r = await fetch(`${BASE}api/devices/${deviceId}/connection-test`, { credentials: "include" });
+      const result = await r.json() as ConnectionTestResult;
+      setTestResult(result);
+    } catch {
+      setTestResult({ ok: false, latencyMs: 0, error: "Network error" });
+    } finally {
+      setTestingConnection(false);
+    }
+  }
 
   const updateMutation = useMutation({
     mutationFn: async (body: Record<string, unknown>) => {
@@ -433,17 +485,18 @@ export default function DeviceDetailPage() {
           <div className="col-span-2 space-y-4">
             {/* Tab bar */}
             <div className="flex border-b border-border">
-              {(["config", "logs", "history"] as Tab[]).map((tab) => (
+              {(["config", "logs", "history", "live-data"] as Tab[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2.5 text-sm font-medium transition-colors capitalize border-b-2 -mb-px ${
+                  className={`px-4 py-2.5 text-sm font-medium transition-colors capitalize border-b-2 -mb-px flex items-center gap-1.5 ${
                     activeTab === tab
                       ? "border-primary text-foreground"
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {tab === "history" ? "Connectivity" : tab}
+                  {tab === "live-data" && <Activity className="h-3.5 w-3.5" />}
+                  {tab === "history" ? "Connectivity" : tab === "live-data" ? "Live Data" : tab}
                 </button>
               ))}
             </div>
@@ -584,6 +637,142 @@ export default function DeviceDetailPage() {
                     </table>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Live Data tab */}
+            {activeTab === "live-data" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold">Live Readings</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {device.dataSource === "live"
+                        ? "Real data from device driver — refreshes every 15s"
+                        : "No live driver readings yet — showing simulated parameters"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {device.dataSource === "live" ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/30">
+                        <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+                        Live
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
+                        Simulated
+                      </span>
+                    )}
+                    {canManage && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5 h-7 text-xs"
+                        onClick={() => void runConnectionTest()}
+                        disabled={testingConnection}
+                      >
+                        <FlaskConical className="h-3 w-3" />
+                        {testingConnection ? "Testing…" : "Test Connection"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Connection test result */}
+                {testResult && (
+                  <div className={`rounded-lg border p-3 flex items-start gap-3 text-sm ${
+                    testResult.ok
+                      ? "border-green-500/30 bg-green-500/5"
+                      : "border-red-500/30 bg-red-500/5"
+                  }`}>
+                    {testResult.ok ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-400 mt-0.5 shrink-0" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium">
+                        {testResult.ok ? `Connected — ${testResult.latencyMs}ms RTT` : "Connection failed"}
+                      </div>
+                      {testResult.error && (
+                        <div className="text-xs text-muted-foreground mt-0.5 break-all">{testResult.error}</div>
+                      )}
+                      {testResult.sampleParams && Object.keys(testResult.sampleParams).length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {Object.entries(testResult.sampleParams).slice(0, 6).map(([k, v]) => (
+                            <span key={k} className="text-[10px] font-mono bg-muted/30 rounded px-1.5 py-0.5">
+                              {k}: <span className="text-foreground">{String(v)}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button onClick={() => setTestResult(null)} className="shrink-0 text-muted-foreground hover:text-foreground">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Template / register map */}
+                {device.template && (
+                  <div className="rounded-lg border border-border bg-muted/10 p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Radio className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Register map: {device.template.manufacturer} {device.template.model}
+                        <span className="ml-2 text-[10px] bg-muted/30 rounded px-1.5 py-0.5">
+                          {device.template.fieldMap.length} fields
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {device.template.fieldMap.slice(0, 10).map((f) => (
+                        <span key={f.key} className="text-[10px] bg-muted/30 rounded px-1.5 py-0.5 text-muted-foreground">
+                          {f.label}{f.unit ? ` (${f.unit})` : ""}
+                        </span>
+                      ))}
+                      {device.template.fieldMap.length > 10 && (
+                        <span className="text-[10px] text-muted-foreground">+{device.template.fieldMap.length - 10} more</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Latest reading params grid */}
+                {latestReading ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
+                        Last reading: {new Date(latestReading.ts).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {Object.entries(latestReading.params).map(([key, value]) => {
+                        const fieldDef = device.template?.fieldMap.find((f) => f.key === key);
+                        return (
+                          <div key={key} className="rounded-lg border border-border bg-card p-3">
+                            <div className="text-xs text-muted-foreground mb-0.5">{fieldDef?.label ?? key}</div>
+                            <div className="font-semibold text-sm tabular-nums">
+                              {typeof value === "number" ? value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : String(value ?? "—")}
+                              {fieldDef?.unit && <span className="text-xs font-normal text-muted-foreground ml-1">{fieldDef.unit}</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed border-border p-8 text-center">
+                    <Activity className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-40" />
+                    <p className="text-sm text-muted-foreground">No readings recorded yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {device.dataSource === "simulated"
+                        ? "Once a real device connects and sends data, readings will appear here."
+                        : "Waiting for the first poll cycle to complete."}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 

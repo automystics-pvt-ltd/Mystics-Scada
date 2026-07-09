@@ -2,6 +2,7 @@ import { index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { organizationsTable } from "./organizations";
+import { deviceTemplatesTable } from "./deviceTemplates";
 
 /**
  * IoT device registry — one row per physical device connected to a plant.
@@ -25,6 +26,8 @@ export const devicesTable = pgTable(
     status: text("status").notNull().default("offline"),
     firmwareVersion: text("firmware_version"),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+    /** FK to device_templates — null if no template assigned */
+    templateId: text("template_id").references(() => deviceTemplatesTable.id, { onDelete: "set null" }),
     /** Arbitrary device-specific settings stored as JSONB. */
     config: jsonb("config").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
