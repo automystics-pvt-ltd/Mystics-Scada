@@ -86,7 +86,7 @@ export class WebSocketDriver extends EventEmitter implements IDriver {
         finish({ ok: false, latencyMs: Date.now() - t0, error: "Connection timed out" });
       }, timeoutMs);
 
-      const ws = new WebSocket(wsUrl);
+      const ws = new WebSocket(wsUrl, { headers: this._buildHeaders() });
       ws.on("open", () => finish({ ok: true, latencyMs: Date.now() - t0 }));
       ws.on("error", (err) => finish({ ok: false, latencyMs: Date.now() - t0, error: err.message }));
     });
@@ -95,6 +95,27 @@ export class WebSocketDriver extends EventEmitter implements IDriver {
   private _setStatus(s: DriverStatus) {
     this._status = s;
     this.emit("status", s);
+  }
+
+  private _buildHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {};
+    const { httpAuthMethod, httpAuthValue, httpApiKeyHeader } = this._cfg;
+    switch (httpAuthMethod) {
+      case "bearer":
+        if (httpAuthValue) headers["Authorization"] = `Bearer ${httpAuthValue}`;
+        break;
+      case "api_key":
+        if (httpApiKeyHeader && httpAuthValue) headers[httpApiKeyHeader] = httpAuthValue;
+        break;
+      case "basic":
+        if (httpAuthValue) {
+          headers["Authorization"] = `Basic ${Buffer.from(httpAuthValue).toString("base64")}`;
+        }
+        break;
+      default:
+        break;
+    }
+    return headers;
   }
 
   private _resolveUrl(): string | null {
@@ -116,7 +137,7 @@ export class WebSocketDriver extends EventEmitter implements IDriver {
     }
 
     this._setStatus("connecting");
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(wsUrl, { headers: this._buildHeaders() });
     this._ws = ws;
 
     ws.on("open", () => {

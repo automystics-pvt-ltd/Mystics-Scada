@@ -48,6 +48,10 @@ export interface DriverConfig {
   topic?: string;
   // HTTP / WebSocket / OPC-UA
   url?: string;
+  // HTTP auth
+  httpAuthMethod?: "none" | "bearer" | "api_key" | "basic";
+  httpAuthValue?: string;    // bearer token or "user:pass" for basic
+  httpApiKeyHeader?: string; // custom header name for api_key, e.g. "X-API-Key"
   // OPC-UA
   opcuaSecurityMode?: "None" | "Sign" | "SignAndEncrypt";
   opcuaUsername?: string;

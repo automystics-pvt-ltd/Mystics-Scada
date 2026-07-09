@@ -101,7 +101,25 @@ export class HttpDriver extends EventEmitter implements IDriver {
   }
 
   private _buildHeaders(): Record<string, string> {
-    return { "Accept": "application/json" };
+    const headers: Record<string, string> = { "Accept": "application/json" };
+    const { httpAuthMethod, httpAuthValue, httpApiKeyHeader } = this._cfg;
+    switch (httpAuthMethod) {
+      case "bearer":
+        if (httpAuthValue) headers["Authorization"] = `Bearer ${httpAuthValue}`;
+        break;
+      case "api_key":
+        if (httpApiKeyHeader && httpAuthValue) headers[httpApiKeyHeader] = httpAuthValue;
+        break;
+      case "basic":
+        if (httpAuthValue) {
+          // httpAuthValue is "user:password"
+          headers["Authorization"] = `Basic ${Buffer.from(httpAuthValue).toString("base64")}`;
+        }
+        break;
+      default:
+        break;
+    }
+    return headers;
   }
 
   private async _poll(): Promise<void> {

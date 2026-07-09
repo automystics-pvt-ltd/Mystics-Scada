@@ -19,6 +19,7 @@ import {
 } from "../lib/simulation.js";
 import { driverRegistry } from "../lib/drivers/registry.js";
 import { assertNotSsrfTarget, SsrfBlockedError } from "../lib/drivers/ssrf.js";
+import { encryptCredential, decryptCredential } from "../lib/credentialCrypto.js";
 import type { DriverConfig, FieldDef } from "../lib/drivers/types.js";
 
 // ── CSV parser (RFC 4180 — handles quoted fields with embedded commas/newlines) ─
@@ -94,6 +95,21 @@ const DEVICE_TYPES = [
 
 const PROTOCOLS = ["modbus", "mqtt", "http", "opcua", "websocket"] as const;
 
+const HTTP_AUTH_METHODS = ["none", "bearer", "api_key", "basic"] as const;
+
+/** Cross-field validation: ensure auth value/header are present for methods that need them. */
+function validateHttpAuth(data: { httpAuthMethod?: string; httpAuthValue?: string; httpApiKeyHeader?: string }, ctx: z.RefinementCtx) {
+  const m = data.httpAuthMethod;
+  if (!m || m === "none") return;
+  if ((m === "bearer" || m === "basic") && !data.httpAuthValue?.trim()) {
+    ctx.addIssue({ code: "custom", path: ["httpAuthValue"], message: `httpAuthValue is required for auth method '${m}'` });
+  }
+  if (m === "api_key") {
+    if (!data.httpAuthValue?.trim()) ctx.addIssue({ code: "custom", path: ["httpAuthValue"], message: "httpAuthValue (key) is required for api_key auth" });
+    if (!data.httpApiKeyHeader?.trim()) ctx.addIssue({ code: "custom", path: ["httpApiKeyHeader"], message: "httpApiKeyHeader is required for api_key auth" });
+  }
+}
+
 const RegisterDeviceBody = z.object({
   name:               z.string().min(1).max(120),
   type:               z.enum(DEVICE_TYPES),
@@ -107,7 +123,25 @@ const RegisterDeviceBody = z.object({
   topic:              z.string().optional(),
   url:                z.string().optional(),
   pollingIntervalSec: z.number().int().min(5).max(3600).default(30),
-});
+  // HTTP auth
+  httpAuthMethod:    z.enum(HTTP_AUTH_METHODS).optional(),
+  httpAuthValue:     z.string().max(2048).optional(),
+  httpApiKeyHeader:  z.string().max(120).optional(),
+}).superRefine(validateHttpAuth);
+
+// Body accepted by the pre-flight test (no device ID needed; value used once, never persisted)
+const PreflightBody = z.object({
+  protocol:         z.enum(PROTOCOLS),
+  url:              z.string().optional(),
+  brokerUrl:        z.string().optional(),
+  topic:            z.string().optional(),
+  ipAddress:        z.string().optional(),
+  port:             z.number().int().min(1).max(65535).optional(),
+  modbusUnitId:     z.number().int().min(1).max(247).optional(),
+  httpAuthMethod:   z.enum(HTTP_AUTH_METHODS).optional(),
+  httpAuthValue:    z.string().max(2048).optional(),
+  httpApiKeyHeader: z.string().max(120).optional(),
+}).superRefine(validateHttpAuth);
 
 const UpdateDeviceBody = z.object({
   name:               z.string().min(1).max(120).optional(),
@@ -119,7 +153,11 @@ const UpdateDeviceBody = z.object({
   topic:              z.string().optional(),
   url:                z.string().optional(),
   pollingIntervalSec: z.number().int().min(5).max(3600).optional(),
-});
+  // HTTP auth — pass httpAuthValue: "" to clear credentials
+  httpAuthMethod:    z.enum(HTTP_AUTH_METHODS).optional(),
+  httpAuthValue:     z.string().max(2048).optional(),
+  httpApiKeyHeader:  z.string().max(120).optional(),
+}).superRefine(validateHttpAuth);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -132,6 +170,10 @@ type DeviceConfig = {
   topic?: string;
   url?: string;
   pollingIntervalSec?: number;
+  // HTTP auth (stored in config JSONB)
+  httpAuthMethod?: "none" | "bearer" | "api_key" | "basic";
+  httpAuthValue?: string;
+  httpApiKeyHeader?: string;
   pendingDeploy?: boolean;
 };
 
@@ -171,6 +213,10 @@ function toDeviceResponse(row: DeviceRow, now: Date) {
       topic:              cfg.topic ?? null,
       url:                cfg.url ?? null,
       pollingIntervalSec: cfg.pollingIntervalSec ?? 30,
+      // Auth metadata (method + header name) is safe to expose; value is never returned
+      httpAuthMethod:     cfg.httpAuthMethod ?? null,
+      httpApiKeyHeader:   cfg.httpApiKeyHeader ?? null,
+      httpAuthConfigured: !!(cfg.httpAuthMethod && cfg.httpAuthMethod !== "none" && cfg.httpAuthValue),
     },
     pendingDeploy: cfg.pendingDeploy ?? false,
     createdAt: row.createdAt,
@@ -188,9 +234,72 @@ function toDriverProtocol(raw: string): DriverConfig["protocol"] | null {
     case "mqtt": return "mqtt";
     case "http": return "http";
     case "websocket": case "ws": return "websocket";
+    case "opcua": case "opc-ua": case "opc_ua": return "opcua";
     default: return null;
   }
 }
+
+// ── POST /devices/connection-preflight ───────────────────────────────────────
+// Test connection params without needing a saved device (used by the wizard).
+
+router.post("/devices/connection-preflight", requirePermission("device.manage"), async (req, res) => {
+  const parsed = PreflightBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ ok: false, error: "validation_error", message: parsed.error.message });
+    return;
+  }
+  const b = parsed.data;
+
+  // SSRF guard
+  try {
+    assertNotSsrfTarget(b.ipAddress);
+    assertNotSsrfTarget(b.brokerUrl);
+    assertNotSsrfTarget(b.url);
+  } catch (e) {
+    if (e instanceof SsrfBlockedError) {
+      res.status(400).json({ ok: false, error: "ssrf_blocked", message: e.message });
+      return;
+    }
+    throw e;
+  }
+
+  const protocol = toDriverProtocol(b.protocol);
+  if (!protocol) {
+    res.status(400).json({ ok: false, error: "unsupported_protocol", message: `Protocol '${b.protocol}' is not supported` });
+    return;
+  }
+
+  const cfg: DriverConfig = {
+    deviceId:        "preflight",
+    protocol,
+    ipAddress:       b.ipAddress,
+    port:            b.port,
+    modbusUnitId:    b.modbusUnitId,
+    brokerUrl:       b.brokerUrl,
+    topic:           b.topic,
+    url:             b.url,
+    httpAuthMethod:  b.httpAuthMethod,
+    httpAuthValue:   b.httpAuthValue,
+    httpApiKeyHeader: b.httpApiKeyHeader,
+    pollingIntervalS: 30,
+    fieldMap:        [],
+  };
+
+  const driver = driverRegistry.makeTestDriver(cfg);
+  if (!driver) {
+    res.status(400).json({
+      ok: false,
+      error: "no_connection_info",
+      message: "No connection parameters provided — supply a URL, broker URL, or IP address",
+    });
+    return;
+  }
+
+  req.log.info({ protocol }, "Connection preflight test initiated");
+  const result = await driver.test(7_000);
+  req.log.info({ ok: result.ok, latencyMs: result.latencyMs }, "Connection preflight test complete");
+  res.json(result);
+});
 
 // ── GET /devices/health-stats ─────────────────────────────────────────────────
 
@@ -271,6 +380,10 @@ router.post("/devices", requirePermission("device.manage"), async (req, res) => 
     topic:              body.topic,
     url:                body.url,
     pollingIntervalSec: body.pollingIntervalSec,
+    httpAuthMethod:     body.httpAuthMethod,
+    // Encrypt credential at rest — never store plaintext
+    httpAuthValue:      body.httpAuthValue ? encryptCredential(body.httpAuthValue) : undefined,
+    httpApiKeyHeader:   body.httpApiKeyHeader,
     pendingDeploy:      false,
   };
 
@@ -383,6 +496,13 @@ router.patch("/devices/:id", requirePermission("device.manage"), async (req, res
     ...(body.topic !== undefined              && { topic:              body.topic }),
     ...(body.url !== undefined                && { url:                body.url }),
     ...(body.pollingIntervalSec !== undefined && { pollingIntervalSec: body.pollingIntervalSec }),
+    // Auth: update method and header name as-is; encrypt value when provided
+    ...(body.httpAuthMethod !== undefined     && { httpAuthMethod:     body.httpAuthMethod }),
+    ...(body.httpApiKeyHeader !== undefined   && { httpApiKeyHeader:   body.httpApiKeyHeader }),
+    ...(body.httpAuthValue !== undefined      && {
+      // Empty string clears the credential; non-empty encrypts it
+      httpAuthValue: body.httpAuthValue ? encryptCredential(body.httpAuthValue) : undefined,
+    }),
     pendingDeploy: true,
   };
 
@@ -658,12 +778,16 @@ router.get("/devices/:id/connection-test", requirePermission("device.manage"), a
   const driverCfg: DriverConfig = {
     deviceId,
     protocol,
-    ipAddress:       cfg.ipAddress,
-    port:            cfg.port,
-    modbusUnitId:    cfg.modbusUnitId,
-    brokerUrl:       cfg.brokerUrl,
-    topic:           cfg.topic,
-    url:             cfg.url,
+    ipAddress:        cfg.ipAddress,
+    port:             cfg.port,
+    modbusUnitId:     cfg.modbusUnitId,
+    brokerUrl:        cfg.brokerUrl,
+    topic:            cfg.topic,
+    url:              cfg.url,
+    httpAuthMethod:   cfg.httpAuthMethod,
+    // Decrypt at point-of-use — never expose ciphertext to the driver
+    httpAuthValue:    cfg.httpAuthValue ? decryptCredential(cfg.httpAuthValue) : undefined,
+    httpApiKeyHeader: cfg.httpApiKeyHeader,
     pollingIntervalS: cfg.pollingIntervalSec ?? 30,
     fieldMap,
   };

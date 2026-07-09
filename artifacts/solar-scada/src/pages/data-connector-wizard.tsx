@@ -514,16 +514,43 @@ export default function DataConnectorWizardPage() {
     setState((prev) => ({ ...prev, ...patch }));
   }
 
-  // Simulate test connection (in production, this would call the connection-test endpoint)
+  // Real pre-flight connection test — calls the backend with the current params
   async function handleTest() {
     const targetUrl = state.url || state.brokerUrl;
     if (!targetUrl && state.sourceType !== "csv_upload") {
       throw new Error("No URL configured — go back and enter a connection URL");
     }
-    // Brief delay to simulate test
-    await new Promise((r) => setTimeout(r, 800));
-    // For demo: always "succeed" — in production call /api/devices/:id/connection-test
-    return;
+    if (state.sourceType === "csv_upload") return; // CSV has no live connection to test
+
+    const protocol =
+      state.sourceType === "mqtt"      ? "mqtt"
+      : state.sourceType === "websocket" ? "websocket"
+      : "http";
+
+    const body: Record<string, unknown> = { protocol };
+    if (state.sourceType === "mqtt") {
+      body.brokerUrl = state.brokerUrl;
+      body.topic     = state.topic;
+    } else {
+      body.url = state.url;
+      if (state.authMethod !== "none") {
+        body.httpAuthMethod   = state.authMethod;
+        body.httpAuthValue    = state.authValue;
+        body.httpApiKeyHeader = state.apiKeyHeader;
+      }
+    }
+
+    const res = await fetch(`${BASE}api/devices/connection-preflight`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    const data = await res.json() as { ok: boolean; error?: string; latencyMs?: number };
+    if (!data.ok) {
+      throw new Error(data.error ?? "Connection failed");
+    }
   }
 
   const activateMutation = useMutation({
@@ -577,9 +604,20 @@ export default function DataConnectorWizardPage() {
       } else if (state.sourceType === "websocket") {
         deviceBody.protocol = "websocket";
         deviceBody.url      = state.url;
+        // Auth applies to WebSocket handshake headers too (future driver support)
+        if (state.authMethod !== "none") {
+          deviceBody.httpAuthMethod   = state.authMethod;
+          deviceBody.httpAuthValue    = state.authValue;
+          deviceBody.httpApiKeyHeader = state.apiKeyHeader;
+        }
       } else {
         deviceBody.protocol = "http";
         deviceBody.url      = state.url;
+        if (state.authMethod !== "none") {
+          deviceBody.httpAuthMethod   = state.authMethod;
+          deviceBody.httpAuthValue    = state.authValue;
+          deviceBody.httpApiKeyHeader = state.apiKeyHeader;
+        }
       }
 
       const r = await fetch(`${BASE}api/devices`, {

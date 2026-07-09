@@ -14,3 +14,4 @@
 - [SSE stream testing with supertest](sse-stream-testing.md) — use custom .parse() to read first event then res.destroy(); isSuperAdmin:false safer than true in mocks.
 - [SSRF guard scope](ssrf-guard-scope.md) — SSRF checks must cover create/update/restart paths, not just connection-test; drivers start from any device registration.
 - [CSV RFC 4180 parser](csv-rfc4180-parser.md) — naive split(",") corrupts quoted fields; use a stateful tokeniser that tracks inQuotes and re-joins quoted newlines before splitting lines.
+- [Connect Source auth credential handling](connect-source-auth.md) — httpAuthValue encrypted at rest (AES-256-GCM via credentialCrypto); decrypt just-in-time in registry/_launchDriver and connection-test; never returned in API responses.

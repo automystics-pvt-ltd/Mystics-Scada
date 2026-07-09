@@ -15,6 +15,7 @@ import { randomUUID } from "node:crypto";
 import { eq, and, lt, sql } from "drizzle-orm";
 import { db, devicesTable, deviceReadingsTable, deviceCommLogsTable, deviceTemplatesTable, ingestionRetryQueueTable } from "@workspace/db";
 import { logger } from "../logger.js";
+import { decryptCredential } from "../credentialCrypto.js";
 import type { IDriver, DriverConfig, DriverStatus, FieldDef } from "./types.js";
 import { ModbusTcpDriver } from "./ModbusTcpDriver.js";
 import { MqttDriver } from "./MqttDriver.js";
@@ -38,6 +39,9 @@ type DeviceConfig = {
   topic?: string;
   url?: string;
   pollingIntervalSec?: number;
+  httpAuthMethod?: "none" | "bearer" | "api_key" | "basic";
+  httpAuthValue?: string;
+  httpApiKeyHeader?: string;
   [key: string]: unknown;
 };
 
@@ -188,14 +192,18 @@ class DriverRegistry {
     }
 
     const driverCfg: DriverConfig = {
-      deviceId:        device.id,
+      deviceId:         device.id,
       protocol,
-      ipAddress:       rawCfg.ipAddress,
-      port:            rawCfg.port,
-      modbusUnitId:    rawCfg.modbusUnitId,
-      brokerUrl:       rawCfg.brokerUrl,
-      topic:           rawCfg.topic,
-      url:             rawCfg.url,
+      ipAddress:        rawCfg.ipAddress,
+      port:             rawCfg.port,
+      modbusUnitId:     rawCfg.modbusUnitId,
+      brokerUrl:        rawCfg.brokerUrl,
+      topic:            rawCfg.topic,
+      url:              rawCfg.url,
+      httpAuthMethod:   rawCfg.httpAuthMethod,
+      // Decrypt at point-of-use — the driver never sees the ciphertext
+      httpAuthValue:    rawCfg.httpAuthValue ? decryptCredential(rawCfg.httpAuthValue) : undefined,
+      httpApiKeyHeader: rawCfg.httpApiKeyHeader,
       pollingIntervalS: rawCfg.pollingIntervalSec ?? 30,
       fieldMap,
     };
