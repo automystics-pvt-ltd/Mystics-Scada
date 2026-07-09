@@ -70,6 +70,7 @@ vi.mock("@workspace/db", () => {
     faultOverridesTable: {},
     organizationsTable:  {},
     notificationsTable:  {},
+    auditLogsTable:      {},
   };
 });
 

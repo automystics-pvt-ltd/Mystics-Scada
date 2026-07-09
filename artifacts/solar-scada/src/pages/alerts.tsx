@@ -12,7 +12,7 @@ import { useState, useMemo } from "react";
 import {
   AlertTriangle, Filter, CheckCircle2, BellRing, Clock,
   XCircle, Info, ChevronRight, X, Calendar,
-  FileText, MapPin,
+  FileText, MapPin, FlaskConical,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -29,6 +29,11 @@ function AlertStatusBadge({ status }: { status: AlertStatus }) {
       {status}
     </span>
   );
+}
+
+/** True when this alert was created by the fault injection system, not a real device fault. */
+function isSimulatedFaultAlert(alert: Alert): boolean {
+  return alert.title.startsWith("Fault Simulation:");
 }
 
 function timeAgo(date: string | Date) {
@@ -72,6 +77,16 @@ function AlertDetail({ alert, onClose, onAcknowledge, onResolve }: {
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        {/* SIMULATION notice — shown only for drill alerts created by fault injection */}
+        {isSimulatedFaultAlert(alert) && (
+          <div className="flex items-start gap-3 rounded-lg px-4 py-3 border border-amber-500/30 bg-amber-500/10 text-amber-400 text-sm">
+            <FlaskConical className="w-4 h-4 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold">SIMULATION DRILL</span>
+              {" — This alarm was injected by an operator for training purposes. It does not indicate a real device fault."}
+            </div>
+          </div>
+        )}
         {/* Message */}
         <div className="bg-muted/40 rounded-lg p-4 border border-border/50 text-sm leading-relaxed">
           {alert.message}
@@ -303,6 +318,11 @@ export default function AlertCenter() {
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <SeverityBadge severity={alert.severity} className="text-[9px]" />
                       <AlertStatusBadge status={alert.status} />
+                      {isSimulatedFaultAlert(alert) && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider bg-amber-500/15 text-amber-400 border-amber-500/30">
+                          <FlaskConical className="w-2.5 h-2.5" /> DRILL
+                        </span>
+                      )}
                       <span className="text-xs text-muted-foreground">{alert.plantName} · {alert.deviceName}</span>
                     </div>
                   </div>

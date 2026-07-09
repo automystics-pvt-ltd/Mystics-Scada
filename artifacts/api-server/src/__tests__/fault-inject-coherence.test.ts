@@ -85,6 +85,7 @@ vi.mock("@workspace/db", () => {
     reportSchedulesTable:     {},
     insightDismissalsTable:   {},
     notificationConfigsTable: {},
+    auditLogsTable:           {},
   };
 });
 

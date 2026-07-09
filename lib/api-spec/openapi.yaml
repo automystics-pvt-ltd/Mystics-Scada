@@ -714,6 +714,9 @@ components:
           $ref: "#/components/schemas/HealthState"
         alertCounts:
           $ref: "#/components/schemas/AlertCounts"
+        simulatedFaultActive:
+          type: boolean
+          description: "True when one or more operator-injected fault simulations are currently active for this plant."
 
     PlantDetail:
       type: object
@@ -810,6 +813,9 @@ components:
         stringFaultCount:
           type: ["integer", "null"]
           description: "Number of strings in a fault/warning state across all child inverters. Only populated for combiner nodes."
+        simulated:
+          type: boolean
+          description: "True when this node's current status is caused by an operator-injected fault simulation, not a real device fault."
 
     SldEdge:
       type: object

@@ -101,15 +101,19 @@ router.get("/stream/telemetry", (req: Request, res: Response) => {
       totalEnergyKwh  += energyKwh;
       totalCapacityMw += plant.capacityMw;
 
+      const simulatedFaultActive =
+        overrides.plantDisconnect || overrides.faultedInverterIds.size > 0;
+
       return {
         id: plant.id,
-        powerKw:          Math.round(powerKw * 10) / 10,
-        energyKwh:        Math.round(energyKwh),
-        pr:               Math.round(pr * 10) / 10,
-        availabilityPct:  Math.round(availability * 10) / 10,
+        powerKw:              Math.round(powerKw * 10) / 10,
+        energyKwh:            Math.round(energyKwh),
+        pr:                   Math.round(pr * 10) / 10,
+        availabilityPct:      Math.round(availability * 10) / 10,
         health,
-        irradianceWm2:    Math.round(irradiance),
-        offlineInverters: offlineCount,
+        irradianceWm2:        Math.round(irradiance),
+        offlineInverters:     offlineCount,
+        simulatedFaultActive,
       };
     });
 
@@ -175,6 +179,7 @@ router.get("/stream/telemetry/:plantId", (req: Request, res: Response) => {
         return {
           index:         i,
           status:        "comm_lost" as const,
+          simulated:     true,
           acPowerKw:     0,
           dcPowerKw:     0,
           acVoltageV:    0,
@@ -189,6 +194,7 @@ router.get("/stream/telemetry/:plantId", (req: Request, res: Response) => {
       return {
         index:         i,
         status,
+        simulated:     false,
         acPowerKw:     Math.round(reading.acPowerKw * 10) / 10,
         dcPowerKw:     Math.round(reading.dcPowerKw * 10) / 10,
         acVoltageV:    Math.round(reading.acVoltageV * 10) / 10,

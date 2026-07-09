@@ -56,6 +56,8 @@ export function plantSummary(
 ) {
   const coords = PLANT_COORDS[plant.id] ?? { lat: 0, lng: 0, region: plant.location };
   const overrides = buildOverrides(plant.id);
+  const simulatedFaultActive =
+    overrides.plantDisconnect || (overrides.faultedInverterIds?.size ?? 0) > 0;
   return {
     id: plant.id,
     name: plant.name,
@@ -69,6 +71,7 @@ export function plantSummary(
     availabilityPct: plantAvailabilityPct(plant, now, overrides),
     healthStatus: plantHealth(plant, now, overrides),
     alertCounts: alertCountsForPlant(plant.id, alertCounts),
+    simulatedFaultActive,
   };
 }
 
@@ -255,6 +258,20 @@ export function sldFor(plant: PlantConfig, now: Date) {
     }
   }
 
+  /** A node's status is simulated when its current fault is operator-injected. */
+  const isNodeSimulated = (nodeId: string, nodeType: string): boolean => {
+    if (overrides.plantDisconnect) {
+      // Full plant disconnect forces the main electrical path offline
+      return (
+        nodeType === "inverter" ||
+        nodeType === "transformer" ||
+        nodeType === "switchyard" ||
+        nodeType === "grid"
+      );
+    }
+    return nodeType === "inverter" && overrides.faultedInverterIds.has(nodeId);
+  };
+
   return {
     plantId: plant.id,
     nodes: nodes.map((n) => ({
@@ -268,6 +285,7 @@ export function sldFor(plant: PlantConfig, now: Date) {
       currentA: n.currentA ?? null,
       breakerState: n.breakerState ?? null,
       stringFaultCount: n.stringFaultCount ?? null,
+      simulated: isNodeSimulated(n.id, n.type),
       detailPath:
         n.type === "inverter"
           ? `/plants/${plant.id}/inverters/${n.id}`

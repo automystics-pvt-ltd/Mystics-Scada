@@ -11,6 +11,7 @@ import { getOrgPlants } from "../lib/domain";
 import { PLANT_ORG_MAP } from "../lib/simulation";
 import { resolveOrgId } from "../lib/orgScope";
 import { requirePermission } from "../middleware/requirePermission";
+import { writeAuditLog } from "../lib/auditLog";
 
 const router: IRouter = Router();
 
@@ -106,6 +107,22 @@ router.post(
         durationMs + 200,
       );
 
+      writeAuditLog({
+        orgId: effectiveOrgId,
+        userId: req.user!.id,
+        action: "fault_inject.create",
+        resourceType: "fault_simulation",
+        resourceId: fault.key,
+        metadata: {
+          plantId: plant.id,
+          target: parsed.target,
+          inverterId: parsed.inverterId,
+          durationSeconds: parsed.durationSeconds,
+          label: fault.label,
+          alertId,
+        },
+      });
+
       res.status(201).json({
         key: fault.key,
         label: fault.label,
@@ -124,6 +141,21 @@ router.post(
       () => void resolveFaultAlert(alertId, effectiveOrgId, fault.label, "expired"),
       durationMs + 200,
     );
+
+    writeAuditLog({
+      orgId: effectiveOrgId,
+      userId: req.user!.id,
+      action: "fault_inject.create",
+      resourceType: "fault_simulation",
+      resourceId: fault.key,
+      metadata: {
+        plantId: plant.id,
+        target: "plant",
+        durationSeconds: parsed.durationSeconds,
+        label: fault.label,
+        alertId,
+      },
+    });
 
     res.status(201).json({
       key: fault.key,
@@ -151,6 +183,21 @@ router.delete(
         void resolveFaultAlert(fault.alertId, fault.orgId, fault.label, "manual");
       }
     }
+    // Derive effective org from the first cleared fault (all faults share the same orgId)
+    // or fall back to the plant's known org so super-admin clears are attributed correctly.
+    const clearAllEffectiveOrgId = cleared[0]?.orgId ?? PLANT_ORG_MAP[plant.id] ?? "";
+    writeAuditLog({
+      orgId: clearAllEffectiveOrgId,
+      userId: req.user!.id,
+      action: "fault_inject.clear_all",
+      resourceType: "fault_simulation",
+      resourceId: plant.id,
+      metadata: {
+        plantId: plant.id,
+        clearedCount: cleared.length,
+        clearedKeys: cleared.map((f) => f.key),
+      },
+    });
     res.status(204).end();
   },
 );
@@ -173,6 +220,20 @@ router.delete(
     if (cleared?.alertId) {
       void resolveFaultAlert(cleared.alertId, cleared.orgId, cleared.label, "manual");
     }
+    const clearOneEffectiveOrgId = cleared?.orgId ?? PLANT_ORG_MAP[plant.id] ?? "";
+    writeAuditLog({
+      orgId: clearOneEffectiveOrgId,
+      userId: req.user!.id,
+      action: "fault_inject.clear_one",
+      resourceType: "fault_simulation",
+      resourceId: key,
+      metadata: {
+        plantId: plant.id,
+        faultKey: key,
+        label: cleared?.label ?? null,
+        alertId: cleared?.alertId ?? null,
+      },
+    });
     res.status(204).end();
   },
 );

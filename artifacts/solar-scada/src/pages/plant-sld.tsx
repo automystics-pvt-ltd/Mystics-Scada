@@ -16,7 +16,7 @@ import "@xyflow/react/dist/style.css";
 import { useGetPlantSld, getGetPlantSldQueryKey, SldNode as SldNodeData, HealthState, useListInverters } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout";
 import { Link, useParams } from "wouter";
-import { Network, Box, Server, Factory, Zap, Cpu, Lock, Unlock, Maximize2, AlertTriangle, Zap as ZapIcon, X, TriangleAlert, ShieldAlert } from "lucide-react";
+import { Network, Box, Server, Factory, Zap, Cpu, Lock, Unlock, Maximize2, AlertTriangle, Zap as ZapIcon, X, TriangleAlert, ShieldAlert, FlaskConical } from "lucide-react";
 import { cn } from "@/components/ui/scada";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useQueryClient } from "@tanstack/react-query";
@@ -59,7 +59,11 @@ const STATUS_DOT: Record<HealthState, string> = {
   offline: "bg-status-offline",
 };
 
-type SldNodeDatum = SldNodeData & { plantId: string };
+type SldNodeDatum = SldNodeData & {
+  plantId: string;
+  /** Server sets true when this node's fault status was caused by fault injection, not a real device fault. */
+  simulated?: boolean;
+};
 
 // ReactFlow requires data to satisfy Record<string,unknown>. We receive the
 // payload as that generic and immediately cast to our typed shape.
@@ -140,6 +144,14 @@ function SldFlowNode({ data }: NodeProps<Node<Record<string, unknown>>>) {
         </div>
       )}
 
+      {/* SIM badge — top-left — shown when this fault was injected by the operator */}
+      {node.simulated && (
+        <div className="absolute -top-2.5 -left-2 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500 text-black text-[9px] font-black leading-none z-10">
+          <FlaskConical className="w-2.5 h-2.5" />
+          SIM
+        </div>
+      )}
+
       <div className="absolute -top-2 -right-2">
         {node.status === "fault" && <div className="w-4 h-4 rounded-full bg-status-fault animate-ping absolute" />}
         {node.status === "fault" && <div className="w-4 h-4 rounded-full bg-status-fault" />}
@@ -211,6 +223,12 @@ function SldNodeDetail({ node }: { node: SldNodeDatum }) {
       {node.type === "combiner" && node.stringFaultCount == null && (
         <div className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium border border-muted-foreground/20 bg-muted/20 text-muted-foreground">
           Readings unavailable
+        </div>
+      )}
+      {node.simulated && (
+        <div className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium border border-amber-500/40 bg-amber-500/10 text-amber-400">
+          <FlaskConical className="w-3 h-3 shrink-0" />
+          Simulated fault — operator drill, not a real alarm
         </div>
       )}
       {node.detailPath && (
@@ -529,6 +547,12 @@ export default function PlantSld() {
 
   const [fullscreen, setFullscreen] = useState(false);
 
+  /** True when at least one SLD node carries a simulated fault status. */
+  const hasSimulatedNodes = useMemo(() => {
+    if (!sld) return false;
+    return (sld.nodes as Array<{ simulated?: boolean }>).some((n) => n.simulated === true);
+  }, [sld]);
+
   const { nodes, edges } = useMemo(() => {
     if (!sld) return { nodes: [] as Node[], edges: [] as Edge[] };
 
@@ -658,6 +682,14 @@ export default function PlantSld() {
             fullscreen && "fixed inset-4 z-50 min-h-0",
           )}
         >
+          {/* SIMULATION ACTIVE banner — displayed when any SLD node carries an operator-injected fault */}
+          {hasSimulatedNodes && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-semibold whitespace-nowrap pointer-events-none">
+              <FlaskConical className="w-3.5 h-3.5 shrink-0" />
+              SIMULATION ACTIVE — faults shown are operator-injected drills, not real alarms
+            </div>
+          )}
+
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="animate-spin text-primary"><Network className="w-8 h-8" /></div>
