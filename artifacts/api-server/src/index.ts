@@ -3,6 +3,8 @@ import { logger } from "./lib/logger";
 import { ensureSeedData } from "./lib/seed";
 import { initFaultStore } from "./lib/initFaultStore";
 import { driverRegistry } from "./lib/drivers/registry";
+import { startRetryWorker } from "./lib/retryWorker";
+import { startFtpScheduler } from "./lib/ftpScheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -34,6 +36,12 @@ async function startServer(): Promise<void> {
   await driverRegistry.init().catch((err: unknown) => {
     logger.error({ err }, "DriverRegistry: failed to initialize");
   });
+
+  // Start durable ingestion retry worker (retries failed device_readings writes).
+  startRetryWorker();
+
+  // Start FTP/SFTP scheduled file-pull scheduler.
+  startFtpScheduler();
 
   // Now open the port
   await new Promise<void>((resolve, reject) => {

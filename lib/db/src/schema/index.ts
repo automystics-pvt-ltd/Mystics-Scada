@@ -19,3 +19,5 @@ export * from "./auditLogs";
 export * from "./faultOverrides";
 export * from "./notifications";
 export * from "./reportSchedules";
+export * from "./ingestionRetryQueue";
+export * from "./ftpSources";

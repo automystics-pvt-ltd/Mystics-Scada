@@ -17,6 +17,7 @@ import deviceTemplatesRouter from "./deviceTemplates";
 import orgRouter from "./org";
 import notificationsRouter from "./notifications";
 import superadminRouter from "./superadmin";
+import ftpSourcesRouter from "./ftpSources";
 import { authenticate } from "../middleware/authenticate";
 import { requireSuperAdmin } from "../middleware/requireSuperAdmin";
 import { resolveOrgId } from "../lib/orgScope";
@@ -72,6 +73,7 @@ router.use(devicesRouter);
 router.use(deviceTemplatesRouter);
 router.use(orgRouter);
 router.use(notificationsRouter);
+router.use(ftpSourcesRouter);
 
 // Super admin portal — requires authenticated + isSuperAdmin
 router.use(requireSuperAdmin, superadminRouter);

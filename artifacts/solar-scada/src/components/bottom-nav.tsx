@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, AlertTriangle, Wrench, Brain, MoreHorizontal,
   Cpu, BookOpen, Activity, Database, FileText, Building2,
-  Settings, Users, Shield, X, ChevronRight,
+  Settings, X, ChevronRight, Server, FolderDown,
 } from "lucide-react";
 
 // Primary 4 items always visible
@@ -16,13 +16,15 @@ const PRIMARY_NAV = [
 
 // All remaining items shown in the "More" drawer
 const MORE_NAV = [
-  { name: "Devices",        href: "/devices",             icon: Cpu      },
-  { name: "Dev Templates",  href: "/device-templates",    icon: BookOpen },
-  { name: "Driver Health",  href: "/driver-health",       icon: Activity },
-  { name: "Connect Source", href: "/connect-data-source", icon: Database },
-  { name: "Reports",        href: "/reports",             icon: FileText },
-  { name: "Organisation",   href: "/org",                 icon: Building2 },
-  { name: "Settings",       href: "/settings",            icon: Settings  },
+  { name: "Devices",         href: "/devices",             icon: Cpu        },
+  { name: "Dev Templates",   href: "/device-templates",    icon: BookOpen   },
+  { name: "Driver Health",   href: "/driver-health",       icon: Activity   },
+  { name: "Connect Source",  href: "/connect-data-source", icon: Database   },
+  { name: "FTP Sources",     href: "/ftp-sources",         icon: Server     },
+  { name: "Auto-Provision",  href: "/autoprovision",       icon: FolderDown },
+  { name: "Reports",         href: "/reports",             icon: FileText   },
+  { name: "Organisation",    href: "/org",                 icon: Building2  },
+  { name: "Settings",        href: "/settings",            icon: Settings   },
 ];
 
 export function BottomNav() {

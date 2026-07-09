@@ -32,6 +32,11 @@ async function buildAll() {
       // pdfkit → fontkit → brotli requires @swc/helpers via CJS; keep pdfkit external
       // so Node.js resolves it from node_modules at runtime instead of bundling it.
       "pdfkit",
+      // OPC-UA — large package with dynamic requires, keep external
+      "node-opcua",
+      "node-opcua-client",
+      // SFTP uses native ssh2 bindings
+      "ssh2-sftp-client",
       "sharp",
       "better-sqlite3",
       "sqlite3",

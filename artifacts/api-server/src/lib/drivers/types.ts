@@ -14,6 +14,20 @@ export interface FieldDef {
   offset?: number;
   // MQTT / HTTP / WebSocket-specific
   jsonPath?: string;    // dot-notation path, e.g. "$.data.acPower"
+  // OPC-UA-specific
+  nodeId?: string;           // e.g. "ns=2;i=1002"
+  samplingIntervalMs?: number;
+  // BACnet-specific
+  objectType?: string;       // e.g. "analogInput"
+  objectInstance?: number;
+  propertyId?: string;       // e.g. "presentValue"
+  // Derived / formula field (computed from other params after raw decode)
+  formula?: string;          // e.g. "ac_voltage * ac_current / 1000"
+  // Alarm thresholds
+  alarmHiHi?: number;
+  alarmHi?: number;
+  alarmLo?: number;
+  alarmLoLo?: number;
 }
 
 // ─── Decoded reading ─────────────────────────────────────────────────────────
@@ -24,7 +38,7 @@ export type ParamMap = Record<string, number | string | boolean | null>;
 
 export interface DriverConfig {
   deviceId: string;
-  protocol: "modbus_tcp" | "modbus_rtu" | "mqtt" | "http" | "websocket";
+  protocol: "modbus_tcp" | "modbus_rtu" | "mqtt" | "http" | "websocket" | "opcua" | "bacnet";
   // Modbus TCP / RTU
   ipAddress?: string;
   port?: number;
@@ -32,8 +46,14 @@ export interface DriverConfig {
   // MQTT
   brokerUrl?: string;
   topic?: string;
-  // HTTP / WebSocket
+  // HTTP / WebSocket / OPC-UA
   url?: string;
+  // OPC-UA
+  opcuaSecurityMode?: "None" | "Sign" | "SignAndEncrypt";
+  opcuaUsername?: string;
+  opcuaPassword?: string;
+  // BACnet
+  bacnetDeviceInstance?: number;
   // Shared
   pollingIntervalS?: number;
   fieldMap: FieldDef[];

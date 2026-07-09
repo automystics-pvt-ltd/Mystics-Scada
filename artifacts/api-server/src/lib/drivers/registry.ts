@@ -13,13 +13,15 @@
 
 import { randomUUID } from "node:crypto";
 import { eq, and, lt, sql } from "drizzle-orm";
-import { db, devicesTable, deviceReadingsTable, deviceCommLogsTable, deviceTemplatesTable } from "@workspace/db";
+import { db, devicesTable, deviceReadingsTable, deviceCommLogsTable, deviceTemplatesTable, ingestionRetryQueueTable } from "@workspace/db";
 import { logger } from "../logger.js";
 import type { IDriver, DriverConfig, DriverStatus, FieldDef } from "./types.js";
 import { ModbusTcpDriver } from "./ModbusTcpDriver.js";
 import { MqttDriver } from "./MqttDriver.js";
 import { HttpDriver } from "./HttpDriver.js";
 import { WebSocketDriver } from "./WebSocketDriver.js";
+import { OpcuaDriver } from "./opcua-driver.js";
+import { applyFormulas } from "../formulaEngine.js";
 
 const MAX_READINGS_PER_DEVICE = 2_000;
 const MAX_COMM_LOGS_PER_DEVICE = 1_000;
@@ -82,6 +84,9 @@ function makeDriver(cfg: DriverConfig): IDriver | null {
     case "websocket":
       if (!cfg.ipAddress && !cfg.url) return null;
       return new WebSocketDriver(cfg);
+    case "opcua":
+      if (!cfg.url && !cfg.ipAddress) return null;
+      return new OpcuaDriver(cfg);
     default:
       return null;
   }
@@ -94,6 +99,7 @@ function normalizeProtocol(raw: string): DriverConfig["protocol"] | null {
     case "mqtt": return "mqtt";
     case "http": return "http";
     case "websocket": case "ws": return "websocket";
+    case "opcua": case "opc-ua": case "opc_ua": return "opcua";
     default: return null;
   }
 }
@@ -101,8 +107,9 @@ function normalizeProtocol(raw: string): DriverConfig["protocol"] | null {
 // ─── Registry ─────────────────────────────────────────────────────────────────
 
 class DriverRegistry {
-  private _drivers = new Map<string, IDriver>();
-  private _stats   = new Map<string, InternalStat>();
+  private _drivers   = new Map<string, IDriver>();
+  private _stats     = new Map<string, InternalStat>();
+  private _fieldMaps = new Map<string, FieldDef[]>();
   /** All device rows that were loaded at init (includes those without drivers) */
   private _allDevices: DeviceRow[] = [];
 
@@ -196,6 +203,7 @@ class DriverRegistry {
     const driver = makeDriver(driverCfg);
     if (!driver) return false;
 
+    this._fieldMaps.set(device.id, fieldMap);
     this._drivers.set(device.id, driver);
     this._stats.set(device.id, {
       deviceName:    device.name,
@@ -219,6 +227,7 @@ class DriverRegistry {
       await existing.stop().catch(() => undefined);
       this._drivers.delete(deviceId);
     }
+    this._fieldMaps.delete(deviceId); // prevent stale-memory accumulation
     // Keep stats — cleared on re-launch
   }
 
@@ -226,7 +235,8 @@ class DriverRegistry {
     const deviceId = driver.deviceId;
 
     driver.on("reading", (params: Record<string, unknown>) => {
-      void this._persistReading(deviceId, orgId, params);
+      // Pass fieldMap so formula-derived fields are computed before persistence
+      void this._persistReading(deviceId, orgId, params, this._fieldMaps.get(deviceId));
     });
 
     driver.on("status", (status: string) => {
@@ -256,8 +266,14 @@ class DriverRegistry {
   private async _persistReading(
     deviceId: string,
     orgId: string,
-    params: Record<string, unknown>,
+    rawParams: Record<string, unknown>,
+    fieldMap?: FieldDef[],
   ): Promise<void> {
+    // Apply formula-based derived fields before persisting
+    const params: Record<string, unknown> = fieldMap?.some((f) => f.formula)
+      ? applyFormulas(rawParams as Record<string, number | string | boolean | null>, fieldMap)
+      : rawParams;
+
     try {
       const now = new Date();
       await db.insert(deviceReadingsTable).values({
@@ -284,7 +300,23 @@ class DriverRegistry {
           )
       `);
     } catch (err) {
-      logger.error({ deviceId, err }, "Failed to persist device reading");
+      logger.error({ deviceId, err }, "Failed to persist device reading — queuing for retry");
+      // Queue for durable retry with exponential back-off
+      try {
+        const backoffMs = 30_000;
+        await db.insert(ingestionRetryQueueTable).values({
+          id:          randomUUID(),
+          deviceId,
+          orgId,
+          payload:     { ts: new Date().toISOString(), params },
+          attempts:    0,
+          maxAttempts: 5,
+          status:      "pending",
+          nextRetryAt: new Date(Date.now() + backoffMs),
+        });
+      } catch (queueErr) {
+        logger.error({ deviceId, queueErr }, "Failed to queue reading for retry");
+      }
     }
   }
 

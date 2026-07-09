@@ -35,6 +35,8 @@ import DeviceTemplatesPage from '@/pages/device-templates';
 import DeviceTemplateBuilderPage from '@/pages/device-template-builder';
 import DriverHealthPage from '@/pages/driver-health';
 import DataConnectorWizardPage from '@/pages/data-connector-wizard';
+import AutoProvisionWizardPage from '@/pages/autoprovision-wizard';
+import FtpSourcesPage from '@/pages/ftp-sources';
 import OrgProfilePage from '@/pages/org-profile';
 import OrgUsersPage from '@/pages/org-users';
 import OrgNotificationsPage from '@/pages/org-notifications';
@@ -76,6 +78,8 @@ function ProtectedRoutes() {
           <Route path="/device-templates/:id/edit" component={DeviceTemplateBuilderPage} />
           <Route path="/driver-health" component={DriverHealthPage} />
           <Route path="/connect-data-source" component={DataConnectorWizardPage} />
+          <Route path="/autoprovision" component={AutoProvisionWizardPage} />
+          <Route path="/ftp-sources" component={FtpSourcesPage} />
           <Route path="/org" component={OrgProfilePage} />
           <Route path="/org/users" component={OrgUsersPage} />
           <Route path="/org/notifications" component={OrgNotificationsPage} />
