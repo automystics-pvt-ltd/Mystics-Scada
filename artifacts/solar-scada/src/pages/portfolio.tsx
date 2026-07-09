@@ -286,20 +286,39 @@ export default function PortfolioDashboard() {
   );
 }
 
-/* Inline mini sparkline to avoid import cycle */
-import { AreaChart, Area, ResponsiveContainer } from "recharts";
+/* Inline mini sparkline — pure SVG, no recharts dependency */
 function _Sparkline({ data, color }: { data: { v: number }[]; color: string }) {
+  if (!data || data.length < 2) return null;
+
+  const W = 200;
+  const H = 40;
+  const vals = data.map((d) => d.v);
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const range = max - min || 1;
+
+  const px = (i: number) => (i / (vals.length - 1)) * W;
+  const py = (v: number) => H - ((v - min) / range) * H * 0.9 - H * 0.05;
+
+  const pts = vals.map((v, i) => `${px(i)},${py(v)}`).join(" ");
+  const areaPath =
+    `M${px(0)},${H} L${px(0)},${py(vals[0]!)} ` +
+    vals.slice(1).map((v, i) => `L${px(i + 1)},${py(v)}`).join(" ") +
+    ` L${px(vals.length - 1)},${H} Z`;
+
+  // Use a unique gradient id per color to avoid SVG id collisions across cards
+  const gradId = `ps-${color.replace(/[^a-z0-9]/gi, "")}`;
+
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id="ps" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-            <stop offset="95%" stopColor={color} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <Area type="monotone" dataKey="v" stroke={color} strokeWidth={1.5} fill="url(#ps)" dot={false} isAnimationActive={false} />
-      </AreaChart>
-    </ResponsiveContainer>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%"  stopColor={color} stopOpacity={0.3} />
+          <stop offset="95%" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill={`url(#${gradId})`} />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
   );
 }
