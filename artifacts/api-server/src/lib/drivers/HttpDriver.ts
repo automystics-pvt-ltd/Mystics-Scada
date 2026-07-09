@@ -38,6 +38,7 @@ export class HttpDriver extends EventEmitter implements IDriver {
   private _status: DriverStatus = "idle";
   private _timer: ReturnType<typeof setInterval> | null = null;
   private _stopped = false;
+  private _polling = false; // guard against concurrent poll cycles
   private readonly _cfg: DriverConfig;
 
   constructor(cfg: DriverConfig) {
@@ -124,6 +125,13 @@ export class HttpDriver extends EventEmitter implements IDriver {
 
   private async _poll(): Promise<void> {
     if (this._stopped) return;
+    // Guard: skip this tick if a previous fetch is still in-flight (slow endpoint
+    // or network delay longer than the polling interval).
+    if (this._polling) {
+      this.emit("log", "READ_WARN", "Poll skipped — previous HTTP request still in-flight");
+      return;
+    }
+
     const url = this._resolveUrl();
     if (!url) {
       this._setStatus("error");
@@ -131,6 +139,7 @@ export class HttpDriver extends EventEmitter implements IDriver {
       return;
     }
 
+    this._polling = true;
     const t0 = Date.now();
     try {
       const controller = new AbortController();
@@ -145,7 +154,6 @@ export class HttpDriver extends EventEmitter implements IDriver {
         const rttMs = Date.now() - t0;
         this._setStatus("error");
         this.emit("log", "READ_FAIL", `HTTP ${res.status} from ${url}`, rttMs);
-        // Retry after next poll interval (timer is still running)
         return;
       }
 
@@ -161,6 +169,8 @@ export class HttpDriver extends EventEmitter implements IDriver {
       this._setStatus("error");
       this.emit("log", "ERROR", (err as Error).message, rttMs);
       this.emit("error", err);
+    } finally {
+      this._polling = false;
     }
   }
 }

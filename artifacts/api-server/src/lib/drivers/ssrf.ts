@@ -11,6 +11,8 @@
  * for this tier of protection).
  */
 
+import { logger } from "../logger.js";
+
 const BLOCKED_PREFIXES = [
   "127.",
   "169.254.",
@@ -45,6 +47,9 @@ export function assertNotSsrfTarget(target: string | null | undefined): void {
 
   for (const prefix of BLOCKED_PREFIXES) {
     if (host === prefix || host.startsWith(prefix)) {
+      // Log only the sanitized hostname — never the raw target which may contain
+      // credentials in userinfo or tokenized query parameters.
+      logger.warn({ resolvedHost: host }, "SSRF policy blocked outbound connection attempt");
       throw new SsrfBlockedError(target);
     }
   }

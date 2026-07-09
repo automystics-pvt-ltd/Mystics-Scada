@@ -23,9 +23,10 @@ function resolveJsonPath(obj: unknown, path: string): unknown {
   }, obj);
 }
 
-function decodePayload(raw: string, fields: FieldDef[]): ParamMap {
+/** Returns null if the raw string is not valid JSON, otherwise a (possibly empty) ParamMap. */
+function decodePayload(raw: string, fields: FieldDef[]): ParamMap | null {
   let obj: unknown;
-  try { obj = JSON.parse(raw); } catch { return {}; }
+  try { obj = JSON.parse(raw); } catch { return null; }
 
   const params: ParamMap = {};
   for (const field of fields) {
@@ -139,13 +140,18 @@ export class MqttDriver extends EventEmitter implements IDriver {
 
     client.on("message", (_topic: string, payload: Buffer) => {
       const t0 = Date.now();
-      const params = decodePayload(payload.toString("utf8"), this._cfg.fieldMap ?? []);
+      const raw = payload.toString("utf8");
+      const params = decodePayload(raw, this._cfg.fieldMap ?? []);
       const rttMs = Date.now() - t0;
-      if (Object.keys(params).length > 0) {
+      if (params === null) {
+        // JSON parse failure — device is publishing non-JSON (binary, CSV, etc.)
+        this.emit("log", "PARSE_ERROR", `Invalid JSON in MQTT payload on ${_topic} (${Buffer.byteLength(raw, "utf8")} bytes)`);
+      } else if (Object.keys(params).length > 0) {
         this.emit("log", "READ_OK", `${Object.keys(params).length} params from ${_topic}`, rttMs);
         this.emit("reading", params);
       } else {
-        this.emit("log", "PARSE_ERROR", `Empty params from payload on ${_topic}`);
+        // Valid JSON but no configured field paths matched
+        this.emit("log", "READ_WARN", `MQTT payload parsed but no field map entries matched on ${_topic}`);
       }
     });
 

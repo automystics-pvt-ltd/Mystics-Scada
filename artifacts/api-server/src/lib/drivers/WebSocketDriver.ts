@@ -18,9 +18,10 @@ function resolveJsonPath(obj: unknown, path: string): unknown {
   }, obj);
 }
 
-function decodeMessage(raw: string, fields: FieldDef[]): ParamMap {
+/** Returns null if the raw string is not valid JSON, otherwise a (possibly empty) ParamMap. */
+function decodeMessage(raw: string, fields: FieldDef[]): ParamMap | null {
   let obj: unknown;
-  try { obj = JSON.parse(raw); } catch { return {}; }
+  try { obj = JSON.parse(raw); } catch { return null; }
   const params: ParamMap = {};
   for (const field of fields) {
     const path = field.jsonPath ?? `$.${field.key}`;
@@ -151,11 +152,15 @@ export class WebSocketDriver extends EventEmitter implements IDriver {
       const raw = typeof data === "string" ? data : data.toString("utf8");
       const params = decodeMessage(raw, this._cfg.fieldMap ?? []);
       const rttMs = Date.now() - t0;
-      if (Object.keys(params).length > 0) {
+      if (params === null) {
+        // JSON parse failure — the frame was not valid JSON
+        this.emit("log", "PARSE_ERROR", `Invalid JSON in WS frame (${Buffer.byteLength(raw, "utf8")} bytes)`);
+      } else if (Object.keys(params).length > 0) {
         this.emit("log", "READ_OK", `${Object.keys(params).length} params`, rttMs);
         this.emit("reading", params);
       } else {
-        this.emit("log", "PARSE_ERROR", "Empty params from WS frame");
+        // Valid JSON but no configured field paths matched
+        this.emit("log", "READ_WARN", "WS frame parsed but no field map entries matched");
       }
     });
 

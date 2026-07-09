@@ -72,7 +72,9 @@ export function useTelemetryStream(): TelemetryState {
         queryClient.setQueryData(["notifications", "unread-count"], (old: any) => ({
           count: ((old?.count as number) ?? 0) + 1,
         }));
-      } catch { /* ignore malformed */ }
+      } catch (err) {
+        console.warn("[telemetry-stream] malformed notification event", err);
+      }
     });
 
     es.addEventListener("telemetry", (evt: MessageEvent) => {

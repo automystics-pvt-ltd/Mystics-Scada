@@ -122,6 +122,7 @@ export class ModbusTcpDriver extends EventEmitter implements IDriver {
   private _timer: ReturnType<typeof setInterval> | null = null;
   private _stopped = false;
   private _reconnecting = false; // guard against double-schedule on close-after-destroy
+  private _polling = false;      // guard against concurrent poll cycles
   private _transId = 0;
   private readonly _cfg: DriverConfig;
 
@@ -270,27 +271,39 @@ export class ModbusTcpDriver extends EventEmitter implements IDriver {
 
   private async _poll(): Promise<void> {
     if (!this._socket || this._status !== "connected") return;
+    // Guard: if the previous poll cycle is still in-flight (e.g. slow device,
+    // long register map, or response timeout), skip this tick rather than
+    // issuing a second concurrent read to the same socket.
+    if (this._polling) {
+      this.emit("log", "READ_WARN", "Poll skipped — previous cycle still in-flight");
+      return;
+    }
 
+    this._polling = true;
     const groups = groupFields(this._cfg.fieldMap ?? []);
     const params: ParamMap = {};
     const t0 = Date.now();
 
-    for (const group of groups) {
-      const regs = await this._readRegisters(group.startAddr, group.quantity);
-      if (!regs) {
-        this.emit("log", "READ_FAIL", `Failed to read addr ${group.startAddr}`);
-        this._setStatus("error");
-        return;
+    try {
+      for (const group of groups) {
+        const regs = await this._readRegisters(group.startAddr, group.quantity);
+        if (!regs) {
+          this.emit("log", "READ_FAIL", `Failed to read addr ${group.startAddr}`);
+          this._setStatus("error");
+          return;
+        }
+        for (const field of group.fields) {
+          const val = decodeField(regs, field, group.startAddr);
+          if (val !== null) params[field.key] = val;
+        }
       }
-      for (const field of group.fields) {
-        const val = decodeField(regs, field, group.startAddr);
-        if (val !== null) params[field.key] = val;
-      }
-    }
 
-    const rttMs = Date.now() - t0;
-    this.emit("log", "READ_OK", `${Object.keys(params).length} params`, rttMs);
-    this.emit("reading", params);
+      const rttMs = Date.now() - t0;
+      this.emit("log", "READ_OK", `${Object.keys(params).length} params`, rttMs);
+      this.emit("reading", params);
+    } finally {
+      this._polling = false;
+    }
   }
 
   private _readRegisters(startAddr: number, quantity: number): Promise<number[] | null> {

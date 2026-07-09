@@ -337,7 +337,11 @@ class DriverRegistry {
         .update(devicesTable)
         .set({ status: mappedStatus, updatedAt: new Date() })
         .where(eq(devicesTable.id, deviceId));
-    } catch { /* non-critical */ }
+    } catch (err) {
+      // Non-critical — live telemetry continues even if the status column is stale.
+      // Log at warn so DB connectivity issues surface in monitoring.
+      logger.warn({ deviceId, err }, "Failed to update device status in DB (non-critical)");
+    }
   }
 
   private async _writeCommLog(
@@ -366,7 +370,10 @@ class DriverRegistry {
             LIMIT ${MAX_COMM_LOGS_PER_DEVICE}
           )
       `);
-    } catch { /* non-critical */ }
+    } catch (err) {
+      // Non-critical — missing a comm log entry does not affect telemetry.
+      logger.warn({ deviceId, err }, "Failed to write device comm log (non-critical)");
+    }
   }
 }
 

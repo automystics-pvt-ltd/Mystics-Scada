@@ -37,6 +37,7 @@ export class OpcuaDriver extends EventEmitter implements IDriver {
   private _timer: NodeJS.Timeout | null = null;
   private _reconnecting = false;
   private _stopped = false;
+  private _polling = false; // guard against concurrent poll cycles
 
   constructor(config: DriverConfig) {
     super();
@@ -143,6 +144,13 @@ export class OpcuaDriver extends EventEmitter implements IDriver {
 
   private async _poll(): Promise<void> {
     if (!this._session || this._stopped) return;
+    // Guard: skip this tick if a previous read cycle is still awaiting node responses.
+    if (this._polling) {
+      this.emit("log", "READ_WARN", "Poll skipped — previous OPC-UA read still in-flight");
+      return;
+    }
+
+    this._polling = true;
     const t0 = Date.now();
     const params: Record<string, unknown> = {};
     const nodeFields: FieldDef[] = (this._cfg.fieldMap ?? []).filter((f) => f.nodeId);
@@ -169,6 +177,8 @@ export class OpcuaDriver extends EventEmitter implements IDriver {
         this._reconnecting = true;
         setTimeout(() => { this._reconnecting = false; this._connect(); }, 10_000);
       }
+    } finally {
+      this._polling = false;
     }
   }
 }
