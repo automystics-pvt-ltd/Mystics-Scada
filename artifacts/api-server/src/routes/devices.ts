@@ -94,11 +94,13 @@ const DEVICE_TYPES = [
   "weather_station", "tracker_controller", "sensor", "gateway",
 ] as const;
 
-const PROTOCOLS = ["modbus", "modbus_rtu", "mqtt", "http", "opcua", "websocket"] as const;
+const PROTOCOLS = ["modbus", "modbus_rtu", "mqtt", "http", "opcua", "websocket", "bacnet"] as const;
 
 const HTTP_AUTH_METHODS = ["none", "bearer", "api_key", "basic"] as const;
 
 const SERIAL_PARITY = ["none", "even", "odd"] as const;
+
+const OPCUA_SECURITY_MODES = ["None", "Sign", "SignAndEncrypt"] as const;
 
 /** Cross-field validation: ensure auth value/header are present for methods that need them. */
 function validateHttpAuth(data: { httpAuthMethod?: string; httpAuthValue?: string; httpApiKeyHeader?: string }, ctx: z.RefinementCtx) {
@@ -136,6 +138,12 @@ const RegisterDeviceBody = z.object({
   parity:            z.enum(SERIAL_PARITY).optional(),
   dataBits:          z.union([z.literal(5), z.literal(6), z.literal(7), z.literal(8)]).optional(),
   stopBits:          z.union([z.literal(1), z.literal(2)]).optional(),
+  // OPC-UA
+  opcuaSecurityMode: z.enum(OPCUA_SECURITY_MODES).optional(),
+  opcuaUsername:     z.string().max(255).optional(),
+  opcuaPassword:     z.string().max(2048).optional(),
+  // BACnet/IP
+  bacnetDeviceInstance: z.number().int().min(0).max(4194302).optional(),
 }).superRefine(validateHttpAuth);
 
 // Body accepted by the pre-flight test (no device ID needed; value used once, never persisted)
@@ -155,6 +163,10 @@ const PreflightBody = z.object({
   parity:           z.enum(SERIAL_PARITY).optional(),
   dataBits:         z.union([z.literal(5), z.literal(6), z.literal(7), z.literal(8)]).optional(),
   stopBits:         z.union([z.literal(1), z.literal(2)]).optional(),
+  opcuaSecurityMode: z.enum(OPCUA_SECURITY_MODES).optional(),
+  opcuaUsername:     z.string().max(255).optional(),
+  opcuaPassword:     z.string().max(2048).optional(),
+  bacnetDeviceInstance: z.number().int().min(0).max(4194302).optional(),
 }).superRefine(validateHttpAuth);
 
 const UpdateDeviceBody = z.object({
@@ -177,6 +189,12 @@ const UpdateDeviceBody = z.object({
   parity:            z.enum(SERIAL_PARITY).optional(),
   dataBits:          z.union([z.literal(5), z.literal(6), z.literal(7), z.literal(8)]).optional(),
   stopBits:          z.union([z.literal(1), z.literal(2)]).optional(),
+  // OPC-UA — pass opcuaPassword: "" to clear credentials
+  opcuaSecurityMode: z.enum(OPCUA_SECURITY_MODES).optional(),
+  opcuaUsername:     z.string().max(255).optional(),
+  opcuaPassword:     z.string().max(2048).optional(),
+  // BACnet/IP
+  bacnetDeviceInstance: z.number().int().min(0).max(4194302).optional(),
 }).superRefine(validateHttpAuth);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -200,6 +218,12 @@ type DeviceConfig = {
   parity?: "none" | "even" | "odd";
   dataBits?: 5 | 6 | 7 | 8;
   stopBits?: 1 | 2;
+  // OPC-UA
+  opcuaSecurityMode?: "None" | "Sign" | "SignAndEncrypt";
+  opcuaUsername?: string;
+  opcuaPassword?: string;
+  // BACnet/IP
+  bacnetDeviceInstance?: number;
   pendingDeploy?: boolean;
 };
 
@@ -253,6 +277,12 @@ function toDeviceResponse(row: DeviceRow, now: Date) {
       parity:             cfg.parity ?? null,
       dataBits:           cfg.dataBits ?? null,
       stopBits:           cfg.stopBits ?? null,
+      // OPC-UA — password value is never returned, only whether one is set
+      opcuaSecurityMode:  cfg.opcuaSecurityMode ?? null,
+      opcuaUsername:      cfg.opcuaUsername ?? null,
+      opcuaPasswordConfigured: !!cfg.opcuaPassword,
+      // BACnet/IP
+      bacnetDeviceInstance: cfg.bacnetDeviceInstance ?? null,
     },
     pendingDeploy: cfg.pendingDeploy ?? false,
     createdAt: row.createdAt,
@@ -271,6 +301,7 @@ function toDriverProtocol(raw: string): DriverConfig["protocol"] | null {
     case "http": return "http";
     case "websocket": case "ws": return "websocket";
     case "opcua": case "opc-ua": case "opc_ua": return "opcua";
+    case "bacnet": case "bac-net": case "bac_net": return "bacnet";
     default: return null;
   }
 }
@@ -322,6 +353,10 @@ router.post("/devices/connection-preflight", requirePermission("device.manage"),
     parity:          b.parity,
     dataBits:        b.dataBits,
     stopBits:        b.stopBits,
+    opcuaSecurityMode: b.opcuaSecurityMode,
+    opcuaUsername:   b.opcuaUsername,
+    opcuaPassword:   b.opcuaPassword,
+    bacnetDeviceInstance: b.bacnetDeviceInstance,
     pollingIntervalS: 30,
     fieldMap:        [],
   };
@@ -445,6 +480,11 @@ router.post("/devices", requirePermission("device.manage"), async (req, res) => 
     parity:             body.parity,
     dataBits:           body.dataBits,
     stopBits:           body.stopBits,
+    opcuaSecurityMode:  body.opcuaSecurityMode,
+    opcuaUsername:      body.opcuaUsername,
+    // Encrypt credential at rest — never store plaintext
+    opcuaPassword:      body.opcuaPassword ? encryptCredential(body.opcuaPassword) : undefined,
+    bacnetDeviceInstance: body.bacnetDeviceInstance,
     pendingDeploy:      false,
   };
 
@@ -645,6 +685,13 @@ router.patch("/devices/:id", requirePermission("device.manage"), async (req, res
     ...(body.parity !== undefined             && { parity:             body.parity }),
     ...(body.dataBits !== undefined           && { dataBits:           body.dataBits }),
     ...(body.stopBits !== undefined           && { stopBits:           body.stopBits }),
+    ...(body.opcuaSecurityMode !== undefined  && { opcuaSecurityMode:  body.opcuaSecurityMode }),
+    ...(body.opcuaUsername !== undefined      && { opcuaUsername:      body.opcuaUsername }),
+    ...(body.opcuaPassword !== undefined      && {
+      // Empty string clears the credential; non-empty encrypts it
+      opcuaPassword: body.opcuaPassword ? encryptCredential(body.opcuaPassword) : undefined,
+    }),
+    ...(body.bacnetDeviceInstance !== undefined && { bacnetDeviceInstance: body.bacnetDeviceInstance }),
     pendingDeploy: true,
   };
 
@@ -1101,6 +1148,11 @@ router.get("/devices/:id/connection-test", requirePermission("device.manage"), a
     parity:           cfg.parity,
     dataBits:         cfg.dataBits,
     stopBits:         cfg.stopBits,
+    opcuaSecurityMode: cfg.opcuaSecurityMode,
+    opcuaUsername:    cfg.opcuaUsername,
+    // Decrypt at point-of-use — never expose ciphertext to the driver
+    opcuaPassword:    cfg.opcuaPassword ? decryptCredential(cfg.opcuaPassword) : undefined,
+    bacnetDeviceInstance: cfg.bacnetDeviceInstance,
     pollingIntervalS: cfg.pollingIntervalSec ?? 30,
     fieldMap,
   };

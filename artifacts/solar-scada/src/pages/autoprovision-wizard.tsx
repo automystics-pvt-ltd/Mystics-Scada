@@ -27,7 +27,7 @@ const BASE = import.meta.env.BASE_URL;
 
 interface Plant { id: string; name: string; location?: string; }
 interface Template { id: string; manufacturer: string; model: string; protocol: string; orgId?: string; }
-interface Device { name: string; templateId: string; protocol: string; ipAddress?: string; port?: string; brokerUrl?: string; topic?: string; url?: string; plantId: string; }
+interface Device { name: string; templateId: string; protocol: string; ipAddress?: string; port?: string; brokerUrl?: string; topic?: string; url?: string; plantId: string; bacnetDeviceInstance?: string; }
 interface TestResult { deviceName: string; ok: boolean; error?: string; latencyMs: number; }
 
 interface WizardState {
@@ -261,7 +261,7 @@ function StepDevices({ state, update, templates }: {
                     <Input className="mt-1" placeholder={`e.g. ${tmpl?.manufacturer ?? "Device"}-01`}
                       value={dev.name} onChange={(e) => updateDevice(i, { name: e.target.value })} />
                   </div>
-                  {(proto === "modbus_tcp" || proto === "modbus" || proto === "http" || proto === "opcua") && (
+                  {(proto === "modbus_tcp" || proto === "modbus" || proto === "http" || proto === "opcua" || proto === "bacnet") && (
                     <>
                       <div>
                         <Label>IP Address</Label>
@@ -270,10 +270,17 @@ function StepDevices({ state, update, templates }: {
                       </div>
                       <div>
                         <Label>Port</Label>
-                        <Input className="mt-1" type="number" value={dev.port ?? ""}
+                        <Input className="mt-1" type="number" placeholder={proto === "bacnet" ? "47808" : undefined} value={dev.port ?? ""}
                           onChange={(e) => updateDevice(i, { port: e.target.value })} />
                       </div>
                     </>
+                  )}
+                  {proto === "bacnet" && (
+                    <div>
+                      <Label>Device Instance</Label>
+                      <Input className="mt-1" type="number" placeholder="1001" value={dev.bacnetDeviceInstance ?? ""}
+                        onChange={(e) => updateDevice(i, { bacnetDeviceInstance: e.target.value })} />
+                    </div>
                   )}
                   {proto === "mqtt" && (
                     <>
@@ -492,6 +499,7 @@ export default function AutoProvisionWizardPage() {
             brokerUrl: dev.brokerUrl || undefined,
             topic: dev.topic || undefined,
             url: dev.url || undefined,
+            bacnetDeviceInstance: dev.bacnetDeviceInstance ? Number(dev.bacnetDeviceInstance) : undefined,
             pollingIntervalSec: 30,
           }),
         });

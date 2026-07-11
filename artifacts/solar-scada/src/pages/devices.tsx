@@ -77,7 +77,7 @@ const DEVICE_TYPES = [
   "RTU", "PLC", "data_logger", "smart_meter", "inverter",
   "weather_station", "tracker_controller", "sensor", "gateway",
 ];
-const PROTOCOLS = ["modbus", "mqtt", "http", "opcua", "websocket"];
+const PROTOCOLS = ["modbus", "mqtt", "http", "opcua", "websocket", "bacnet"];
 
 const PLANT_NAMES: Record<string, string> = {
   "plant-thar":       "Thar Desert Solar Farm",
@@ -153,6 +153,8 @@ export default function DevicesPage() {
     templateId: "",
     ipAddress: "", port: "502", modbusUnitId: "1", pollingIntervalSec: "30",
     brokerUrl: "", topic: "", url: "",
+    opcuaSecurityMode: "None", opcuaUsername: "", opcuaPassword: "",
+    bacnetDeviceInstance: "",
   });
 
   const { data: devices = [], isLoading } = useQuery<Device[]>({
@@ -194,7 +196,9 @@ export default function DevicesPage() {
       setForm({ name: "", type: "RTU", protocol: "modbus", plantId: "plant-thar",
         templateId: "",
         ipAddress: "", port: "502", modbusUnitId: "1", pollingIntervalSec: "30",
-        brokerUrl: "", topic: "", url: "" });
+        brokerUrl: "", topic: "", url: "",
+        opcuaSecurityMode: "None", opcuaUsername: "", opcuaPassword: "",
+        bacnetDeviceInstance: "" });
       toast({ title: "Device registered", description: "New device added to the registry." });
     },
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -234,10 +238,19 @@ export default function DevicesPage() {
       if (form.topic) body.topic = form.topic;
     } else if (form.protocol === "websocket") {
       if (form.url) body.url = form.url;
+    } else if (form.protocol === "bacnet") {
+      if (form.ipAddress) body.ipAddress = form.ipAddress;
+      if (form.port) body.port = Number(form.port);
+      if (form.bacnetDeviceInstance) body.bacnetDeviceInstance = Number(form.bacnetDeviceInstance);
     } else {
       if (form.ipAddress) body.ipAddress = form.ipAddress;
       if (form.port) body.port = Number(form.port);
       if (form.url) body.url = form.url;
+      if (form.protocol === "opcua") {
+        body.opcuaSecurityMode = form.opcuaSecurityMode;
+        if (form.opcuaUsername) body.opcuaUsername = form.opcuaUsername;
+        if (form.opcuaPassword) body.opcuaPassword = form.opcuaPassword;
+      }
     }
     registerMutation.mutate(body);
   }
@@ -538,8 +551,52 @@ export default function DevicesPage() {
                   </div>
                   <div className="col-span-1 sm:col-span-2">
                     <Label>Endpoint URL <span className="text-muted-foreground font-normal">(overrides IP/port if set)</span></Label>
-                    <Input className="mt-1" placeholder="https://device.local/api/data" value={form.url}
+                    <Input className="mt-1" placeholder={form.protocol === "opcua" ? "opc.tcp://device.local:4840" : "https://device.local/api/data"} value={form.url}
                       onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))} />
+                  </div>
+                </>
+              )}
+              {form.protocol === "opcua" && (
+                <>
+                  <div>
+                    <Label>Security Mode</Label>
+                    <Select value={form.opcuaSecurityMode} onValueChange={(v) => setForm((f) => ({ ...f, opcuaSecurityMode: v }))}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="None">None</SelectItem>
+                        <SelectItem value="Sign">Sign</SelectItem>
+                        <SelectItem value="SignAndEncrypt">Sign &amp; Encrypt</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Username <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                    <Input className="mt-1" value={form.opcuaUsername}
+                      onChange={(e) => setForm((f) => ({ ...f, opcuaUsername: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Password <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                    <Input className="mt-1" type="password" value={form.opcuaPassword}
+                      onChange={(e) => setForm((f) => ({ ...f, opcuaPassword: e.target.value }))} />
+                  </div>
+                </>
+              )}
+              {form.protocol === "bacnet" && (
+                <>
+                  <div>
+                    <Label>IP Address</Label>
+                    <Input className="mt-1" placeholder="10.0.1.40" value={form.ipAddress}
+                      onChange={(e) => setForm((f) => ({ ...f, ipAddress: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Port <span className="text-muted-foreground font-normal">(default 47808)</span></Label>
+                    <Input className="mt-1" type="number" placeholder="47808" value={form.port}
+                      onChange={(e) => setForm((f) => ({ ...f, port: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Device Instance</Label>
+                    <Input className="mt-1" type="number" placeholder="1001" value={form.bacnetDeviceInstance}
+                      onChange={(e) => setForm((f) => ({ ...f, bacnetDeviceInstance: e.target.value }))} />
                   </div>
                 </>
               )}

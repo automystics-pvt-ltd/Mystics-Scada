@@ -38,11 +38,14 @@ export class OpcuaDriver extends EventEmitter implements IDriver {
   private _reconnecting = false;
   private _stopped = false;
   private _polling = false; // guard against concurrent poll cycles
+  /** Count of NodeIds actively polled — surfaced on the health dashboard. */
+  subscriptionCount = 0;
 
   constructor(config: DriverConfig) {
     super();
     this.deviceId = config.deviceId;
     this._cfg = config;
+    this.subscriptionCount = (config.fieldMap ?? []).filter((f) => f.nodeId).length;
   }
 
   start(): void {
@@ -62,14 +65,36 @@ export class OpcuaDriver extends EventEmitter implements IDriver {
     const t0 = Date.now();
     try {
       const opcua = await getOpcua();
-      const client = opcua.OPCUAClient.create({ endpointMustExist: false, connectionStrategy: { maxRetry: 1 } }) as unknown as OpcuaClient;
+      // Mirror _connect()'s security/auth handling so a test result reflects the
+      // same connection semantics the running driver will actually use.
+      const mode = this._cfg.opcuaSecurityMode ?? "None";
+      const securityMode = (opcua.MessageSecurityMode as unknown as Record<string, unknown>)[mode] ?? opcua.MessageSecurityMode.None;
+      const securityPolicy = mode === "None" ? opcua.SecurityPolicy.None : opcua.SecurityPolicy.Basic256Sha256;
+      const client = opcua.OPCUAClient.create({
+        endpointMustExist: false,
+        connectionStrategy: { maxRetry: 1 },
+        securityMode: securityMode as typeof opcua.MessageSecurityMode.None,
+        securityPolicy,
+      }) as unknown as OpcuaClient;
       const endpointUrl = this._cfg.url ?? `opc.tcp://${this._cfg.ipAddress ?? "localhost"}:${this._cfg.port ?? 4840}`;
       await Promise.race([
         client.connect(endpointUrl),
         new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), timeoutMs)),
       ]);
-      const session = await client.createSession();
+      let identity: unknown = { type: 0 }; // AnonymousIdentity
+      if (this._cfg.opcuaUsername) {
+        identity = { type: 1, userName: this._cfg.opcuaUsername, password: this._cfg.opcuaPassword };
+      }
+      const session = await client.createSession(identity);
       const sampleParams: Record<string, unknown> = {};
+      // Standard NodeId for Server.NamespaceArray (ns=0;i=2255) — present on every
+      // spec-compliant OPC-UA server, so this works without knowing the vendor's
+      // custom namespace layout ahead of time.
+      try {
+        const nsArray = await session.readVariableValue("ns=0;i=2255");
+        const namespaces = nsArray.value.value;
+        if (Array.isArray(namespaces)) sampleParams.namespaceArray = namespaces.join(", ");
+      } catch { /* server may not expose it under the standard id — non-fatal */ }
       for (const field of (this._cfg.fieldMap ?? []).slice(0, 3)) {
         if (field.nodeId) {
           try {
@@ -105,11 +130,17 @@ export class OpcuaDriver extends EventEmitter implements IDriver {
     const endpointUrl = this._cfg.url ?? `opc.tcp://${this._cfg.ipAddress ?? "localhost"}:${this._cfg.port ?? 4840}`;
 
     getOpcua().then(async (opcua) => {
+      // Sign / SignAndEncrypt rely on node-opcua's auto-generated client certificate
+      // (no user-supplied cert management, which is out of scope for this driver).
+      const mode = this._cfg.opcuaSecurityMode ?? "None";
+      const securityMode = (opcua.MessageSecurityMode as unknown as Record<string, unknown>)[mode] ?? opcua.MessageSecurityMode.None;
+      const securityPolicy = mode === "None" ? opcua.SecurityPolicy.None : opcua.SecurityPolicy.Basic256Sha256;
+
       const client = opcua.OPCUAClient.create({
         endpointMustExist: false,
         connectionStrategy: { maxRetry: 3, initialDelay: 1000 },
-        securityMode: opcua.MessageSecurityMode.None,
-        securityPolicy: opcua.SecurityPolicy.None,
+        securityMode: securityMode as typeof opcua.MessageSecurityMode.None,
+        securityPolicy,
       }) as unknown as OpcuaClient;
 
       this._client = client;

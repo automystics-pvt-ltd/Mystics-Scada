@@ -33,12 +33,19 @@ const FieldDefSchema = z.object({
   alarmHigh:    z.number().optional(),
   alarmLow:     z.number().optional(),
   readWrite:    z.boolean().optional(),
+  // OPC-UA
+  nodeId:              z.string().max(300).optional(),
+  samplingIntervalMs:  z.number().int().min(100).max(600_000).optional(),
+  // BACnet/IP
+  objectType:          z.string().max(40).optional(),
+  objectInstance:      z.number().int().min(0).max(4194302).optional(),
+  propertyId:          z.string().max(60).optional(),
 });
 
 const CreateTemplateBody = z.object({
   manufacturer:       z.string().min(1).max(120),
   model:              z.string().min(1).max(120),
-  protocol:           z.enum(["modbus_tcp", "modbus_rtu", "mqtt", "http", "websocket"]),
+  protocol:           z.enum(["modbus_tcp", "modbus_rtu", "mqtt", "http", "websocket", "opcua", "bacnet"]),
   fieldMap:           z.array(FieldDefSchema).default([]),
   defaultPollIntervalS: z.number().int().min(5).max(3600).default(30),
   firmwareVersionParam: z.string().max(80).optional(),

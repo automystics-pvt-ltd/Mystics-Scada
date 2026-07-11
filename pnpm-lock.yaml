@@ -200,6 +200,9 @@ importers:
       mqtt:
         specifier: ^5.15.2
         version: 5.15.2
+      node-bacnet:
+        specifier: ^0.2.4
+        version: 0.2.4
       node-opcua:
         specifier: ^2.174.0
         version: 2.174.0
@@ -2831,6 +2834,10 @@ packages:
   humanize@0.0.9:
     resolution: {integrity: sha512-bvZZ7vXpr1RKoImjuQ45hJb5OvE2oJafHysiD/AL3nkqTZH2hFCjQ3YZfCd63FefDitbJze/ispUPP0gfDsT2Q==}
 
+  iconv-lite@0.5.2:
+    resolution: {integrity: sha512-kERHXvpSaB4aU3eANwidg79K8FlrN77m8G9V+0vOR3HYaRifrlwMEpT7ZBJqLSEIHnEgJTHcWK82wwLwwKwtag==}
+    engines: {node: '>=0.10.0'}
+
   iconv-lite@0.7.3:
     resolution: {integrity: sha512-IKXpvIzjnC9XTAUbVBcMfGS0EPaIXtW6v+zr+RRp+hqULEpo0owZax6wyRwPOJbWbzjYspQwusTsfVr0ifh4uQ==}
     engines: {node: '>=0.10.0'}
@@ -3101,6 +3108,10 @@ packages:
   node-addon-api@8.3.0:
     resolution: {integrity: sha512-8VOpLHFrOQlAH+qA0ZzuGRlALRA6/LVh8QJldbrC4DY0hXoMP0l4Acq8TzFC018HztWiRqyCEj2aTWY2UvnJUg==}
     engines: {node: ^18 || ^20 || >= 21}
+
+  node-bacnet@0.2.4:
+    resolution: {integrity: sha512-Ni8BQzOYmB6kJSbp0GVkRKmlJAkQaVGoZMBJVMOKF17GxWrAo+eVozEDBvGZLkiV5/CbuTaCy/pKqBFITcowGQ==}
+    engines: {node: '>= 10'}
 
   node-gyp-build@4.8.4:
     resolution: {integrity: sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==}
@@ -3958,6 +3969,9 @@ packages:
 
   uc.micro@2.1.0:
     resolution: {integrity: sha512-ARDJmphmdvUk6Glw7y9DQ2bFkKBHwQHLi2lsaH6PPmz/Ka9sFOBsBluozhDltWmnv9u/cF6Rt87znRTPV+yp/A==}
+
+  underscore@1.13.8:
+    resolution: {integrity: sha512-DXtD3ZtEQzc7M8m4cXotyHR+FAS18C64asBYY5vqZexfYryNNnDc02W4hKg3rdQuqOYas1jkseX0+nZXjTXnvQ==}
 
   undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
@@ -6471,6 +6485,10 @@ snapshots:
 
   humanize@0.0.9: {}
 
+  iconv-lite@0.5.2:
+    dependencies:
+      safer-buffer: 2.1.2
+
   iconv-lite@0.7.3:
     dependencies:
       safer-buffer: 2.1.2
@@ -6699,6 +6717,14 @@ snapshots:
       react-dom: 19.1.0(react@19.1.0)
 
   node-addon-api@8.3.0: {}
+
+  node-bacnet@0.2.4:
+    dependencies:
+      debug: 4.4.3
+      iconv-lite: 0.5.2
+      underscore: 1.13.8
+    transitivePeerDependencies:
+      - supports-color
 
   node-gyp-build@4.8.4: {}
 
@@ -8156,6 +8182,8 @@ snapshots:
   typical@7.3.0: {}
 
   uc.micro@2.1.0: {}
+
+  underscore@1.13.8: {}
 
   undici-types@5.26.5: {}
 

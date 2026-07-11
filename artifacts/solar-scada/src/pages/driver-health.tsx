@@ -29,6 +29,7 @@ interface DriverStat {
   lastRttMs: number | null;
   readingCount: number;
   errorCount: number;
+  subscriptionCount: number | null;
 }
 
 const STATUS_META = {
@@ -43,6 +44,7 @@ const STATUS_META = {
 const PROTOCOL_COLORS: Record<string, string> = {
   modbus: "text-amber-400", modbus_tcp: "text-amber-400", modbus_rtu: "text-amber-400",
   mqtt: "text-blue-400", http: "text-green-400", websocket: "text-purple-400", ws: "text-purple-400",
+  opcua: "text-cyan-400", bacnet: "text-orange-400",
 };
 
 function timeAgo(iso: string | null): string {
@@ -197,6 +199,7 @@ export default function DriverHealthPage() {
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">RTT</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Reads</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Errors</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Subscriptions</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Uptime</th>
                   {canManage && <th className="w-20 px-4 py-2.5" />}
                 </tr>
@@ -204,7 +207,7 @@ export default function DriverHealthPage() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="text-center py-10 text-muted-foreground text-sm">
+                    <td colSpan={10} className="text-center py-10 text-muted-foreground text-sm">
                       No drivers match your filter.
                     </td>
                   </tr>
@@ -254,6 +257,9 @@ export default function DriverHealthPage() {
                         <div className={`text-xs ${s.errorCount > 0 ? "text-red-400" : "text-muted-foreground"}`}>
                           {s.errorCount > 0 ? `${s.errorCount} (${errorRate}%)` : "—"}
                         </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {s.subscriptionCount !== null ? s.subscriptionCount.toLocaleString() : "—"}
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">
                         {s.startedAt ? timeAgo(s.startedAt).replace(" ago", "") : "—"}

@@ -35,6 +35,8 @@ async function buildAll() {
       // OPC-UA — large package with dynamic requires, keep external
       "node-opcua",
       "node-opcua-client",
+      // BACnet/IP — pure JS but uses a raw UDP dgram socket; keep external for consistency
+      "node-bacnet",
       // SFTP uses native ssh2 bindings
       "ssh2-sftp-client",
       "sharp",

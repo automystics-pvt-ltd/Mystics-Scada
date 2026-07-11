@@ -28,7 +28,7 @@ const BASE = import.meta.env.BASE_URL;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Protocol = "modbus_tcp" | "modbus_rtu" | "mqtt" | "http" | "websocket";
+type Protocol = "modbus_tcp" | "modbus_rtu" | "mqtt" | "http" | "websocket" | "opcua" | "bacnet";
 
 interface FieldDef {
   key: string;
@@ -42,6 +42,13 @@ interface FieldDef {
   jsonPath?: string;
   alarmHigh?: number;
   alarmLow?: number;
+  // OPC-UA
+  nodeId?: string;
+  samplingIntervalMs?: number;
+  // BACnet/IP
+  objectType?: string;
+  objectInstance?: number;
+  propertyId?: string;
 }
 
 interface Template {
@@ -62,7 +69,12 @@ const PROTOCOLS: { value: Protocol; label: string }[] = [
   { value: "mqtt",        label: "MQTT" },
   { value: "http",        label: "HTTP / REST API" },
   { value: "websocket",   label: "WebSocket" },
+  { value: "opcua",       label: "OPC-UA" },
+  { value: "bacnet",      label: "BACnet/IP" },
 ];
+
+const BACNET_OBJECT_TYPES = ["analogInput", "analogOutput", "analogValue", "binaryInput", "binaryOutput", "binaryValue", "multiStateInput", "multiStateOutput", "multiStateValue"] as const;
+const BACNET_PROPERTIES = ["presentValue", "statusFlags", "reliability", "outOfService"] as const;
 
 const DATA_TYPES = ["UINT16", "INT16", "UINT32", "INT32", "FLOAT32"] as const;
 
@@ -98,6 +110,8 @@ function FieldEditor({
 }) {
   const [f, setF] = useState<FieldDef>({ ...field });
   const isModbus = protocol === "modbus_tcp" || protocol === "modbus_rtu";
+  const isOpcua = protocol === "opcua";
+  const isBacnet = protocol === "bacnet";
 
   useEffect(() => { setF({ ...field }); }, [field, open]);
 
@@ -192,6 +206,66 @@ function FieldEditor({
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {DATA_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            ) : isOpcua ? (
+              <>
+                <div className="col-span-2">
+                  <Label>Node ID <span className="text-red-400">*</span></Label>
+                  <Input
+                    className="mt-1 font-mono text-sm"
+                    placeholder="ns=2;i=1002"
+                    value={f.nodeId ?? ""}
+                    onChange={(e) => setF((v) => ({ ...v, nodeId: e.target.value }))}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-0.5">OPC-UA NodeId of the variable to read</p>
+                </div>
+                <div>
+                  <Label>Sampling Interval (ms)</Label>
+                  <Input
+                    className="mt-1"
+                    type="number"
+                    placeholder="1000"
+                    value={f.samplingIntervalMs ?? ""}
+                    onChange={(e) => setF((v) => ({ ...v, samplingIntervalMs: e.target.value ? Number(e.target.value) : undefined }))}
+                  />
+                </div>
+              </>
+            ) : isBacnet ? (
+              <>
+                <div>
+                  <Label>Object Type <span className="text-red-400">*</span></Label>
+                  <Select
+                    value={f.objectType ?? "analogInput"}
+                    onValueChange={(v) => setF((prev) => ({ ...prev, objectType: v }))}
+                  >
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {BACNET_OBJECT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Object Instance <span className="text-red-400">*</span></Label>
+                  <Input
+                    className="mt-1"
+                    type="number"
+                    placeholder="0"
+                    value={f.objectInstance ?? ""}
+                    onChange={(e) => setF((v) => ({ ...v, objectInstance: e.target.value ? Number(e.target.value) : undefined }))}
+                  />
+                </div>
+                <div>
+                  <Label>Property</Label>
+                  <Select
+                    value={f.propertyId ?? "presentValue"}
+                    onValueChange={(v) => setF((prev) => ({ ...prev, propertyId: v }))}
+                  >
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {BACNET_PROPERTIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

@@ -19,3 +19,6 @@
 - [Modbus RTU graceful degradation](modbus-rtu-graceful-degradation.md) — hardware-transport drivers must dynamic-import native deps and treat missing device (ENOENT) as idle+retry, never throw.
 - [Express route ordering](express-route-ordering.md) — static-path routes (e.g. /resource/report) must be registered before /resource/:id or they get shadowed and silently 404.
 - [Alert dedup & status authority](alert-dedup-and-status-authority.md) — dedup alerts by stable ID not display name; live status must not be silently overridden by demo simulation fallbacks.
+- [node-bacnet driver integration](node-bacnet-driver.md) — no types, shared singleton UDP socket required, callback API, structured object addressing not flat registers.
+- [OPC-UA driver decisions](opcua-driver-decisions.md) — polling-only (push subscriptions unverifiable without live server), security-mode mapping, ns=0;i=2255 as universal liveness check, credential encryption pattern.
+- [Data Connector Wizard vs Device registration scope](data-connector-wizard-scope.md) — industrial protocols (Modbus/OPC-UA/BACnet) belong on Devices/Templates pages, not the generic wizard.

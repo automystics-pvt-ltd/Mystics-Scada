@@ -23,6 +23,7 @@ import { MqttDriver } from "./MqttDriver.js";
 import { HttpDriver } from "./HttpDriver.js";
 import { WebSocketDriver } from "./WebSocketDriver.js";
 import { OpcuaDriver } from "./opcua-driver.js";
+import { BacnetDriver } from "./bacnet-driver.js";
 import { applyFormulas } from "../formulaEngine.js";
 import { publish } from "../sseRegistry.js";
 import { computeDeviceHealthScore } from "../deviceHealth.js";
@@ -53,6 +54,10 @@ type DeviceConfig = {
   parity?: "none" | "even" | "odd";
   dataBits?: 5 | 6 | 7 | 8;
   stopBits?: 1 | 2;
+  opcuaSecurityMode?: "None" | "Sign" | "SignAndEncrypt";
+  opcuaUsername?: string;
+  opcuaPassword?: string;
+  bacnetDeviceInstance?: number;
   [key: string]: unknown;
 };
 
@@ -68,6 +73,8 @@ export interface DriverHealthStat {
   lastRttMs: number | null;
   readingCount: number;
   errorCount: number;
+  /** Active NodeId/object subscriptions being polled — only meaningful for opcua/bacnet drivers. */
+  subscriptionCount: number | null;
 }
 
 interface InternalStat {
@@ -104,6 +111,9 @@ function makeDriver(cfg: DriverConfig): IDriver | null {
     case "opcua":
       if (!cfg.url && !cfg.ipAddress) return null;
       return new OpcuaDriver(cfg);
+    case "bacnet":
+      if (!cfg.ipAddress) return null;
+      return new BacnetDriver(cfg);
     default:
       return null;
   }
@@ -117,6 +127,7 @@ function normalizeProtocol(raw: string): DriverConfig["protocol"] | null {
     case "http": return "http";
     case "websocket": case "ws": return "websocket";
     case "opcua": case "opc-ua": case "opc_ua": return "opcua";
+    case "bacnet": case "bac-net": case "bac_net": return "bacnet";
     default: return null;
   }
 }
@@ -169,6 +180,8 @@ class DriverRegistry {
         lastRttMs:     stat?.lastRttMs ?? null,
         readingCount:  stat?.readingCount ?? 0,
         errorCount:    stat?.errorCount ?? 0,
+        subscriptionCount:
+          driver && (driver instanceof OpcuaDriver || driver instanceof BacnetDriver) ? driver.subscriptionCount : null,
       };
     });
   }
@@ -231,6 +244,11 @@ class DriverRegistry {
       parity:           rawCfg.parity,
       dataBits:         rawCfg.dataBits,
       stopBits:         rawCfg.stopBits,
+      opcuaSecurityMode: rawCfg.opcuaSecurityMode,
+      opcuaUsername:    rawCfg.opcuaUsername,
+      // Decrypt at point-of-use — the driver never sees the ciphertext
+      opcuaPassword:    rawCfg.opcuaPassword ? decryptCredential(rawCfg.opcuaPassword) : undefined,
+      bacnetDeviceInstance: rawCfg.bacnetDeviceInstance,
       pollingIntervalS: rawCfg.pollingIntervalSec ?? 30,
       fieldMap,
     };

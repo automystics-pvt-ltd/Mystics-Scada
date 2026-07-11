@@ -9,7 +9,7 @@ import { deviceTemplatesTable } from "./deviceTemplates";
  *
  * type:     "RTU" | "PLC" | "data_logger" | "smart_meter" | "inverter" |
  *           "weather_station" | "tracker_controller" | "sensor" | "gateway"
- * protocol: "modbus" | "mqtt" | "http" | "opcua"
+ * protocol: "modbus" | "mqtt" | "http" | "opcua" | "bacnet" | "websocket"
  * status:   "online" | "offline" | "error" | "maintenance"
  */
 export const devicesTable = pgTable(

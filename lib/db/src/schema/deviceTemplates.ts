@@ -7,7 +7,7 @@ import { index, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-
  * org_id = null  → system library template (visible to all orgs, read-only)
  * org_id = <id>  → org-private custom template
  *
- * protocol: "modbus_tcp" | "modbus_rtu" | "mqtt" | "http" | "websocket"
+ * protocol: "modbus_tcp" | "modbus_rtu" | "mqtt" | "http" | "websocket" | "opcua" | "bacnet"
  *
  * field_map: FieldDef[]
  *   FieldDef = {
