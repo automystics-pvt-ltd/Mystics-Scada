@@ -17,3 +17,5 @@
 - [Connect Source auth credential handling](connect-source-auth.md) — httpAuthValue encrypted at rest (AES-256-GCM via credentialCrypto); decrypt just-in-time in registry/_launchDriver and connection-test; never returned in API responses.
 - [pnpm scoped installs & native deps](pnpm-scoped-native-deps.md) — use `pnpm --filter <pkg> add`, not the generic install tool, for artifact-only deps; native bindings need `onlyBuiltDependencies`.
 - [Modbus RTU graceful degradation](modbus-rtu-graceful-degradation.md) — hardware-transport drivers must dynamic-import native deps and treat missing device (ENOENT) as idle+retry, never throw.
+- [Express route ordering](express-route-ordering.md) — static-path routes (e.g. /resource/report) must be registered before /resource/:id or they get shadowed and silently 404.
+- [Alert dedup & status authority](alert-dedup-and-status-authority.md) — dedup alerts by stable ID not display name; live status must not be silently overridden by demo simulation fallbacks.

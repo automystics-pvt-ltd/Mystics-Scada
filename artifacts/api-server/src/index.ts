@@ -5,6 +5,7 @@ import { initFaultStore } from "./lib/initFaultStore";
 import { driverRegistry } from "./lib/drivers/registry";
 import { startRetryWorker } from "./lib/retryWorker";
 import { startFtpScheduler } from "./lib/ftpScheduler";
+import { startOfflineDetectionJob } from "./lib/offlineDetection";
 
 const rawPort = process.env["PORT"];
 
@@ -42,6 +43,9 @@ async function startServer(): Promise<void> {
 
   // Start FTP/SFTP scheduled file-pull scheduler.
   startFtpScheduler();
+
+  // Start the device offline-detection sweep (60s interval).
+  startOfflineDetectionJob();
 
   // Now open the port
   await new Promise<void>((resolve, reject) => {

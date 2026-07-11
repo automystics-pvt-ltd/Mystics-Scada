@@ -20,6 +20,8 @@ export const deviceCommLogsTable = pgTable(
     eventType: text("event_type").notNull(),
     message: text("message"),
     rttMs: integer("rtt_ms"),
+    /** Register address / node id / json path implicated in this event, if applicable. */
+    registerAddr: text("register_addr"),
     occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({

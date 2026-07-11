@@ -18,9 +18,22 @@ import { computeHealthScore, healthScoreColor, syntheticSparkline } from "@/lib/
 import { HealthScoreGauge } from "@/components/ui/scada";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { SvgAreaChart } from "@/components/ui/svg-charts";
+import { SvgAreaChart, MiniLineChart } from "@/components/ui/svg-charts";
+import { HeartPulse } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL as string;
+
+interface DeviceHealthSummary {
+  plantId: string;
+  totalDevices: number;
+  online: number;
+  offline: number;
+  degraded: number;
+  error: number;
+  avgHealthScore: number | null;
+  worstDevices: { id: string; name: string; status: string; healthScore: number | null }[];
+  sparkline: { timestamp: string; onlinePct: number }[];
+}
 
 interface PlantInsight {
   id: string; type: string; severity: "critical" | "warning" | "info";
@@ -65,6 +78,17 @@ export default function PlantDashboard() {
 
   const { data: inverters } = useListInverters(pid, {
     query: { enabled: !!pid, refetchInterval: 15000, queryKey: getListInvertersQueryKey(pid) }
+  });
+
+  const { data: deviceHealth } = useQuery<DeviceHealthSummary>({
+    queryKey: ["plant-device-health", pid],
+    queryFn: async () => {
+      const r = await fetch(`${BASE}api/plants/${pid}/device-health`, { credentials: "include" });
+      if (!r.ok) throw new Error("Failed to load device health");
+      return r.json() as Promise<DeviceHealthSummary>;
+    },
+    enabled: !!pid,
+    refetchInterval: 30_000,
   });
 
   const [insightsExpanded, setInsightsExpanded] = useState(true);
@@ -312,6 +336,76 @@ export default function PlantDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Device Health summary */}
+        {deviceHealth && deviceHealth.totalDevices > 0 && (
+          <div className="bg-card border border-card-border rounded-xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <HeartPulse className="w-4 h-4 text-primary" /> Device Health
+              </h3>
+              <Link href="/devices" className="text-xs text-primary hover:underline">View all →</Link>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 lg:col-span-2">
+                {[
+                  { label: "Online",   value: deviceHealth.online,   cls: "text-status-normal" },
+                  { label: "Degraded", value: deviceHealth.degraded, cls: "text-status-warning" },
+                  { label: "Offline",  value: deviceHealth.offline,  cls: "text-muted-foreground" },
+                  { label: "Error",    value: deviceHealth.error,    cls: "text-status-fault" },
+                ].map(({ label, value, cls }) => (
+                  <div key={label} className="bg-muted/30 rounded-lg p-2.5 text-center border border-border/50">
+                    <div className={`text-2xl font-bold font-mono ${cls}`}>{value}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{label}</div>
+                  </div>
+                ))}
+                <div className="col-span-2 sm:col-span-4 bg-muted/30 rounded-lg p-3 border border-border/50 flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Avg Health Score</span>
+                  <span className={`text-lg font-bold font-mono ${
+                    (deviceHealth.avgHealthScore ?? 100) >= 80 ? "text-status-normal"
+                      : (deviceHealth.avgHealthScore ?? 100) >= 50 ? "text-status-warning" : "text-status-fault"
+                  }`}>
+                    {deviceHealth.avgHealthScore ?? "--"}{deviceHealth.avgHealthScore != null && "/100"}
+                  </span>
+                </div>
+                {deviceHealth.sparkline.length >= 2 && (
+                  <div className="col-span-2 sm:col-span-4 bg-muted/30 rounded-lg p-3 border border-border/50">
+                    <div className="text-[10px] text-muted-foreground mb-1">Online % — last 24h</div>
+                    <MiniLineChart
+                      color="hsl(var(--primary))"
+                      points={deviceHealth.sparkline.map((p) => ({
+                        label: new Date(p.timestamp).toLocaleTimeString([], { hour: "2-digit" }),
+                        value: p.onlinePct,
+                      }))}
+                    />
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Worst Devices</div>
+                <div className="space-y-1.5">
+                  {deviceHealth.worstDevices.length === 0 ? (
+                    <div className="text-xs text-muted-foreground">All devices healthy</div>
+                  ) : (
+                    deviceHealth.worstDevices.map((d) => (
+                      <Link key={d.id} href={`/devices/${d.id}`}>
+                        <div className="flex items-center justify-between text-xs bg-muted/30 rounded-lg px-2.5 py-1.5 border border-border/50 hover:bg-muted/50 cursor-pointer">
+                          <span className="truncate">{d.name}</span>
+                          <span className={`font-mono font-semibold ml-2 shrink-0 ${
+                            (d.healthScore ?? 100) >= 80 ? "text-status-normal"
+                              : (d.healthScore ?? 100) >= 50 ? "text-status-warning" : "text-status-fault"
+                          }`}>
+                            {d.healthScore ?? "—"}
+                          </span>
+                        </div>
+                      </Link>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* AI Insights panel */}
         {plantInsights.length > 0 && (

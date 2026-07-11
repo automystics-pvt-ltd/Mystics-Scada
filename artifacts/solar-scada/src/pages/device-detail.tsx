@@ -39,7 +39,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useDeviceStream } from "@/hooks/useDeviceStream";
-import { MiniLineChart } from "@/components/ui/svg-charts";
+import { MiniLineChart, DonutChart } from "@/components/ui/svg-charts";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -63,6 +63,10 @@ interface Device {
   firmwareVersion: string;
   dataSource: "live" | "simulated";
   pendingDeploy: boolean;
+  healthScore: number | null;
+  consecutiveFailures: number;
+  latestFirmwareVersion: string | null;
+  firmwareUpToDate: boolean;
   template: Template | null;
   config: {
     ipAddress: string | null;
@@ -92,6 +96,43 @@ interface LogEntry {
   timestamp: string;
   level: LogLevel;
   message: string;
+  eventType?: string | null;
+}
+
+interface ConnectivityBucket {
+  timestamp: string;
+  status: "online" | "offline" | "degraded" | "error" | "no_data";
+  successCount: number;
+  failureCount: number;
+}
+
+interface PollingStats {
+  readingCount24h: number;
+  errorCount24h: number;
+  successRate24h: number | null;
+  avgRttMs: number | null;
+  lastRttMs: number | null;
+  lastReadingAt: string | null;
+  driverStatus: string;
+}
+
+interface ErrorBreakdownEntry { category: string; count: number; }
+
+interface Diagnostics {
+  deviceId: string;
+  healthScore: number | null;
+  consecutiveFailures: number;
+  dataSource: "live" | "simulated";
+  connectivityTimeline: ConnectivityBucket[];
+  pollingStats: PollingStats;
+  errorBreakdown: ErrorBreakdownEntry[];
+}
+
+interface FirmwareHistoryEntry {
+  id: string;
+  previousVersion: string | null;
+  newVersion: string;
+  detectedAt: string;
 }
 
 const PLANT_NAMES: Record<string, string> = {
@@ -179,7 +220,7 @@ function LogLevelBadge({ level }: { level: LogLevel }) {
   );
 }
 
-type Tab = "config" | "logs" | "history" | "live-data";
+type Tab = "config" | "logs" | "history" | "live-data" | "diagnostics";
 
 export default function DeviceDetailPage() {
   const [, params] = useRoute("/devices/:id");
@@ -227,6 +268,42 @@ export default function DeviceDetailPage() {
     },
     enabled: activeTab === "logs",
     refetchInterval: 60_000,
+  });
+
+  const [logLevelFilter, setLogLevelFilter] = useState<LogLevel | "ALL">("ALL");
+
+  const { data: diagLogs = [] } = useQuery<LogEntry[]>({
+    queryKey: ["device-diag-logs", deviceId, logLevelFilter],
+    queryFn: async () => {
+      const qs = new URLSearchParams({ count: "300" });
+      if (logLevelFilter !== "ALL") qs.set("level", logLevelFilter);
+      const r = await fetch(`${BASE}api/devices/${deviceId}/logs?${qs}`, { credentials: "include" });
+      if (!r.ok) return [];
+      return r.json() as Promise<LogEntry[]>;
+    },
+    enabled: activeTab === "diagnostics",
+    refetchInterval: 30_000,
+  });
+
+  const { data: diagnostics } = useQuery<Diagnostics>({
+    queryKey: ["device-diagnostics", deviceId],
+    queryFn: async () => {
+      const r = await fetch(`${BASE}api/devices/${deviceId}/diagnostics`, { credentials: "include" });
+      if (!r.ok) throw new Error("Failed to load diagnostics");
+      return r.json() as Promise<Diagnostics>;
+    },
+    enabled: activeTab === "diagnostics",
+    refetchInterval: 30_000,
+  });
+
+  const { data: firmwareHistory = [] } = useQuery<FirmwareHistoryEntry[]>({
+    queryKey: ["device-firmware-history", deviceId],
+    queryFn: async () => {
+      const r = await fetch(`${BASE}api/devices/${deviceId}/firmware-history`, { credentials: "include" });
+      if (!r.ok) return [];
+      return r.json() as Promise<FirmwareHistoryEntry[]>;
+    },
+    enabled: activeTab === "diagnostics",
   });
 
   const { data: polledReading } = useQuery<Reading | null>({
@@ -533,8 +610,24 @@ export default function DeviceDetailPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Health Score</span>
+                  <span className={`text-sm font-bold tabular-nums ${
+                    (device.healthScore ?? 100) >= 80 ? "text-status-normal"
+                      : (device.healthScore ?? 100) >= 50 ? "text-status-warning" : "text-status-fault"
+                  }`}>
+                    {device.healthScore ?? "—"}{device.healthScore != null && "/100"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Firmware</span>
-                  <code className="text-xs">{device.firmwareVersion}</code>
+                  <span className="flex items-center gap-1.5">
+                    <code className="text-xs">{device.firmwareVersion}</code>
+                    {!device.firmwareUpToDate && (
+                      <Badge variant="outline" className="text-[9px] border-amber-500/40 text-amber-400 px-1 py-0">
+                        Update available
+                      </Badge>
+                    )}
+                  </span>
                 </div>
               </div>
             </div>
@@ -588,7 +681,7 @@ export default function DeviceDetailPage() {
           <div className="lg:col-span-2 space-y-4">
             {/* Tab bar */}
             <div className="flex border-b border-border overflow-x-auto scrollbar-none">
-              {(["config", "logs", "history", "live-data"] as Tab[]).map((tab) => (
+              {(["config", "diagnostics", "logs", "history", "live-data"] as Tab[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -707,6 +800,150 @@ export default function DeviceDetailPage() {
                       </>
                     )}
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Diagnostics tab */}
+            {activeTab === "diagnostics" && (
+              <div className="space-y-5">
+                {!diagnostics ? (
+                  <div className="text-sm text-muted-foreground py-8 text-center">Loading diagnostics…</div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="rounded-lg border border-border bg-card p-3">
+                        <div className="text-xs text-muted-foreground mb-1">Health Score</div>
+                        <div className={`text-2xl font-bold tabular-nums ${
+                          (diagnostics.healthScore ?? 100) >= 80 ? "text-status-normal"
+                            : (diagnostics.healthScore ?? 100) >= 50 ? "text-status-warning" : "text-status-fault"
+                        }`}>
+                          {diagnostics.healthScore ?? "—"}
+                          {diagnostics.healthScore != null && <span className="text-sm font-normal text-muted-foreground">/100</span>}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                          {diagnostics.dataSource === "live" ? "From last hour of comms" : "Simulated (no driver comms yet)"}
+                        </div>
+                      </div>
+                      <div className="rounded-lg border border-border bg-card p-3">
+                        <div className="text-xs text-muted-foreground mb-1">24h Success Rate</div>
+                        <div className="text-2xl font-bold tabular-nums">
+                          {diagnostics.pollingStats.successRate24h ?? "—"}
+                          {diagnostics.pollingStats.successRate24h != null && "%"}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                          {diagnostics.pollingStats.readingCount24h} ok · {diagnostics.pollingStats.errorCount24h} failed
+                        </div>
+                      </div>
+                      <div className="rounded-lg border border-border bg-card p-3">
+                        <div className="text-xs text-muted-foreground mb-1">Avg RTT</div>
+                        <div className="text-2xl font-bold tabular-nums">
+                          {diagnostics.pollingStats.avgRttMs ?? "—"}
+                          {diagnostics.pollingStats.avgRttMs != null && <span className="text-sm font-normal text-muted-foreground">ms</span>}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                          Consecutive failures: {diagnostics.consecutiveFailures}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-border p-4 space-y-2">
+                      <h3 className="text-sm font-semibold">24h Connectivity Timeline</h3>
+                      <div className="flex items-center gap-[1px] h-8">
+                        {diagnostics.connectivityTimeline.map((b, i) => {
+                          const cls = b.status === "online" ? "bg-status-normal"
+                            : b.status === "degraded" ? "bg-status-warning"
+                            : b.status === "offline" || b.status === "error" ? "bg-status-fault"
+                            : "bg-muted-foreground/15";
+                          return (
+                            <div key={i} title={`${new Date(b.timestamp).toLocaleTimeString()} — ${b.status} (${b.successCount} ok / ${b.failureCount} fail)`}
+                              className={`flex-1 h-full rounded-[1px] ${cls}`} />
+                          );
+                        })}
+                      </div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                        <span>24h ago</span><span>Now</span>
+                      </div>
+                      <div className="flex gap-4 text-[10px] text-muted-foreground">
+                        {[
+                          { label: "Online", cls: "bg-status-normal" },
+                          { label: "Degraded", cls: "bg-status-warning" },
+                          { label: "Offline/Error", cls: "bg-status-fault" },
+                          { label: "No data", cls: "bg-muted-foreground/15" },
+                        ].map(({ label, cls }) => (
+                          <span key={label} className="flex items-center gap-1.5">
+                            <span className={`h-2 w-4 rounded-sm ${cls}`} /> {label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-border p-4">
+                      <h3 className="text-sm font-semibold mb-3">Error Breakdown (24h)</h3>
+                      <DonutChart
+                        centerLabel={String(diagnostics.errorBreakdown.reduce((s, e) => s + e.count, 0))}
+                        centerSubLabel="events"
+                        slices={diagnostics.errorBreakdown.map((e, i) => ({
+                          label: e.category,
+                          value: e.count,
+                          color: ["hsl(0,72%,55%)", "hsl(38,92%,50%)", "hsl(280,60%,55%)", "hsl(200,70%,50%)", "hsl(var(--muted-foreground))"][i % 5]!,
+                        }))}
+                      />
+                    </div>
+
+                    {firmwareHistory.length > 0 && (
+                      <div className="rounded-lg border border-border p-4 space-y-2">
+                        <h3 className="text-sm font-semibold">Firmware History</h3>
+                        <div className="space-y-1.5">
+                          {firmwareHistory.map((h) => (
+                            <div key={h.id} className="flex items-center justify-between text-xs border-b border-border/50 last:border-0 py-1.5">
+                              <span className="font-mono">
+                                {h.previousVersion ? `${h.previousVersion} → ` : ""}<strong>{h.newVersion}</strong>
+                              </span>
+                              <span className="text-muted-foreground">{new Date(h.detectedAt).toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="rounded-lg border border-border overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
+                        <h3 className="text-sm font-semibold">Comm Log</h3>
+                        <div className="flex gap-1">
+                          {(["ALL", "INFO", "WARN", "ERROR"] as const).map((lvl) => (
+                            <button
+                              key={lvl}
+                              onClick={() => setLogLevelFilter(lvl)}
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                                logLevelFilter === lvl ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                              }`}
+                            >
+                              {lvl}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="overflow-y-auto max-h-[360px] font-mono text-xs">
+                        <table className="w-full">
+                          <tbody>
+                            {diagLogs.map((entry, i) => (
+                              <tr key={i} className="border-b border-border/50 last:border-0 hover:bg-muted/20">
+                                <td className="px-3 py-1.5 text-muted-foreground tabular-nums whitespace-nowrap">
+                                  {new Date(entry.timestamp).toLocaleTimeString()}
+                                </td>
+                                <td className="px-2 py-1.5 whitespace-nowrap"><LogLevelBadge level={entry.level} /></td>
+                                <td className="px-3 py-1.5 text-foreground/80">{entry.message}</td>
+                              </tr>
+                            ))}
+                            {diagLogs.length === 0 && (
+                              <tr><td colSpan={3} className="px-3 py-6 text-center text-muted-foreground">No log entries match this filter</td></tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             )}

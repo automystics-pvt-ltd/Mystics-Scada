@@ -58,6 +58,9 @@ interface Device {
   signalStrengthPct: number;
   lastSeenAt: string;
   firmwareVersion: string;
+  latestFirmwareVersion: string | null;
+  firmwareUpToDate: boolean;
+  healthScore: number | null;
   dataSource: "live" | "simulated";
   pendingDeploy: boolean;
   config: {
@@ -397,7 +400,14 @@ export default function DevicesPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <code className="text-xs text-muted-foreground">{d.firmwareVersion}</code>
+                      <div className="flex items-center gap-1.5">
+                        <code className="text-xs text-muted-foreground">{d.firmwareVersion}</code>
+                        {!d.firmwareUpToDate && (
+                          <Badge variant="outline" className="text-[9px] border-amber-500/40 text-amber-400 px-1 py-0">
+                            Update
+                          </Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground tabular-nums">
                       {timeAgo(d.lastSeenAt)}

@@ -31,6 +31,7 @@ import SuperAdminOrgs from '@/pages/superadmin-orgs';
 import SuperAdminOrgDetail from '@/pages/superadmin-org-detail';
 import DevicesPage from '@/pages/devices';
 import DeviceDetailPage from '@/pages/device-detail';
+import DeviceFirmwareReportPage from '@/pages/device-firmware-report';
 import DeviceTemplatesPage from '@/pages/device-templates';
 import DeviceTemplateBuilderPage from '@/pages/device-template-builder';
 import DriverHealthPage from '@/pages/driver-health';
@@ -72,6 +73,7 @@ function ProtectedRoutes() {
           <Route path="/reports" component={ReportsView} />
           <Route path="/insights" component={InsightsPage} />
           <Route path="/devices" component={DevicesPage} />
+          <Route path="/devices/firmware" component={DeviceFirmwareReportPage} />
           <Route path="/devices/:id" component={DeviceDetailPage} />
           <Route path="/device-templates" component={DeviceTemplatesPage} />
           <Route path="/device-templates/new" component={DeviceTemplateBuilderPage} />

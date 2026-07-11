@@ -85,6 +85,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { name: "Alert Center", href: "/alerts",      icon: AlertTriangle   },
     { name: "Work Orders",  href: "/maintenance", icon: Wrench          },
     { name: "Devices",         href: "/devices",              icon: Cpu        },
+    { name: "Firmware",        href: "/devices/firmware",     icon: Cpu        },
     { name: "Dev Templates",   href: "/device-templates",     icon: BookOpen   },
     { name: "Driver Health",   href: "/driver-health",        icon: Activity   },
     { name: "Connect Source",  href: "/connect-data-source",  icon: Database   },

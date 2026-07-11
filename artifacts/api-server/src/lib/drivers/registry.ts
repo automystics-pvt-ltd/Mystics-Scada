@@ -13,7 +13,7 @@
 
 import { randomUUID } from "node:crypto";
 import { eq, and, lt, sql } from "drizzle-orm";
-import { db, devicesTable, deviceReadingsTable, deviceCommLogsTable, deviceTemplatesTable, ingestionRetryQueueTable } from "@workspace/db";
+import { db, devicesTable, deviceReadingsTable, deviceCommLogsTable, deviceTemplatesTable, ingestionRetryQueueTable, firmwareVersionHistoryTable } from "@workspace/db";
 import { logger } from "../logger.js";
 import { decryptCredential } from "../credentialCrypto.js";
 import type { IDriver, DriverConfig, DriverStatus, FieldDef } from "./types.js";
@@ -25,6 +25,8 @@ import { WebSocketDriver } from "./WebSocketDriver.js";
 import { OpcuaDriver } from "./opcua-driver.js";
 import { applyFormulas } from "../formulaEngine.js";
 import { publish } from "../sseRegistry.js";
+import { computeDeviceHealthScore } from "../deviceHealth.js";
+import { resolveDeviceOfflineAlert } from "../offlineDetection.js";
 
 const DEVICE_READING_CHANNEL = "device_reading";
 
@@ -127,6 +129,10 @@ class DriverRegistry {
   private _fieldMaps = new Map<string, FieldDef[]>();
   /** All device rows that were loaded at init (includes those without drivers) */
   private _allDevices: DeviceRow[] = [];
+  /** deviceId -> fieldMap key that carries the firmware version string, from the assigned template */
+  private _firmwareParams = new Map<string, string>();
+  /** deviceId -> last known firmware version, cached to avoid a DB round-trip on every reading */
+  private _firmwareVersions = new Map<string, string | null>();
 
   async init(): Promise<void> {
     logger.info("DriverRegistry: initializing drivers for all configured devices");
@@ -200,7 +206,12 @@ class DriverRegistry {
         .from(deviceTemplatesTable)
         .where(eq(deviceTemplatesTable.id, device.templateId));
       if (tmpl?.fieldMap) fieldMap = tmpl.fieldMap as FieldDef[];
+      if (tmpl?.firmwareVersionParam) this._firmwareParams.set(device.id, tmpl.firmwareVersionParam);
+      else this._firmwareParams.delete(device.id);
+    } else {
+      this._firmwareParams.delete(device.id);
     }
+    this._firmwareVersions.set(device.id, device.firmwareVersion ?? null);
 
     const driverCfg: DriverConfig = {
       deviceId:         device.id,
@@ -252,6 +263,8 @@ class DriverRegistry {
       this._drivers.delete(deviceId);
     }
     this._fieldMaps.delete(deviceId); // prevent stale-memory accumulation
+    this._firmwareParams.delete(deviceId);
+    this._firmwareVersions.delete(deviceId);
     // Keep stats — cleared on re-launch
   }
 
@@ -273,6 +286,7 @@ class DriverRegistry {
       });
 
       void this._persistReading(deviceId, orgId, processed);
+      void this._checkFirmwareVersion(deviceId, processed);
     });
 
     driver.on("status", (status: string) => {
@@ -296,6 +310,12 @@ class DriverRegistry {
       const stat = this._stats.get(deviceId);
       if (stat) stat.errorCount += 1;
       logger.warn({ deviceId, err: err.message }, "Driver error");
+      void db
+        .update(devicesTable)
+        .set({ consecutiveFailures: sql`${devicesTable.consecutiveFailures} + 1` })
+        .where(eq(devicesTable.id, deviceId))
+        .catch(() => undefined);
+      void computeDeviceHealthScore(deviceId, new Date());
     });
   }
 
@@ -316,8 +336,12 @@ class DriverRegistry {
 
       await db
         .update(devicesTable)
-        .set({ lastSeenAt: now, status: "online", updatedAt: now })
+        .set({ lastSeenAt: now, status: "online", consecutiveFailures: 0, updatedAt: now })
         .where(eq(devicesTable.id, deviceId));
+
+      const stat = this._stats.get(deviceId);
+      void resolveDeviceOfflineAlert(deviceId, orgId, stat?.deviceName ?? deviceId);
+      void computeDeviceHealthScore(deviceId, now);
 
       await db.execute(sql`
         DELETE FROM device_readings
@@ -363,6 +387,35 @@ class DriverRegistry {
       // Non-critical — live telemetry continues even if the status column is stale.
       // Log at warn so DB connectivity issues surface in monitoring.
       logger.warn({ deviceId, err }, "Failed to update device status in DB (non-critical)");
+    }
+  }
+
+  /** Detects a firmware version change from a decoded reading and records history. */
+  private async _checkFirmwareVersion(deviceId: string, processed: Record<string, unknown>): Promise<void> {
+    const paramKey = this._firmwareParams.get(deviceId);
+    if (!paramKey) return;
+    const raw = processed[paramKey];
+    if (raw === undefined || raw === null) return;
+    const newVersion = String(raw).trim();
+    if (!newVersion) return;
+
+    const previousVersion = this._firmwareVersions.get(deviceId) ?? null;
+    if (previousVersion === newVersion) return;
+
+    this._firmwareVersions.set(deviceId, newVersion);
+    try {
+      const now = new Date();
+      await db.insert(firmwareVersionHistoryTable).values({
+        id: randomUUID(),
+        deviceId,
+        previousVersion,
+        newVersion,
+        detectedAt: now,
+      });
+      await db.update(devicesTable).set({ firmwareVersion: newVersion, updatedAt: now }).where(eq(devicesTable.id, deviceId));
+      logger.info({ deviceId, previousVersion, newVersion }, "Device firmware version change detected");
+    } catch (err) {
+      logger.warn({ deviceId, err }, "Failed to record firmware version change (non-critical)");
     }
   }
 

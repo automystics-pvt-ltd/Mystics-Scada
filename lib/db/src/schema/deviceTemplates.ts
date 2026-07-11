@@ -37,8 +37,11 @@ export const deviceTemplatesTable = pgTable(
     /** Array of FieldDef objects (see JSDoc above) */
     fieldMap: jsonb("field_map").notNull().default([]),
     defaultPollIntervalS: integer("default_poll_interval_s").notNull().default(30),
-    /** camelCase key in fieldMap that carries the firmware version string */
+    /** camelCase key in fieldMap that carries the firmware version string
+     *  (Modbus register or JSON path — resolved via the referenced FieldDef) */
     firmwareVersionParam: text("firmware_version_param"),
+    /** Latest known-good firmware version for this device model, used to badge outdated devices. */
+    latestFirmwareVersion: text("latest_firmware_version"),
     /** active | deprecated */
     status: text("status").notNull().default("active"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

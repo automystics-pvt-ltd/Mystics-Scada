@@ -24,7 +24,10 @@ import {
 import { combinerStrings } from "../lib/combinerStrings";
 import { calcCombinerCount } from "../lib/combinerUtils";
 import { activeAlertCountsByPlant } from "../lib/alertCounts";
-import { resolveOrgId } from "../lib/orgScope";
+import { resolveOrgId, orgCondition } from "../lib/orgScope";
+import { db, devicesTable } from "@workspace/db";
+import { and, eq } from "drizzle-orm";
+import { deviceStatus } from "../lib/simulation";
 
 const router: IRouter = Router();
 
@@ -158,6 +161,74 @@ router.get("/plants/:plantId/combiners/:combinerId/strings", (req, res) => {
 
   const data = combinerStrings(plant, combinerId, new Date());
   res.json(data);
+});
+
+/**
+ * GET /plants/:plantId/device-health
+ *
+ * Aggregate device health for the plant-level Device Health summary card:
+ * online/offline/degraded counts, average health score, and a 24h sparkline
+ * of the plant-wide online-device ratio.
+ */
+router.get("/plants/:plantId/device-health", async (req, res) => {
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
+  if (!plant) {
+    res.status(404).json({ error: "not_found", message: "Plant not found" });
+    return;
+  }
+
+  const now = new Date();
+  const oc = orgCondition(devicesTable.orgId, orgId);
+  const devices = await db
+    .select()
+    .from(devicesTable)
+    .where(oc ? and(eq(devicesTable.plantId, plant.id), oc) : eq(devicesTable.plantId, plant.id));
+
+  let online = 0, offline = 0, degraded = 0, error = 0;
+  let scoreSum = 0, scoreCount = 0;
+  const perDevice = devices.map((d) => {
+    // Every device has a live driver managing devices.status (connect/error
+    // events plus the offline-detection job), so it is always authoritative.
+    const status = d.status;
+    if (status === "online") online++;
+    else if (status === "offline") offline++;
+    else if (status === "error") error++;
+    else degraded++;
+
+    const score = d.healthScore ?? (status === "online" ? 95 : status === "error" ? 40 : status === "offline" ? 0 : 60);
+    scoreSum += score;
+    scoreCount++;
+
+    return { id: d.id, name: d.name, status, healthScore: score };
+  });
+
+  const worstDevices = [...perDevice].sort((a, b) => a.healthScore - b.healthScore).slice(0, 5);
+
+  // 24h sparkline: fraction of devices online, sampled hourly using each
+  // device's deterministic simulated status (real per-hour history isn't
+  // retained at the plant level, so this reflects the same demo pattern
+  // used elsewhere for offline devices).
+  const sparkline = Array.from({ length: 24 }, (_, i) => {
+    const t = new Date(now.getTime() - (23 - i) * 60 * 60 * 1000);
+    const onlineAtT = devices.filter((d) => deviceStatus(d.id, t).status === "online").length;
+    return {
+      timestamp: t.toISOString(),
+      onlinePct: devices.length > 0 ? Math.round((onlineAtT / devices.length) * 100) : 100,
+    };
+  });
+
+  res.json({
+    plantId: plant.id,
+    totalDevices: devices.length,
+    online,
+    offline,
+    degraded,
+    error,
+    avgHealthScore: scoreCount > 0 ? Math.round(scoreSum / scoreCount) : null,
+    worstDevices,
+    sparkline,
+  });
 });
 
 export default router;

@@ -14,6 +14,10 @@ export const alertsTable = pgTable(
     plantName: text("plant_name").notNull(),
     deviceType: text("device_type").notNull(),
     deviceName: text("device_name").notNull(),
+    // Nullable: older alert sources (fault injection, manual creation) key off
+    // deviceName only. New device-scoped alerts (e.g. offline detection) set
+    // this so dedup/resolution is unambiguous even when device names collide.
+    deviceId: text("device_id"),
     title: text("title").notNull(),
     message: text("message").notNull(),
     severity: text("severity").notNull(),

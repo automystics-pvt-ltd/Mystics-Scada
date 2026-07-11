@@ -1,4 +1,4 @@
-import { index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { index, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { organizationsTable } from "./organizations";
@@ -26,6 +26,10 @@ export const devicesTable = pgTable(
     status: text("status").notNull().default("offline"),
     firmwareVersion: text("firmware_version"),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+    /** Recency-weighted comms success ratio over the last hour, 0-100. Null until first computed. */
+    healthScore: integer("health_score"),
+    /** Consecutive failed reads since the last successful read; reset to 0 on READ_OK. */
+    consecutiveFailures: integer("consecutive_failures").notNull().default(0),
     /** FK to device_templates — null if no template assigned */
     templateId: text("template_id").references(() => deviceTemplatesTable.id, { onDelete: "set null" }),
     /** Arbitrary device-specific settings stored as JSONB. */

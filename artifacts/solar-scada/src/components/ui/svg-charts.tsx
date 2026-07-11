@@ -454,3 +454,80 @@ export function MiniAreaChart({
     </svg>
   );
 }
+
+// ─── Donut chart ──────────────────────────────────────────────────────────────
+
+export interface DonutSlice { label: string; value: number; color: string; }
+
+/** Simple SVG donut chart with a center label and a legend. No external refs. */
+export function DonutChart({
+  slices, centerLabel, centerSubLabel, size = 140,
+}: {
+  slices: DonutSlice[]; centerLabel?: string; centerSubLabel?: string; size?: number;
+}) {
+  const total = slices.reduce((sum, s) => sum + s.value, 0);
+  const r = size / 2;
+  const strokeW = r * 0.32;
+  const innerR = r - strokeW / 2;
+  const circumference = 2 * Math.PI * innerR;
+
+  let cumulative = 0;
+  const segments = slices
+    .filter((s) => s.value > 0)
+    .map((s) => {
+      const fraction = total > 0 ? s.value / total : 0;
+      const dash = fraction * circumference;
+      const offset = -cumulative * circumference;
+      cumulative += fraction;
+      return { ...s, dash, offset };
+    });
+
+  return (
+    <div className="flex items-center gap-4">
+      <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} aria-hidden>
+        {total === 0 ? (
+          <circle cx={r} cy={r} r={innerR} fill="none" stroke="hsl(var(--muted))" strokeWidth={strokeW} />
+        ) : (
+          <g transform={`rotate(-90 ${r} ${r})`}>
+            {segments.map((s, i) => (
+              <circle
+                key={i}
+                cx={r} cy={r} r={innerR}
+                fill="none"
+                stroke={s.color}
+                strokeWidth={strokeW}
+                strokeDasharray={`${dashLen(s.dash)} ${dashLen(circumference)}`}
+                strokeDashoffset={dashLen(s.offset)}
+                strokeLinecap="butt"
+              />
+            ))}
+          </g>
+        )}
+        {centerLabel && (
+          <text x={r} y={centerSubLabel ? r - 4 : r + 5} textAnchor="middle" fontSize={size * 0.16} fontWeight={700} fill="hsl(var(--foreground))">
+            {centerLabel}
+          </text>
+        )}
+        {centerSubLabel && (
+          <text x={r} y={r + 14} textAnchor="middle" fontSize={size * 0.08} fill="hsl(var(--muted-foreground))">
+            {centerSubLabel}
+          </text>
+        )}
+      </svg>
+      <div className="space-y-1.5">
+        {slices.map((s) => (
+          <div key={s.label} className="flex items-center gap-2 text-xs">
+            <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: s.color }} />
+            <span className="text-muted-foreground">{s.label}</span>
+            <span className="font-semibold tabular-nums ml-auto">{s.value}</span>
+          </div>
+        ))}
+        {slices.length === 0 && <span className="text-xs text-muted-foreground">No data</span>}
+      </div>
+    </div>
+  );
+}
+
+function dashLen(n: number): string {
+  return n.toFixed(2);
+}

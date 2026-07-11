@@ -15,6 +15,7 @@ export * from "./reports";
 export * from "./devices";
 export * from "./deviceReadings";
 export * from "./deviceCommLogs";
+export * from "./firmwareVersionHistory";
 export * from "./auditLogs";
 export * from "./faultOverrides";
 export * from "./notifications";

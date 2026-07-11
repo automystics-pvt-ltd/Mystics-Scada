@@ -8,6 +8,7 @@ import {
   deviceReadingsTable,
   deviceCommLogsTable,
   deviceTemplatesTable,
+  firmwareVersionHistoryTable,
 } from "@workspace/db";
 import { resolveOrgId, orgCondition } from "../lib/orgScope.js";
 import { requirePermission } from "../middleware/requirePermission.js";
@@ -210,9 +211,13 @@ function parseConfig(raw: unknown): DeviceConfig {
 function toDeviceResponse(row: DeviceRow, now: Date) {
   const sim = deviceStatus(row.id, now);
   const cfg = parseConfig(row.config);
-  // Use real status from DB if available; otherwise fall through to simulation
-  const liveStatus = (row.status as string | undefined);
-  const status = liveStatus && liveStatus !== "offline" ? liveStatus : sim.status;
+  // Every registered device has a live driver instance managing its
+  // `devices.status` column (connect/error/disconnect events, plus the
+  // offline-detection background job) — so DB status is always authoritative.
+  // Only cosmetic fields without a live equivalent (signal strength, and
+  // lastSeenAt/firmwareVersion when no real reading has ever landed) fall
+  // back to the deterministic simulation, purely for demo polish.
+  const status = row.status as string;
   const lastSeenAt = row.lastSeenAt ? row.lastSeenAt.toISOString() : sim.lastSeenAt;
   const firmwareVersion = row.firmwareVersion ?? sim.firmwareVersion;
 
@@ -363,7 +368,22 @@ router.get("/devices", requirePermission("device.view"), async (req, res) => {
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(devicesTable.name);
 
-  res.json(rows.map((r) => toDeviceResponse(r, now)));
+  const templateIds = Array.from(new Set(rows.map((r) => r.templateId).filter((t): t is string => !!t)));
+  const templates = templateIds.length > 0
+    ? await db.select().from(deviceTemplatesTable).where(sql`${deviceTemplatesTable.id} = ANY(${templateIds})`)
+    : [];
+  const latestFwByTemplate = new Map(templates.map((t) => [t.id, t.latestFirmwareVersion]));
+
+  res.json(rows.map((r) => {
+    const base = toDeviceResponse(r, now);
+    const latestFirmwareVersion = r.templateId ? (latestFwByTemplate.get(r.templateId) ?? null) : null;
+    return {
+      ...base,
+      latestFirmwareVersion,
+      firmwareUpToDate: latestFirmwareVersion ? base.firmwareVersion === latestFirmwareVersion : true,
+      healthScore: r.healthScore,
+    };
+  }));
 });
 
 // ── POST /devices ─────────────────────────────────────────────────────────────
@@ -455,6 +475,77 @@ router.post("/devices", requirePermission("device.manage"), async (req, res) => 
   res.status(201).json(toDeviceResponse(created!, now));
 });
 
+// ── GET /devices/firmware-report ──────────────────────────────────────────────
+// Org-scoped fleet report: devices grouped by model, current firmware vs.
+// latest known-good version, flagging which devices need an update.
+// Registered before /devices/:id so "firmware-report" isn't matched as an id.
+
+router.get("/devices/firmware-report", requirePermission("device.view"), async (req, res) => {
+  const orgId = resolveOrgId(req);
+  const conditions: SQL[] = [];
+  const oc = orgCondition(devicesTable.orgId, orgId);
+  if (oc) conditions.push(oc);
+
+  const rows = await db
+    .select({
+      id: devicesTable.id,
+      name: devicesTable.name,
+      plantId: devicesTable.plantId,
+      firmwareVersion: devicesTable.firmwareVersion,
+      templateId: devicesTable.templateId,
+      status: devicesTable.status,
+    })
+    .from(devicesTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(devicesTable.name);
+
+  const templateIds = Array.from(new Set(rows.map((r) => r.templateId).filter((t): t is string => !!t)));
+  const templates = templateIds.length > 0
+    ? await db.select().from(deviceTemplatesTable).where(sql`${deviceTemplatesTable.id} = ANY(${templateIds})`)
+    : [];
+  const templateById = new Map(templates.map((t) => [t.id, t]));
+
+  const now = new Date();
+  const groups = new Map<string, {
+    manufacturer: string;
+    model: string;
+    latestFirmwareVersion: string | null;
+    devices: { id: string; name: string; plantId: string; firmwareVersion: string; upToDate: boolean; status: string }[];
+  }>();
+
+  for (const r of rows) {
+    const tmpl = r.templateId ? templateById.get(r.templateId) : undefined;
+    const groupKey = tmpl ? `${tmpl.manufacturer}::${tmpl.model}` : "unassigned";
+    const firmwareVersion = r.firmwareVersion ?? deviceStatus(r.id, now).firmwareVersion;
+    const latest = tmpl?.latestFirmwareVersion ?? null;
+
+    if (!groups.has(groupKey)) {
+      groups.set(groupKey, {
+        manufacturer: tmpl?.manufacturer ?? "Unassigned",
+        model: tmpl?.model ?? "No template",
+        latestFirmwareVersion: latest,
+        devices: [],
+      });
+    }
+    groups.get(groupKey)!.devices.push({
+      id: r.id,
+      name: r.name,
+      plantId: r.plantId,
+      firmwareVersion,
+      upToDate: latest ? firmwareVersion === latest : true,
+      status: r.status,
+    });
+  }
+
+  const report = Array.from(groups.values()).map((g) => ({
+    ...g,
+    totalDevices: g.devices.length,
+    outdatedDevices: g.devices.filter((d) => !d.upToDate).length,
+  }));
+
+  res.json(report);
+});
+
 // ── GET /devices/:id ──────────────────────────────────────────────────────────
 
 router.get("/devices/:id", requirePermission("device.view"), async (req, res) => {
@@ -475,11 +566,16 @@ router.get("/devices/:id", requirePermission("device.view"), async (req, res) =>
       .select()
       .from(deviceTemplatesTable)
       .where(eq(deviceTemplatesTable.id, row.templateId));
-    if (tmpl) template = { id: tmpl.id, manufacturer: tmpl.manufacturer, model: tmpl.model, fieldMap: tmpl.fieldMap };
+    if (tmpl) template = { id: tmpl.id, manufacturer: tmpl.manufacturer, model: tmpl.model, fieldMap: tmpl.fieldMap, latestFirmwareVersion: tmpl.latestFirmwareVersion ?? null };
   }
 
+  const base = toDeviceResponse(row, now);
   res.json({
-    ...toDeviceResponse(row, now),
+    ...base,
+    healthScore: row.healthScore,
+    consecutiveFailures: row.consecutiveFailures,
+    latestFirmwareVersion: template?.latestFirmwareVersion ?? null,
+    firmwareUpToDate: template?.latestFirmwareVersion ? base.firmwareVersion === template.latestFirmwareVersion : true,
     template,
     connectivityTimeline: timeline.map((p) => ({
       timestamp: p.timestamp,
@@ -620,31 +716,197 @@ router.get("/devices/:id/logs", requirePermission("device.view"), async (req, re
     return;
   }
 
-  const count = Math.min(Number(req.query["count"] ?? 100), 200);
+  const count = Math.min(Number(req.query["count"] ?? 100), 500);
+  const eventTypeFilter = (req.query["eventType"] as string | undefined)?.trim();
+  const levelFilter = (req.query["level"] as string | undefined)?.trim().toUpperCase();
 
   // Return real comm logs if they exist, otherwise simulation
+  const conditions: SQL[] = [eq(deviceCommLogsTable.deviceId, deviceId)];
+  if (eventTypeFilter) conditions.push(eq(deviceCommLogsTable.eventType, eventTypeFilter));
   const realLogs = await db
     .select()
     .from(deviceCommLogsTable)
-    .where(eq(deviceCommLogsTable.deviceId, deviceId))
+    .where(and(...conditions))
     .orderBy(desc(deviceCommLogsTable.occurredAt))
     .limit(count);
 
   if (realLogs.length > 0) {
-    res.json(realLogs.map((l) => ({
+    let mapped = realLogs.map((l) => ({
       timestamp: l.occurredAt,
       level:     l.eventType === "READ_OK" || l.eventType === "CONNECT" ? "INFO"
                : l.eventType === "PARSE_ERROR" ? "WARN" : "ERROR",
       message:   `[${l.eventType}] ${l.message ?? ""}${l.rttMs != null ? ` (${l.rttMs}ms)` : ""}`,
       eventType: l.eventType,
+      registerAddr: l.registerAddr,
       rttMs:     l.rttMs,
-    })));
+    }));
+    if (levelFilter) mapped = mapped.filter((m) => m.level === levelFilter);
+    res.json(mapped);
     return;
   }
 
   // Fallback to simulation
-  const simLogs = deviceLogs(deviceId, count, new Date());
+  let simLogs = deviceLogs(deviceId, count, new Date()).map((l) => ({ ...l, eventType: null, registerAddr: null, rttMs: null }));
+  if (levelFilter) simLogs = simLogs.filter((l) => l.level === levelFilter);
   res.json(simLogs);
+});
+
+// ── GET /devices/:id/diagnostics ──────────────────────────────────────────────
+// Health score, 24h connectivity timeline, polling stats, and error breakdown
+// for the Diagnostics tab.
+
+router.get("/devices/:id/diagnostics", requirePermission("device.view"), async (req, res) => {
+  const orgId = resolveOrgId(req);
+  const deviceId = (req.params["id"] as string) ?? "";
+  const [row] = await db.select().from(devicesTable).where(eq(devicesTable.id, deviceId));
+  if (!row || (orgId !== null && row.orgId !== orgId)) {
+    res.status(404).json({ error: "not_found", message: "Device not found" });
+    return;
+  }
+
+  const now = new Date();
+  const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  const commLogs24h = await db
+    .select()
+    .from(deviceCommLogsTable)
+    .where(and(eq(deviceCommLogsTable.deviceId, deviceId), sql`${deviceCommLogsTable.occurredAt} >= ${dayAgo}`))
+    .orderBy(deviceCommLogsTable.occurredAt);
+
+  const hasRealData = commLogs24h.length > 0;
+  const BUCKET_MS = 15 * 60 * 1000;
+  const BUCKET_COUNT = 96;
+
+  // ── Connectivity timeline (96 x 15-min buckets over 24h) ──
+  let connectivityTimeline: { timestamp: string; status: string; successCount: number; failureCount: number }[];
+  if (hasRealData) {
+    const buckets = new Map<number, { success: number; failure: number }>();
+    for (const log of commLogs24h) {
+      const bucketIdx = Math.floor((log.occurredAt.getTime() - dayAgo.getTime()) / BUCKET_MS);
+      const b = buckets.get(bucketIdx) ?? { success: 0, failure: 0 };
+      if (log.eventType === "READ_OK" || log.eventType === "CONNECT") b.success++;
+      else if (log.eventType !== "STATUS") b.failure++;
+      buckets.set(bucketIdx, b);
+    }
+    connectivityTimeline = Array.from({ length: BUCKET_COUNT }, (_, i) => {
+      const ts = new Date(dayAgo.getTime() + i * BUCKET_MS);
+      const b = buckets.get(i);
+      if (!b || (b.success === 0 && b.failure === 0)) {
+        return { timestamp: ts.toISOString(), status: "no_data", successCount: 0, failureCount: 0 };
+      }
+      const status = b.failure === 0 ? "online" : b.success === 0 ? "offline" : "degraded";
+      return { timestamp: ts.toISOString(), status, successCount: b.success, failureCount: b.failure };
+    });
+  } else {
+    connectivityTimeline = deviceConnectivityTimeline(deviceId, now).map((p) => ({
+      timestamp: p.timestamp.toISOString(),
+      status: p.status,
+      successCount: p.status === "online" ? 1 : 0,
+      failureCount: p.status === "online" ? 0 : 1,
+    }));
+  }
+
+  // ── Polling stats ──
+  const healthStats = await driverRegistry.getHealthStats();
+  const liveStat = healthStats.find((s) => s.deviceId === deviceId);
+  const realOkCount = commLogs24h.filter((l) => l.eventType === "READ_OK").length;
+  const realFailCount = commLogs24h.filter((l) => l.eventType !== "READ_OK" && l.eventType !== "CONNECT" && l.eventType !== "STATUS").length;
+  const realRtts = commLogs24h.filter((l) => l.rttMs != null).map((l) => l.rttMs as number);
+
+  const pollingStats = hasRealData || liveStat
+    ? {
+        readingCount24h: realOkCount,
+        errorCount24h: realFailCount,
+        successRate24h: realOkCount + realFailCount > 0 ? Math.round((realOkCount / (realOkCount + realFailCount)) * 100) : null,
+        avgRttMs: realRtts.length > 0 ? Math.round(realRtts.reduce((a, b) => a + b, 0) / realRtts.length) : (liveStat?.lastRttMs ?? null),
+        lastRttMs: liveStat?.lastRttMs ?? (realRtts.length > 0 ? realRtts[realRtts.length - 1]! : null),
+        lastReadingAt: liveStat?.lastReadingAt ?? row.lastSeenAt,
+        driverStatus: liveStat?.status ?? "no_driver",
+      }
+    : {
+        readingCount24h: connectivityTimeline.filter((p) => p.status === "online").length,
+        errorCount24h: connectivityTimeline.filter((p) => p.status === "offline" || p.status === "error").length,
+        successRate24h: Math.round((connectivityTimeline.filter((p) => p.status === "online").length / BUCKET_COUNT) * 100),
+        avgRttMs: null,
+        lastRttMs: null,
+        lastReadingAt: row.lastSeenAt ?? deviceStatus(deviceId, now).lastSeenAt,
+        driverStatus: "simulated",
+      };
+
+  // ── Error breakdown donut ──
+  let errorBreakdown: { category: string; count: number }[];
+  if (hasRealData) {
+    const categoryOf = (eventType: string): string => {
+      switch (eventType) {
+        case "TIMEOUT": return "Timeout";
+        case "PARSE_ERROR": return "Parse Error";
+        case "DISCONNECT": return "Disconnect";
+        case "ERROR": return "Connection Error";
+        case "READ_FAIL": return "Read Failure";
+        default: return "Other";
+      }
+    };
+    const counts = new Map<string, number>();
+    for (const l of commLogs24h) {
+      if (l.eventType === "READ_OK" || l.eventType === "CONNECT" || l.eventType === "STATUS") continue;
+      const cat = categoryOf(l.eventType);
+      counts.set(cat, (counts.get(cat) ?? 0) + 1);
+    }
+    errorBreakdown = Array.from(counts.entries()).map(([category, count]) => ({ category, count }));
+  } else {
+    const simLogs = deviceLogs(deviceId, 200, now).filter((l) => l.level !== "INFO");
+    const counts = new Map<string, number>();
+    for (const l of simLogs) {
+      const cat = /timeout/i.test(l.message) ? "Timeout"
+                : /crc|checksum|mismatch/i.test(l.message) ? "Parse Error"
+                : /refused|disconnect/i.test(l.message) ? "Disconnect"
+                : /auth/i.test(l.message) ? "Connection Error"
+                : "Other";
+      counts.set(cat, (counts.get(cat) ?? 0) + 1);
+    }
+    errorBreakdown = Array.from(counts.entries()).map(([category, count]) => ({ category, count }));
+  }
+
+  const healthScore = row.healthScore ?? (
+    hasRealData ? null : Math.max(0, Math.min(100, Math.round(
+      (connectivityTimeline.filter((p) => p.status === "online").length / BUCKET_COUNT) * 100,
+    )))
+  );
+
+  res.json({
+    deviceId,
+    healthScore,
+    consecutiveFailures: row.consecutiveFailures ?? 0,
+    dataSource: hasRealData ? "live" : "simulated",
+    connectivityTimeline,
+    pollingStats,
+    errorBreakdown,
+  });
+});
+
+// ── GET /devices/:id/firmware-history ─────────────────────────────────────────
+
+router.get("/devices/:id/firmware-history", requirePermission("device.view"), async (req, res) => {
+  const orgId = resolveOrgId(req);
+  const deviceId = (req.params["id"] as string) ?? "";
+  const [row] = await db.select().from(devicesTable).where(eq(devicesTable.id, deviceId));
+  if (!row || (orgId !== null && row.orgId !== orgId)) {
+    res.status(404).json({ error: "not_found", message: "Device not found" });
+    return;
+  }
+
+  const history = await db
+    .select()
+    .from(firmwareVersionHistoryTable)
+    .where(eq(firmwareVersionHistoryTable.deviceId, deviceId))
+    .orderBy(desc(firmwareVersionHistoryTable.detectedAt));
+
+  res.json(history.map((h) => ({
+    id: h.id,
+    previousVersion: h.previousVersion,
+    newVersion: h.newVersion,
+    detectedAt: h.detectedAt,
+  })));
 });
 
 // ── POST /devices/:id/import-readings ─────────────────────────────────────────
