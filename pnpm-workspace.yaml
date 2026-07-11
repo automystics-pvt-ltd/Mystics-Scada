@@ -70,6 +70,8 @@ autoInstallPeers: false
 
 onlyBuiltDependencies:
   - '@swc/core'
+  - '@serialport/bindings-cpp'
+  - cpu-features
   - esbuild
   - msw
   - unrs-resolver

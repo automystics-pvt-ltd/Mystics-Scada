@@ -93,9 +93,11 @@ const DEVICE_TYPES = [
   "weather_station", "tracker_controller", "sensor", "gateway",
 ] as const;
 
-const PROTOCOLS = ["modbus", "mqtt", "http", "opcua", "websocket"] as const;
+const PROTOCOLS = ["modbus", "modbus_rtu", "mqtt", "http", "opcua", "websocket"] as const;
 
 const HTTP_AUTH_METHODS = ["none", "bearer", "api_key", "basic"] as const;
+
+const SERIAL_PARITY = ["none", "even", "odd"] as const;
 
 /** Cross-field validation: ensure auth value/header are present for methods that need them. */
 function validateHttpAuth(data: { httpAuthMethod?: string; httpAuthValue?: string; httpApiKeyHeader?: string }, ctx: z.RefinementCtx) {
@@ -127,6 +129,12 @@ const RegisterDeviceBody = z.object({
   httpAuthMethod:    z.enum(HTTP_AUTH_METHODS).optional(),
   httpAuthValue:     z.string().max(2048).optional(),
   httpApiKeyHeader:  z.string().max(120).optional(),
+  // Modbus RTU / RS485 (serial transport)
+  serialPort:        z.string().max(255).optional(),
+  baudRate:          z.number().int().min(300).max(921600).optional(),
+  parity:            z.enum(SERIAL_PARITY).optional(),
+  dataBits:          z.union([z.literal(5), z.literal(6), z.literal(7), z.literal(8)]).optional(),
+  stopBits:          z.union([z.literal(1), z.literal(2)]).optional(),
 }).superRefine(validateHttpAuth);
 
 // Body accepted by the pre-flight test (no device ID needed; value used once, never persisted)
@@ -141,6 +149,11 @@ const PreflightBody = z.object({
   httpAuthMethod:   z.enum(HTTP_AUTH_METHODS).optional(),
   httpAuthValue:    z.string().max(2048).optional(),
   httpApiKeyHeader: z.string().max(120).optional(),
+  serialPort:       z.string().max(255).optional(),
+  baudRate:         z.number().int().min(300).max(921600).optional(),
+  parity:           z.enum(SERIAL_PARITY).optional(),
+  dataBits:         z.union([z.literal(5), z.literal(6), z.literal(7), z.literal(8)]).optional(),
+  stopBits:         z.union([z.literal(1), z.literal(2)]).optional(),
 }).superRefine(validateHttpAuth);
 
 const UpdateDeviceBody = z.object({
@@ -157,6 +170,12 @@ const UpdateDeviceBody = z.object({
   httpAuthMethod:    z.enum(HTTP_AUTH_METHODS).optional(),
   httpAuthValue:     z.string().max(2048).optional(),
   httpApiKeyHeader:  z.string().max(120).optional(),
+  // Modbus RTU / RS485 (serial transport)
+  serialPort:        z.string().max(255).optional(),
+  baudRate:          z.number().int().min(300).max(921600).optional(),
+  parity:            z.enum(SERIAL_PARITY).optional(),
+  dataBits:          z.union([z.literal(5), z.literal(6), z.literal(7), z.literal(8)]).optional(),
+  stopBits:          z.union([z.literal(1), z.literal(2)]).optional(),
 }).superRefine(validateHttpAuth);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -174,6 +193,12 @@ type DeviceConfig = {
   httpAuthMethod?: "none" | "bearer" | "api_key" | "basic";
   httpAuthValue?: string;
   httpApiKeyHeader?: string;
+  // Modbus RTU / RS485 (serial transport)
+  serialPort?: string;
+  baudRate?: number;
+  parity?: "none" | "even" | "odd";
+  dataBits?: 5 | 6 | 7 | 8;
+  stopBits?: 1 | 2;
   pendingDeploy?: boolean;
 };
 
@@ -217,6 +242,12 @@ function toDeviceResponse(row: DeviceRow, now: Date) {
       httpAuthMethod:     cfg.httpAuthMethod ?? null,
       httpApiKeyHeader:   cfg.httpApiKeyHeader ?? null,
       httpAuthConfigured: !!(cfg.httpAuthMethod && cfg.httpAuthMethod !== "none" && cfg.httpAuthValue),
+      // Modbus RTU / RS485
+      serialPort:         cfg.serialPort ?? null,
+      baudRate:           cfg.baudRate ?? null,
+      parity:             cfg.parity ?? null,
+      dataBits:           cfg.dataBits ?? null,
+      stopBits:           cfg.stopBits ?? null,
     },
     pendingDeploy: cfg.pendingDeploy ?? false,
     createdAt: row.createdAt,
@@ -281,6 +312,11 @@ router.post("/devices/connection-preflight", requirePermission("device.manage"),
     httpAuthMethod:  b.httpAuthMethod,
     httpAuthValue:   b.httpAuthValue,
     httpApiKeyHeader: b.httpApiKeyHeader,
+    serialPort:      b.serialPort,
+    baudRate:        b.baudRate,
+    parity:          b.parity,
+    dataBits:        b.dataBits,
+    stopBits:        b.stopBits,
     pollingIntervalS: 30,
     fieldMap:        [],
   };
@@ -290,7 +326,7 @@ router.post("/devices/connection-preflight", requirePermission("device.manage"),
     res.status(400).json({
       ok: false,
       error: "no_connection_info",
-      message: "No connection parameters provided — supply a URL, broker URL, or IP address",
+      message: "No connection parameters provided — supply a URL, broker URL, IP address, or serial port path",
     });
     return;
   }
@@ -384,6 +420,11 @@ router.post("/devices", requirePermission("device.manage"), async (req, res) => 
     // Encrypt credential at rest — never store plaintext
     httpAuthValue:      body.httpAuthValue ? encryptCredential(body.httpAuthValue) : undefined,
     httpApiKeyHeader:   body.httpApiKeyHeader,
+    serialPort:         body.serialPort,
+    baudRate:           body.baudRate,
+    parity:             body.parity,
+    dataBits:           body.dataBits,
+    stopBits:           body.stopBits,
     pendingDeploy:      false,
   };
 
@@ -503,6 +544,11 @@ router.patch("/devices/:id", requirePermission("device.manage"), async (req, res
       // Empty string clears the credential; non-empty encrypts it
       httpAuthValue: body.httpAuthValue ? encryptCredential(body.httpAuthValue) : undefined,
     }),
+    ...(body.serialPort !== undefined         && { serialPort:         body.serialPort }),
+    ...(body.baudRate !== undefined           && { baudRate:           body.baudRate }),
+    ...(body.parity !== undefined             && { parity:             body.parity }),
+    ...(body.dataBits !== undefined           && { dataBits:           body.dataBits }),
+    ...(body.stopBits !== undefined           && { stopBits:           body.stopBits }),
     pendingDeploy: true,
   };
 
@@ -788,6 +834,11 @@ router.get("/devices/:id/connection-test", requirePermission("device.manage"), a
     // Decrypt at point-of-use — never expose ciphertext to the driver
     httpAuthValue:    cfg.httpAuthValue ? decryptCredential(cfg.httpAuthValue) : undefined,
     httpApiKeyHeader: cfg.httpApiKeyHeader,
+    serialPort:       cfg.serialPort,
+    baudRate:         cfg.baudRate,
+    parity:           cfg.parity,
+    dataBits:         cfg.dataBits,
+    stopBits:         cfg.stopBits,
     pollingIntervalS: cfg.pollingIntervalSec ?? 30,
     fieldMap,
   };
@@ -810,7 +861,7 @@ router.get("/devices/:id/connection-test", requirePermission("device.manage"), a
     res.status(400).json({
       ok: false,
       error: "no_connection_info",
-      message: "Device has no connection parameters configured (IP address, broker URL, or endpoint URL required)",
+      message: "Device has no connection parameters configured (IP address, broker URL, endpoint URL, or serial port required)",
     });
     return;
   }

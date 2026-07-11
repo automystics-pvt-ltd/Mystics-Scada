@@ -18,6 +18,7 @@ import { logger } from "../logger.js";
 import { decryptCredential } from "../credentialCrypto.js";
 import type { IDriver, DriverConfig, DriverStatus, FieldDef } from "./types.js";
 import { ModbusTcpDriver } from "./ModbusTcpDriver.js";
+import { ModbusRtuDriver } from "./ModbusRtuDriver.js";
 import { MqttDriver } from "./MqttDriver.js";
 import { HttpDriver } from "./HttpDriver.js";
 import { WebSocketDriver } from "./WebSocketDriver.js";
@@ -45,6 +46,11 @@ type DeviceConfig = {
   httpAuthMethod?: "none" | "bearer" | "api_key" | "basic";
   httpAuthValue?: string;
   httpApiKeyHeader?: string;
+  serialPort?: string;
+  baudRate?: number;
+  parity?: "none" | "even" | "odd";
+  dataBits?: 5 | 6 | 7 | 8;
+  stopBits?: 1 | 2;
   [key: string]: unknown;
 };
 
@@ -79,9 +85,11 @@ interface InternalStat {
 function makeDriver(cfg: DriverConfig): IDriver | null {
   switch (cfg.protocol) {
     case "modbus_tcp":
-    case "modbus_rtu":
       if (!cfg.ipAddress) return null;
       return new ModbusTcpDriver(cfg);
+    case "modbus_rtu":
+      if (!cfg.serialPort) return null;
+      return new ModbusRtuDriver(cfg);
     case "mqtt":
       if (!cfg.brokerUrl) return null;
       return new MqttDriver(cfg);
@@ -207,6 +215,11 @@ class DriverRegistry {
       // Decrypt at point-of-use — the driver never sees the ciphertext
       httpAuthValue:    rawCfg.httpAuthValue ? decryptCredential(rawCfg.httpAuthValue) : undefined,
       httpApiKeyHeader: rawCfg.httpApiKeyHeader,
+      serialPort:       rawCfg.serialPort,
+      baudRate:         rawCfg.baudRate,
+      parity:           rawCfg.parity,
+      dataBits:         rawCfg.dataBits,
+      stopBits:         rawCfg.stopBits,
       pollingIntervalS: rawCfg.pollingIntervalSec ?? 30,
       fieldMap,
     };

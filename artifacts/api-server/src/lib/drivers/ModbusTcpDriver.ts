@@ -49,7 +49,7 @@ function parseHoldingRegResponse(buf: Buffer): number[] | null {
 
 // ─── Field decoding ───────────────────────────────────────────────────────────
 
-function decodeField(regs: number[], field: FieldDef, baseAddr: number): number | null {
+export function decodeField(regs: number[], field: FieldDef, baseAddr: number): number | null {
   if (field.address === undefined) return null;
   const idx = field.address - baseAddr;
   const len = field.length ?? 1;
@@ -77,13 +77,13 @@ function decodeField(regs: number[], field: FieldDef, baseAddr: number): number 
 
 // ─── Group fields into minimal batch read windows ─────────────────────────────
 
-interface ReadGroup {
+export interface ReadGroup {
   startAddr: number;
   quantity: number;
   fields: FieldDef[];
 }
 
-function groupFields(fields: FieldDef[]): ReadGroup[] {
+export function groupFields(fields: FieldDef[]): ReadGroup[] {
   const sorted = fields
     .filter((f) => f.address !== undefined)
     .sort((a, b) => (a.address ?? 0) - (b.address ?? 0));

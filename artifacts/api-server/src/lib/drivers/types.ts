@@ -39,10 +39,16 @@ export type ParamMap = Record<string, number | string | boolean | null>;
 export interface DriverConfig {
   deviceId: string;
   protocol: "modbus_tcp" | "modbus_rtu" | "mqtt" | "http" | "websocket" | "opcua" | "bacnet";
-  // Modbus TCP / RTU
+  // Modbus TCP
   ipAddress?: string;
   port?: number;
   modbusUnitId?: number;
+  // Modbus RTU / RS485 (serial transport)
+  serialPort?: string;                                   // e.g. "/dev/ttyUSB0"
+  baudRate?: number;                                      // e.g. 9600, 19200, 115200
+  parity?: "none" | "even" | "odd";
+  dataBits?: 5 | 6 | 7 | 8;
+  stopBits?: 1 | 2;
   // MQTT
   brokerUrl?: string;
   topic?: string;
