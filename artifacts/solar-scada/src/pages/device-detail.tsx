@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import {
@@ -38,6 +38,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import { useDeviceStream } from "@/hooks/useDeviceStream";
+import { MiniLineChart } from "@/components/ui/svg-charts";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -227,7 +229,7 @@ export default function DeviceDetailPage() {
     refetchInterval: 60_000,
   });
 
-  const { data: latestReading } = useQuery<Reading | null>({
+  const { data: polledReading } = useQuery<Reading | null>({
     queryKey: ["device-readings", deviceId],
     queryFn: async () => {
       const r = await fetch(`${BASE}api/devices/${deviceId}/readings?limit=1`, { credentials: "include" });
@@ -236,8 +238,101 @@ export default function DeviceDetailPage() {
       return arr[0] ?? null;
     },
     enabled: activeTab === "live-data",
+    // Kept as a fallback for the initial paint / if the SSE connection drops;
+    // the live stream below is what actually drives real-time updates.
     refetchInterval: 15_000,
   });
+
+  // Real-time push — replaces manual refresh with an always-current reading.
+  const deviceStream = useDeviceStream(activeTab === "live-data" ? deviceId : null);
+
+  // Prefer the streamed reading once it's arrived; it's always at least as
+  // fresh as the polled one (the stream replays the latest row on connect).
+  const latestReading: Reading | null =
+    deviceStream.latest ?? polledReading ?? null;
+
+  // Small ring buffer of recent readings to drive the live-appending chart.
+  const [readingHistory, setReadingHistory] = useState<
+    { ts: string; value: number }[]
+  >([]);
+  const [chartField, setChartField] = useState<string | null>(null);
+  const prevParamsRef = useRef<Record<string, number | string | boolean | null>>({});
+  const [changedKeys, setChangedKeys] = useState<Set<string>>(new Set());
+  const MAX_HISTORY_POINTS = 200;
+
+  // Reset per-device chart/highlight state when navigating between devices —
+  // the route component instance persists across /devices/:id changes.
+  useEffect(() => {
+    setReadingHistory([]);
+    setChartField(null);
+    prevParamsRef.current = {};
+    setChangedKeys(new Set());
+  }, [deviceId]);
+
+  useEffect(() => {
+    if (!deviceStream.latest) return;
+    const { params } = deviceStream.latest;
+
+    // Track which fields changed since the previous reading, to briefly
+    // highlight them in the params grid.
+    const prev = prevParamsRef.current;
+    const changed = new Set<string>();
+    for (const [k, v] of Object.entries(params)) {
+      if (prev[k] !== v) changed.add(k);
+    }
+    prevParamsRef.current = params;
+    if (changed.size > 0) {
+      setChangedKeys(changed);
+      const timer = setTimeout(() => setChangedKeys(new Set()), 1200);
+      return () => clearTimeout(timer);
+    }
+    return;
+  }, [deviceStream.latest]);
+
+  useEffect(() => {
+    if (!deviceStream.latest) return;
+    const { ts, params } = deviceStream.latest;
+
+    // Pick the first numeric field to chart by default, once.
+    setChartField((prev) => {
+      if (prev && typeof params[prev] === "number") return prev;
+      const firstNumeric = Object.entries(params).find(([, v]) => typeof v === "number");
+      return firstNumeric ? firstNumeric[0] : prev;
+    });
+
+    setReadingHistory((prevHistory) => {
+      // Pause appending while the tab is hidden — flush resumes automatically
+      // once it's visible again because the stream keeps delivering events.
+      if (document.visibilityState === "hidden") return prevHistory;
+      if (prevHistory.length > 0 && prevHistory[prevHistory.length - 1]!.ts === ts) {
+        return prevHistory;
+      }
+      const numericField = Object.entries(params).find(([, v]) => typeof v === "number");
+      if (!numericField) return prevHistory;
+      const next = [...prevHistory, { ts, value: numericField[1] as number }];
+      return next.length > MAX_HISTORY_POINTS ? next.slice(next.length - MAX_HISTORY_POINTS) : next;
+    });
+  }, [deviceStream.latest]);
+
+  // Live/stale/offline indicator: green while events are arriving within
+  // ~2x the device's polling interval, amber if it's gone quiet, grey if
+  // there's no stream connection at all.
+  const pollingIntervalMs = (device?.config.pollingIntervalSec ?? 30) * 1000;
+  const staleThresholdMs = Math.max(pollingIntervalMs * 2, 10_000);
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => forceTick((n) => n + 1), 2_000);
+    return () => clearInterval(t);
+  }, []);
+  const msSinceLastEvent = deviceStream.lastEventAt
+    ? Date.now() - deviceStream.lastEventAt.getTime()
+    : null;
+  const streamHealth: "live" | "stale" | "offline" =
+    !deviceStream.connected || msSinceLastEvent === null
+      ? "offline"
+      : msSinceLastEvent > staleThresholdMs
+        ? "stale"
+        : "live";
 
   async function runConnectionTest() {
     setTestingConnection(true);
@@ -655,20 +750,30 @@ export default function DeviceDetailPage() {
                   <div>
                     <h3 className="text-sm font-semibold">Live Readings</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {device.dataSource === "live"
-                        ? "Real data from device driver — refreshes every 15s"
-                        : "No live driver readings yet — showing simulated parameters"}
+                      {streamHealth === "live"
+                        ? "Streaming in real time — no refresh needed"
+                        : streamHealth === "stale"
+                          ? "Connected, but the device hasn't reported recently"
+                          : device.dataSource === "live"
+                            ? "Reconnecting to live stream…"
+                            : "No live driver readings yet — showing simulated parameters"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {device.dataSource === "live" ? (
+                    {streamHealth === "live" ? (
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/30">
                         <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
                         Live
                       </span>
+                    ) : streamHealth === "stale" ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                        Stale
+                      </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
-                        Simulated
+                        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
+                        Offline
                       </span>
                     )}
                     {canManage && (
@@ -758,8 +863,14 @@ export default function DeviceDetailPage() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {Object.entries(latestReading.params).map(([key, value]) => {
                         const fieldDef = device.template?.fieldMap.find((f) => f.key === key);
+                        const justChanged = changedKeys.has(key);
                         return (
-                          <div key={key} className="rounded-lg border border-border bg-card p-3">
+                          <div
+                            key={key}
+                            className={`rounded-lg border p-3 transition-colors duration-700 ${
+                              justChanged ? "border-primary/50 bg-primary/5" : "border-border bg-card"
+                            }`}
+                          >
                             <div className="text-xs text-muted-foreground mb-0.5">{fieldDef?.label ?? key}</div>
                             <div className="font-semibold text-sm tabular-nums">
                               {typeof value === "number" ? value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : String(value ?? "—")}
@@ -769,6 +880,21 @@ export default function DeviceDetailPage() {
                         );
                       })}
                     </div>
+
+                    {chartField && readingHistory.length >= 2 && (
+                      <div className="rounded-lg border border-border bg-card p-3">
+                        <div className="text-xs text-muted-foreground mb-1">
+                          {device.template?.fieldMap.find((f) => f.key === chartField)?.label ?? chartField} — live trend
+                        </div>
+                        <MiniLineChart
+                          color="hsl(var(--primary))"
+                          points={readingHistory.map((p) => ({
+                            label: new Date(p.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+                            value: p.value,
+                          }))}
+                        />
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="rounded-lg border border-dashed border-border p-8 text-center">

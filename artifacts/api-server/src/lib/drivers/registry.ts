@@ -23,6 +23,9 @@ import { HttpDriver } from "./HttpDriver.js";
 import { WebSocketDriver } from "./WebSocketDriver.js";
 import { OpcuaDriver } from "./opcua-driver.js";
 import { applyFormulas } from "../formulaEngine.js";
+import { publish } from "../sseRegistry.js";
+
+const DEVICE_READING_CHANNEL = "device_reading";
 
 const MAX_READINGS_PER_DEVICE = 2_000;
 const MAX_COMM_LOGS_PER_DEVICE = 1_000;
@@ -243,8 +246,20 @@ class DriverRegistry {
     const deviceId = driver.deviceId;
 
     driver.on("reading", (params: Record<string, unknown>) => {
-      // Pass fieldMap so formula-derived fields are computed before persistence
-      void this._persistReading(deviceId, orgId, params, this._fieldMaps.get(deviceId));
+      const fieldMap = this._fieldMaps.get(deviceId);
+      // Apply formula-derived fields once, then fan out to both the live SSE
+      // stream (real-time, low-latency) and durable persistence.
+      const processed: Record<string, unknown> = fieldMap?.some((f) => f.formula)
+        ? applyFormulas(params as Record<string, number | string | boolean | null>, fieldMap)
+        : params;
+
+      publish(DEVICE_READING_CHANNEL, orgId, {
+        deviceId,
+        ts: new Date().toISOString(),
+        params: processed,
+      });
+
+      void this._persistReading(deviceId, orgId, processed);
     });
 
     driver.on("status", (status: string) => {
@@ -274,14 +289,8 @@ class DriverRegistry {
   private async _persistReading(
     deviceId: string,
     orgId: string,
-    rawParams: Record<string, unknown>,
-    fieldMap?: FieldDef[],
+    params: Record<string, unknown>,
   ): Promise<void> {
-    // Apply formula-based derived fields before persisting
-    const params: Record<string, unknown> = fieldMap?.some((f) => f.formula)
-      ? applyFormulas(rawParams as Record<string, number | string | boolean | null>, fieldMap)
-      : rawParams;
-
     try {
       const now = new Date();
       await db.insert(deviceReadingsTable).values({

@@ -29,6 +29,9 @@ import {
 import { getFaultedInverterIds, isPlantDisconnected } from "../lib/faultInjection";
 import { resolveOrgId } from "../lib/orgScope";
 import { registerOrgNotificationClient } from "../lib/notificationRegistry";
+import { subscribe } from "../lib/sseRegistry";
+import { db, devicesTable, deviceReadingsTable } from "@workspace/db";
+import { eq, desc } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -223,6 +226,74 @@ router.get("/stream/telemetry/:plantId", (req: Request, res: Response) => {
   req.on("close", () => {
     clearInterval(pushTimer);
     clearInterval(keepaliveTimer);
+  });
+});
+
+/* ── Per-device live readings stream ─────────────────────────────────── */
+
+/** How stale (ms) the last driver reading can be before the client should treat the feed as idle. */
+export const DEVICE_STREAM_IDLE_MS = 15_000;
+
+router.get("/stream/devices/:deviceId", async (req: Request, res: Response) => {
+  const orgId = resolveOrgId(req);
+  const deviceId = req.params["deviceId"] as string;
+
+  const [device] = await db.select().from(devicesTable).where(eq(devicesTable.id, deviceId));
+  if (!device || (orgId !== null && device.orgId !== orgId)) {
+    res.status(404).json({ error: "not_found", message: "Device not found" });
+    return;
+  }
+
+  sseHeaders(res);
+
+  // Subscribe BEFORE querying the DB for the replay snapshot. If we queried
+  // first, a driver reading published between the query and the subscribe
+  // call would be lost — neither in the replay snapshot nor delivered live.
+  // Instead, buffer anything that arrives while "priming", then flush it
+  // after the replay event so the client never has a real-time gap.
+  let priming = true;
+  const buffered: unknown[] = [];
+  const unsubscribe = subscribe(
+    "device_reading",
+    device.orgId,
+    (data) => {
+      const payload = data as { deviceId: string };
+      if (payload.deviceId !== deviceId) return; // channel is org-wide; filter to this device
+      if (priming) {
+        buffered.push(data);
+        return;
+      }
+      sendEvent(res, "device_reading", data);
+    },
+  );
+
+  // Prime the client with the latest known reading (if any) so the UI shows
+  // data immediately instead of waiting for the next driver poll cycle.
+  const [latest] = await db
+    .select()
+    .from(deviceReadingsTable)
+    .where(eq(deviceReadingsTable.deviceId, deviceId))
+    .orderBy(desc(deviceReadingsTable.ts))
+    .limit(1);
+
+  if (latest) {
+    sendEvent(res, "device_reading", {
+      deviceId,
+      ts: latest.ts instanceof Date ? latest.ts.toISOString() : latest.ts,
+      params: latest.params,
+      replay: true,
+    });
+  }
+
+  priming = false;
+  for (const data of buffered) sendEvent(res, "device_reading", data);
+  buffered.length = 0;
+
+  const keepaliveTimer = setInterval(() => sendKeepalive(res), KEEPALIVE_INTERVAL_MS);
+
+  req.on("close", () => {
+    clearInterval(keepaliveTimer);
+    unsubscribe();
   });
 });
 
