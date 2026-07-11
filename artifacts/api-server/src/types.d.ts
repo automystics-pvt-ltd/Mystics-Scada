@@ -16,6 +16,15 @@ declare global {
         /** Set when a super admin is impersonating an org via the portal. */
         orgOverride?: string;
       };
+      /**
+       * Set by the `validateGatewayToken` middleware for Edge Gateway Agent
+       * requests (bearer token auth, not session cookie auth).
+       */
+      gateway?: {
+        id: string;
+        orgId: string;
+        name: string;
+      };
     }
   }
 }

@@ -1,0 +1,27 @@
+{
+  "name": "@workspace/edge-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Edge Gateway Agent — runs on a plant-local machine, polls devices on the plant LAN over Modbus/MQTT/HTTP, and forwards readings to the cloud API over a single outbound HTTPS connection.",
+  "bin": {
+    "edge-agent": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "node build.mjs",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.4.1",
+    "mqtt": "^5.15.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.3.3",
+    "esbuild": "0.27.3",
+    "tsx": "^4.21.0",
+    "typescript": "~5.9.3"
+  }
+}

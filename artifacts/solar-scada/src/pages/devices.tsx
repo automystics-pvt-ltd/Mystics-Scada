@@ -151,6 +151,7 @@ export default function DevicesPage() {
   const [form, setForm] = useState({
     name: "", type: "RTU", protocol: "modbus", plantId: "plant-thar",
     templateId: "",
+    gatewayId: "",
     ipAddress: "", port: "502", modbusUnitId: "1", pollingIntervalSec: "30",
     brokerUrl: "", topic: "", url: "",
     opcuaSecurityMode: "None", opcuaUsername: "", opcuaPassword: "",
@@ -176,6 +177,15 @@ export default function DevicesPage() {
     },
   });
 
+  const { data: gateways = [] } = useQuery<{ id: string; name: string; revokedAt: string | null }[]>({
+    queryKey: ["org-gateways-select"],
+    queryFn: async () => {
+      const r = await fetch(`${BASE}api/gateway/list`, { credentials: "include" });
+      if (!r.ok) return [];
+      return r.json() as Promise<{ id: string; name: string; revokedAt: string | null }[]>;
+    },
+  });
+
   const registerMutation = useMutation({
     mutationFn: async (body: Record<string, unknown>) => {
       const r = await fetch(`${BASE}api/devices`, {
@@ -195,6 +205,7 @@ export default function DevicesPage() {
       setShowRegister(false);
       setForm({ name: "", type: "RTU", protocol: "modbus", plantId: "plant-thar",
         templateId: "",
+        gatewayId: "",
         ipAddress: "", port: "502", modbusUnitId: "1", pollingIntervalSec: "30",
         brokerUrl: "", topic: "", url: "",
         opcuaSecurityMode: "None", opcuaUsername: "", opcuaPassword: "",
@@ -229,6 +240,7 @@ export default function DevicesPage() {
       pollingIntervalSec: Number(form.pollingIntervalSec) || 30,
     };
     if (form.templateId) body.templateId = form.templateId;
+    if (form.gatewayId) body.gatewayId = form.gatewayId;
     if (form.protocol === "modbus") {
       if (form.ipAddress) body.ipAddress = form.ipAddress;
       if (form.port) body.port = Number(form.port);
@@ -498,6 +510,18 @@ export default function DevicesPage() {
                   <SelectContent>
                     {Object.entries(PLANT_NAMES).map(([id, name]) => (
                       <SelectItem key={id} value={id}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-1 sm:col-span-2">
+                <Label>Assigned Gateway <span className="text-muted-foreground font-normal">(optional — leave unset to poll directly from the cloud)</span></Label>
+                <Select value={form.gatewayId || "none"} onValueChange={(v) => setForm((f) => ({ ...f, gatewayId: v === "none" ? "" : v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Cloud (direct connection)</SelectItem>
+                    {gateways.filter((g) => !g.revokedAt).map((g) => (
+                      <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

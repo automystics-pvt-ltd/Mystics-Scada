@@ -71,6 +71,7 @@ autoInstallPeers: false
 onlyBuiltDependencies:
   - '@swc/core'
   - '@serialport/bindings-cpp'
+  - better-sqlite3
   - cpu-features
   - esbuild
   - msw

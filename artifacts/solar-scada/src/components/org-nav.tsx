@@ -1,10 +1,11 @@
 import { Link, useLocation } from "wouter";
-import { Building2, Users, Bell, ScrollText } from "lucide-react";
+import { Building2, Users, Bell, ScrollText, Router as RouterIcon } from "lucide-react";
 
 const tabs = [
   { label: "Profile",       href: "/org",               icon: Building2 },
   { label: "Users",         href: "/org/users",          icon: Users     },
   { label: "Notifications", href: "/org/notifications",  icon: Bell      },
+  { label: "Gateways",      href: "/org/gateways",       icon: RouterIcon },
   { label: "Audit Log",     href: "/org/audit-log",      icon: ScrollText },
 ];
 

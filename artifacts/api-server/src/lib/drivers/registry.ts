@@ -67,7 +67,7 @@ export interface DriverHealthStat {
   protocol: string;
   orgId: string;
   plantId: string;
-  status: DriverStatus | "no_driver";
+  status: DriverStatus | "no_driver" | "managed_by_gateway";
   startedAt: Date | null;
   lastReadingAt: Date | null;
   lastRttMs: number | null;
@@ -174,7 +174,7 @@ class DriverRegistry {
         protocol:      d.protocol,
         orgId:         d.orgId,
         plantId:       d.plantId,
-        status:        driver ? driver.status : "no_driver",
+        status:        driver ? driver.status : d.gatewayId ? "managed_by_gateway" : "no_driver",
         startedAt:     stat?.startedAt ?? null,
         lastReadingAt: stat?.lastReadingAt ?? null,
         lastRttMs:     stat?.lastRttMs ?? null,
@@ -207,6 +207,10 @@ class DriverRegistry {
   // ── Private ─────────────────────────────────────────────────────────────────
 
   private async _launchDriver(device: DeviceRow): Promise<boolean> {
+    // Devices assigned to an Edge Gateway Agent are polled plant-side; the
+    // cloud process must not also start a direct driver for them.
+    if (device.gatewayId) return false;
+
     const rawCfg   = (device.config ?? {}) as DeviceConfig;
     const protocol = normalizeProtocol(device.protocol);
     if (!protocol) return false;

@@ -3,6 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { organizationsTable } from "./organizations";
 import { deviceTemplatesTable } from "./deviceTemplates";
+import { gatewayTokensTable } from "./gatewayTokens";
 
 /**
  * IoT device registry — one row per physical device connected to a plant.
@@ -32,6 +33,12 @@ export const devicesTable = pgTable(
     consecutiveFailures: integer("consecutive_failures").notNull().default(0),
     /** FK to device_templates — null if no template assigned */
     templateId: text("template_id").references(() => deviceTemplatesTable.id, { onDelete: "set null" }),
+    /**
+     * FK to gateway_tokens — when set, this device is polled by a plant-local
+     * Edge Gateway Agent instead of a direct driver in the cloud API process.
+     * The driver registry skips launching a local driver for these devices.
+     */
+    gatewayId: text("gateway_id").references(() => gatewayTokensTable.id, { onDelete: "set null" }),
     /** Arbitrary device-specific settings stored as JSONB. */
     config: jsonb("config").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -41,6 +48,7 @@ export const devicesTable = pgTable(
     orgIdIdx: index("devices_org_id_idx").on(table.orgId),
     plantIdIdx: index("devices_plant_id_idx").on(table.plantId),
     orgPlantIdx: index("devices_org_plant_idx").on(table.orgId, table.plantId),
+    gatewayIdIdx: index("devices_gateway_id_idx").on(table.gatewayId),
   }),
 );
 

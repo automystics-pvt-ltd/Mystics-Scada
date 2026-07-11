@@ -41,6 +41,7 @@ import FtpSourcesPage from '@/pages/ftp-sources';
 import OrgProfilePage from '@/pages/org-profile';
 import OrgUsersPage from '@/pages/org-users';
 import OrgNotificationsPage from '@/pages/org-notifications';
+import OrgGatewaysPage from '@/pages/org-gateways';
 import OrgAuditLogPage from '@/pages/org-audit-log';
 import PlantZones from '@/pages/plant-zones';
 import PlantZoneDetail from '@/pages/plant-zone-detail';
@@ -85,6 +86,7 @@ function ProtectedRoutes() {
           <Route path="/org" component={OrgProfilePage} />
           <Route path="/org/users" component={OrgUsersPage} />
           <Route path="/org/notifications" component={OrgNotificationsPage} />
+          <Route path="/org/gateways" component={OrgGatewaysPage} />
           <Route path="/org/audit-log" component={OrgAuditLogPage} />
           <Route path="/admin/users" component={AdminUsers} />
           <Route path="/admin/roles" component={AdminRoles} />

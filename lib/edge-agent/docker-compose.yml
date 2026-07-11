@@ -1,0 +1,14 @@
+# One-command deployment at a plant site:
+#   cp .env.gateway.example .env.gateway   # fill in GATEWAY_TOKEN + API_URL
+#   docker compose up -d
+services:
+  edge-agent:
+    build: .
+    restart: unless-stopped
+    env_file: .env.gateway
+    network_mode: host   # needs direct access to the plant LAN (Modbus/MQTT/HTTP devices)
+    volumes:
+      - edge-agent-data:/app/data
+
+volumes:
+  edge-agent-data:

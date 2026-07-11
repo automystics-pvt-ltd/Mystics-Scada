@@ -6,6 +6,8 @@ export * from "./organizations";
 
 // IoT device tables (templateTemplates must come before devices to avoid circular FK)
 export * from "./deviceTemplates";
+// Edge gateway tokens must come before devices (devices.gateway_id FK)
+export * from "./gatewayTokens";
 
 // Domain tables (all scoped to an org via org_id)
 export * from "./alerts";

@@ -22,3 +22,4 @@
 - [node-bacnet driver integration](node-bacnet-driver.md) — no types, shared singleton UDP socket required, callback API, structured object addressing not flat registers.
 - [OPC-UA driver decisions](opcua-driver-decisions.md) — polling-only (push subscriptions unverifiable without live server), security-mode mapping, ns=0;i=2255 as universal liveness check, credential encryption pattern.
 - [Data Connector Wizard vs Device registration scope](data-connector-wizard-scope.md) — industrial protocols (Modbus/OPC-UA/BACnet) belong on Devices/Templates pages, not the generic wizard.
+- [Edge Gateway Agent architecture](edge-gateway-agent.md) — token-router mounting pitfall, super-admin write-guard prefixes, gateway-assignment driver status, edge-agent protocol scope.

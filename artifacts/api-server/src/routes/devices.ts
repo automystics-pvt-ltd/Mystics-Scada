@@ -9,6 +9,7 @@ import {
   deviceCommLogsTable,
   deviceTemplatesTable,
   firmwareVersionHistoryTable,
+  gatewayTokensTable,
 } from "@workspace/db";
 import { resolveOrgId, orgCondition } from "../lib/orgScope.js";
 import { requirePermission } from "../middleware/requirePermission.js";
@@ -96,6 +97,15 @@ const DEVICE_TYPES = [
 
 const PROTOCOLS = ["modbus", "modbus_rtu", "mqtt", "http", "opcua", "websocket", "bacnet"] as const;
 
+/**
+ * Protocols the Edge Gateway Agent (lib/edge-agent) actually implements pollers for.
+ * A device can only be assigned to a gateway (`gatewayId` set) if its protocol is
+ * in this set — otherwise the cloud driver registry stops polling it (any
+ * `gatewayId` device is skipped) while the edge agent silently can't pick it up
+ * either, resulting in permanent telemetry loss.
+ */
+const EDGE_GATEWAY_SUPPORTED_PROTOCOLS = ["modbus", "mqtt", "http"] as const;
+
 const HTTP_AUTH_METHODS = ["none", "bearer", "api_key", "basic"] as const;
 
 const SERIAL_PARITY = ["none", "even", "odd"] as const;
@@ -121,6 +131,8 @@ const RegisterDeviceBody = z.object({
   protocol:           z.enum(PROTOCOLS),
   plantId:            z.string().min(1),
   templateId:         z.string().optional(),
+  /** Edge Gateway Agent this device is polled by — null/omitted means the cloud drives it directly. */
+  gatewayId:          z.string().nullable().optional(),
   ipAddress:          z.string().optional(),
   port:               z.number().int().min(1).max(65535).optional(),
   modbusUnitId:       z.number().int().min(1).max(247).optional(),
@@ -172,6 +184,8 @@ const PreflightBody = z.object({
 const UpdateDeviceBody = z.object({
   name:               z.string().min(1).max(120).optional(),
   templateId:         z.string().nullable().optional(),
+  /** Edge Gateway Agent this device is polled by — pass null to unassign. */
+  gatewayId:          z.string().nullable().optional(),
   ipAddress:          z.string().optional(),
   port:               z.number().int().min(1).max(65535).optional(),
   modbusUnitId:       z.number().int().min(1).max(247).optional(),
@@ -253,6 +267,7 @@ function toDeviceResponse(row: DeviceRow, now: Date) {
     type: row.type,
     protocol: row.protocol,
     templateId: row.templateId ?? null,
+    gatewayId: row.gatewayId ?? null,
     status,
     signalStrengthPct: sim.signalStrengthPct,
     lastSeenAt,
@@ -450,6 +465,22 @@ router.post("/devices", requirePermission("device.manage"), async (req, res) => 
     }
   }
 
+  // Validate gateway if provided — must belong to this org and not be revoked
+  if (body.gatewayId) {
+    const [gw] = await db.select().from(gatewayTokensTable).where(eq(gatewayTokensTable.id, body.gatewayId));
+    if (!gw || gw.orgId !== orgId || gw.revokedAt) {
+      res.status(400).json({ error: "invalid_gateway", message: "Gateway not found or revoked" });
+      return;
+    }
+    if (!(EDGE_GATEWAY_SUPPORTED_PROTOCOLS as readonly string[]).includes(body.protocol)) {
+      res.status(400).json({
+        error: "unsupported_gateway_protocol",
+        message: `Protocol '${body.protocol}' is not supported by the Edge Gateway Agent. Supported: ${EDGE_GATEWAY_SUPPORTED_PROTOCOLS.join(", ")}.`,
+      });
+      return;
+    }
+  }
+
   // SSRF guard — block loopback/metadata targets before persisting or starting a driver
   const targetUrl = body.url ?? (body.ipAddress ? `tcp://${body.ipAddress}:${body.port ?? 502}` : null)
                   ?? body.brokerUrl ?? null;
@@ -500,6 +531,7 @@ router.post("/devices", requirePermission("device.manage"), async (req, res) => 
       type:       body.type,
       protocol:   body.protocol,
       templateId: body.templateId ?? null,
+      gatewayId:  body.gatewayId ?? null,
       status:     "offline",
       config,
       createdAt: now,
@@ -649,6 +681,23 @@ router.patch("/devices/:id", requirePermission("device.manage"), async (req, res
     }
   }
 
+  // Validate new gateway if changing (null is a valid "unassign" value)
+  if (body.gatewayId) {
+    const [gw] = await db.select().from(gatewayTokensTable).where(eq(gatewayTokensTable.id, body.gatewayId));
+    if (!gw || (orgId !== null && gw.orgId !== orgId) || gw.revokedAt) {
+      res.status(400).json({ error: "invalid_gateway", message: "Gateway not found or revoked" });
+      return;
+    }
+    // Protocol is immutable after registration, so check the device's existing protocol
+    if (!(EDGE_GATEWAY_SUPPORTED_PROTOCOLS as readonly string[]).includes(existing.protocol)) {
+      res.status(400).json({
+        error: "unsupported_gateway_protocol",
+        message: `Protocol '${existing.protocol}' is not supported by the Edge Gateway Agent. Supported: ${EDGE_GATEWAY_SUPPORTED_PROTOCOLS.join(", ")}.`,
+      });
+      return;
+    }
+  }
+
   // SSRF guard on updated network targets
   const patchUrl = body.url
     ?? (body.ipAddress ? `tcp://${body.ipAddress}:${body.port ?? 502}` : null)
@@ -702,6 +751,7 @@ router.patch("/devices/:id", requirePermission("device.manage"), async (req, res
   };
   if (body.name)                         updates.name       = body.name;
   if (body.templateId !== undefined)     updates.templateId = body.templateId ?? null;
+  if (body.gatewayId !== undefined)      updates.gatewayId  = body.gatewayId ?? null;
 
   const [updated] = await db.update(devicesTable).set(updates).where(eq(devicesTable.id, deviceId)).returning();
   req.log.info({ deviceId }, "Device config updated — pending deploy");

@@ -18,6 +18,7 @@ import orgRouter from "./org";
 import notificationsRouter from "./notifications";
 import superadminRouter from "./superadmin";
 import ftpSourcesRouter from "./ftpSources";
+import { gatewayAdminRouter, gatewayAgentRouter } from "./gateway";
 import { authenticate } from "../middleware/authenticate";
 import { requireSuperAdmin } from "../middleware/requireSuperAdmin";
 import { resolveOrgId } from "../lib/orgScope";
@@ -27,6 +28,10 @@ const router: IRouter = Router();
 // Always-public routes (no auth required)
 router.use(healthRouter);
 router.use(authRouter);
+
+// Edge Gateway Agent ingest routes — authenticate via bearer gateway token,
+// not a browser session cookie, so they must sit outside `authenticate`.
+router.use(gatewayAgentRouter);
 
 // All routes below this line require a valid session cookie.
 router.use(authenticate);
@@ -44,8 +49,10 @@ router.use(authenticate);
  */
 function requireOrgScopeForWrites(req: Request, res: Response, next: NextFunction): void {
   const isMutation = ["POST", "PATCH", "PUT", "DELETE"].includes(req.method);
-  // /superadmin/** carries its own org context; /org/** always operates on req.user.orgId
-  const isScopedRoute = req.path.startsWith("/superadmin") || req.path.startsWith("/org");
+  // /superadmin/** carries its own org context; /org/** and /gateway/** always
+  // operate on req.user.orgId (the admin gateway endpoints never accept a
+  // separate org param — they're always scoped to the caller's own org).
+  const isScopedRoute = req.path.startsWith("/superadmin") || req.path.startsWith("/org") || req.path.startsWith("/gateway");
   if (isMutation && !isScopedRoute && req.user?.isSuperAdmin && !resolveOrgId(req)) {
     res.status(400).json({
       error: "org_required",
@@ -74,6 +81,7 @@ router.use(deviceTemplatesRouter);
 router.use(orgRouter);
 router.use(notificationsRouter);
 router.use(ftpSourcesRouter);
+router.use(gatewayAdminRouter);
 
 // Super admin portal — requires authenticated + isSuperAdmin
 router.use(requireSuperAdmin, superadminRouter);

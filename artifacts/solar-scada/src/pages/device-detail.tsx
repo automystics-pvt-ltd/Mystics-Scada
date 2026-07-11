@@ -36,6 +36,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useDeviceStream } from "@/hooks/useDeviceStream";
@@ -57,6 +64,7 @@ interface Device {
   type: string;
   protocol: string;
   templateId: string | null;
+  gatewayId: string | null;
   status: DeviceStatus;
   signalStrengthPct: number;
   lastSeenAt: string;
@@ -247,7 +255,17 @@ export default function DeviceDetailPage() {
   const [configForm, setConfigForm] = useState<{
     ipAddress: string; port: string; modbusUnitId: string;
     brokerUrl: string; topic: string; pollingIntervalSec: string;
+    gatewayId: string;
   } | null>(null);
+
+  const { data: gateways = [] } = useQuery<{ id: string; name: string; revokedAt: string | null }[]>({
+    queryKey: ["org-gateways-select"],
+    queryFn: async () => {
+      const r = await fetch(`${BASE}api/gateway/list`, { credentials: "include" });
+      if (!r.ok) return [];
+      return r.json() as Promise<{ id: string; name: string; revokedAt: string | null }[]>;
+    },
+  });
 
   const { data: device, isLoading } = useQuery<Device>({
     queryKey: ["device", deviceId],
@@ -486,6 +504,7 @@ export default function DeviceDetailPage() {
       brokerUrl:          d.config.brokerUrl ?? "",
       topic:              d.config.topic ?? "",
       pollingIntervalSec: String(d.config.pollingIntervalSec),
+      gatewayId:          d.gatewayId ?? "",
     });
     setEditing(true);
   }
@@ -494,6 +513,7 @@ export default function DeviceDetailPage() {
     if (!configForm) return;
     const body: Record<string, unknown> = {
       pollingIntervalSec: Number(configForm.pollingIntervalSec) || 30,
+      gatewayId: configForm.gatewayId || null,
     };
     if (configForm.ipAddress)    body.ipAddress    = configForm.ipAddress;
     if (configForm.port)         body.port         = Number(configForm.port);
@@ -713,6 +733,7 @@ export default function DeviceDetailPage() {
                   <div className="rounded-lg border border-border overflow-hidden">
                     {[
                       { label: "Protocol",           value: device.protocol.toUpperCase() },
+                      { label: "Assigned Gateway",    value: device.gatewayId ? (gateways.find((g) => g.id === device.gatewayId)?.name ?? "Unknown gateway") : "Cloud (direct connection)" },
                       { label: "IP Address",          value: device.config.ipAddress },
                       { label: "Port",                value: device.config.port },
                       { label: "Modbus Unit ID",      value: device.config.modbusUnitId },
@@ -784,6 +805,21 @@ export default function DeviceDetailPage() {
                             <Label>Polling Interval (seconds)</Label>
                             <Input className="mt-1" type="number" value={configForm.pollingIntervalSec}
                               onChange={(e) => setConfigForm((f) => f && ({ ...f, pollingIntervalSec: e.target.value }))} />
+                          </div>
+                          <div className="col-span-1 sm:col-span-2">
+                            <Label>Assigned Gateway <span className="text-muted-foreground font-normal">(leave unset to poll directly from the cloud)</span></Label>
+                            <Select
+                              value={configForm.gatewayId || "none"}
+                              onValueChange={(v) => setConfigForm((f) => f && ({ ...f, gatewayId: v === "none" ? "" : v }))}
+                            >
+                              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Cloud (direct connection)</SelectItem>
+                                {gateways.filter((g) => !g.revokedAt).map((g) => (
+                                  <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                         <div className="flex gap-2 pt-2">
