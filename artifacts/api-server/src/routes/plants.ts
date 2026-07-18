@@ -27,9 +27,28 @@ import { activeAlertCountsByPlant } from "../lib/alertCounts";
 import { resolveOrgId, orgCondition } from "../lib/orgScope";
 import { db, devicesTable } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
-import { deviceStatus } from "../lib/simulation";
+import { deviceStatus, addPlant } from "../lib/simulation";
 
 const router: IRouter = Router();
+
+// ── POST /plants — create a new plant (wizard) ──────────────────────────────
+router.post("/plants", async (req, res) => {
+  const session = (req as any).session as import("../middleware/authenticate").SessionPayload | undefined;
+  const orgId = resolveOrgId(req);
+  if (!orgId) {
+    res.status(403).json({ error: "forbidden", message: "No organisation in session." });
+    return;
+  }
+
+  const { name, location } = req.body as { name?: unknown; location?: unknown };
+  if (typeof name !== "string" || !name.trim()) {
+    res.status(400).json({ error: "invalid_body", message: "Plant name is required." });
+    return;
+  }
+
+  const plant = addPlant(orgId, name.trim(), typeof location === "string" ? location.trim() : "");
+  res.status(201).json({ id: plant.id, name: plant.name, location: plant.location });
+});
 
 router.get("/plants", async (req, res) => {
   const orgId = resolveOrgId(req);

@@ -109,6 +109,44 @@ export function getPlant(plantId: string): PlantConfig | undefined {
   return PLANTS.find((p) => p.id === plantId);
 }
 
+/**
+ * Dynamically register a new plant (created via the wizard).
+ * Adds it to the in-memory PLANTS array and maps it to the given org.
+ * Sensible simulation defaults are applied for unspecified fields.
+ */
+export function addPlant(
+  orgId: string,
+  name: string,
+  location: string,
+): PlantConfig {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 32);
+  // Ensure unique ID even if slug collides
+  const id = `plant-${slug}-${Date.now().toString(36)}`;
+
+  const plant: PlantConfig = {
+    id,
+    name,
+    location: location || "Unknown Location",
+    timezoneOffsetHours: 5.5,
+    capacityMw: 10,
+    trackerType: "fixed_tilt",
+    commissionedYear: new Date().getFullYear(),
+    inverterCount: 4,
+    inverterRatingKw: 1500,
+    stringsPerInverter: 12,
+    weatherStationCount: 1,
+    cloudinessSeed: 0.2,
+  };
+
+  PLANTS.push(plant);
+  PLANT_ORG_MAP[id] = orgId;
+  return plant;
+}
+
 export function getPlantByInverterId(inverterId: string): PlantConfig | undefined {
   const plantId = inverterId.split("-inv-")[0];
   return getPlant(plantId ?? "");
