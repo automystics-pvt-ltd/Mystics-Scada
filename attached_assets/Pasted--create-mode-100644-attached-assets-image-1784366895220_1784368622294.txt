@@ -1,0 +1,56 @@
+ create mode 100644 attached_assets/image_1784366895220.png
+    proxy_pass http://127.0.0.1:8080;
+  root /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/solar-scada/dist/public;
+2026/07/18 09:44:12 [error] 3915796#3915796: *152 connect() failed (111: Connection refused) while connecting to upstream, client: 106.195.35.124, server: scada.automystics.tech, request: "POST / HTTP/2.0", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:44:22 [error] 3915795#3915795: *530 connect() failed (111: Connection refused) while connecting to upstream, client: 106.195.43.114, server: scada.automystics.tech, request: "GET / HTTP/2.0", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:44:23 [error] 3915795#3915795: *530 connect() failed (111: Connection refused) while connecting to upstream, client: 106.195.43.114, server: scada.automystics.tech, request: "GET /favicon.ico HTTP/2.0", upstream: "http://127.0.0.1:3003/favicon.ico", host: "scada.automystics.tech", referrer: "https://scada.automystics.tech/"
+2026/07/18 09:45:13 [error] 3915796#3915796: *152 connect() failed (111: Connection refused) while connecting to upstream, client: 106.195.35.124, server: scada.automystics.tech, request: "POST / HTTP/2.0", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:46:02 [error] 3915796#3915796: *609 connect() failed (111: Connection refused) while connecting to upstream, client: 42.104.210.227, server: scada.automystics.tech, request: "GET / HTTP/2.0", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:46:02 [error] 3915796#3915796: *609 connect() failed (111: Connection refused) while connecting to upstream, client: 42.104.210.227, server: scada.automystics.tech, request: "GET /favicon.ico HTTP/2.0", upstream: "http://127.0.0.1:3003/favicon.ico", host: "scada.automystics.tech", referrer: "https://scada.automystics.tech/"
+2026/07/18 09:46:15 [error] 3915796#3915796: *152 connect() failed (111: Connection refused) while connecting to upstream, client: 106.195.35.124, server: scada.automystics.tech, request: "POST / HTTP/2.0", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:47:15 [error] 3915796#3915796: *152 connect() failed (111: Connection refused) while connecting to upstream, client: 106.195.35.124, server: scada.automystics.tech, request: "POST / HTTP/2.0", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:47:29 [error] 3915797#3915797: *652 connect() failed (111: Connection refused) while connecting to upstream, client: 106.195.43.114, server: scada.automystics.tech, request: "GET / HTTP/2.0", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:47:29 [error] 3915797#3915797: *652 connect() failed (111: Connection refused) while connecting to upstream, client: 106.195.43.114, server: scada.automystics.tech, request: "GET /favicon.ico HTTP/2.0", upstream: "http://127.0.0.1:3003/favicon.ico", host: "scada.automystics.tech", referrer: "https://scada.automystics.tech/"
+2026/07/18 09:48:16 [error] 3915796#3915796: *152 connect() failed (111: Connection refused) while connecting to upstream, client: 106.195.35.124, server: scada.automystics.tech, request: "POST / HTTP/2.0", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:48:24 [error] 3915797#3915797: *652 connect() failed (111: Connection refused) while connecting to upstream, client: 106.195.43.114, server: scada.automystics.tech, request: "GET / HTTP/2.0", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:48:24 [error] 3915797#3915797: *652 connect() failed (111: Connection refused) while connecting to upstream, client: 106.195.43.114, server: scada.automystics.tech, request: "GET /favicon.ico HTTP/2.0", upstream: "http://127.0.0.1:3003/favicon.ico", host: "scada.automystics.tech", referrer: "https://scada.automystics.tech/"
+2026/07/18 09:49:25 [error] 3915797#3915797: *710 connect() failed (111: Connection refused) while connecting to upstream, client: 106.195.35.124, server: scada.automystics.tech, request: "POST / HTTP/2.0", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:50:25 [error] 3915797#3915797: *710 connect() failed (111: Connection refused) while connecting to upstream, client: 106.195.35.124, server: scada.automystics.tech, request: "POST / HTTP/2.0", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:51:26 [error] 3915797#3915797: *710 connect() failed (111: Connection refused) while connecting to upstream, client: 106.195.35.124, server: scada.automystics.tech, request: "POST / HTTP/2.0", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:52:26 [error] 3915797#3915797: *710 connect() failed (111: Connection refused) while connecting to upstream, client: 106.195.35.124, server: scada.automystics.tech, request: "POST / HTTP/2.0", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:53:11 [error] 3915798#3915798: *812 connect() failed (111: Connection refused) while connecting to upstream, client: 91.231.89.39, server: scada.automystics.tech, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:54:25 [error] 3915798#3915798: *832 connect() failed (111: Connection refused) while connecting to upstream, client: 74.7.230.16, server: scada.automystics.tech, request: "GET /robots.txt HTTP/2.0", upstream: "http://127.0.0.1:3003/robots.txt", host: "scada.automystics.tech"
+2026/07/18 09:55:12 [error] 3915795#3915795: *853 connect() failed (111: Connection refused) while connecting to upstream, client: 91.196.152.153, server: scada.automystics.tech, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# # Full restart (not just reload)
+systemctl restart nginx
+
+# Confirm new workers are running with correct config
+curl -v https://scada.automystics.tech 2>&1 | head -20
+
+# Check error log for NEW entries after restart
+tail -5 /home/automystics-scada/logs/nginx/error.log
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0* Host scada.automystics.tech:443 was resolved.
+* IPv6: (none)
+* IPv4: 76.13.4.214
+*   Trying 76.13.4.214:443...
+* Connected to scada.automystics.tech (76.13.4.214) port 443
+* ALPN: curl offers h2,http/1.1
+} [5 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+} [512 bytes data]
+*  CAfile: /etc/ssl/certs/ca-certificates.crt
+*  CApath: /etc/ssl/certs
+{ [5 bytes data]
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+{ [122 bytes data]
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+{ [19 bytes data]
+* TLSv1.3 (IN), TLS handshake, Certificate (11):
+{ [4344 bytes data]
+2026/07/18 09:53:11 [error] 3915798#3915798: *812 connect() failed (111: Connection refused) while connecting to upstream, client: 91.231.89.39, server: scada.automystics.tech, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:54:25 [error] 3915798#3915798: *832 connect() failed (111: Connection refused) while connecting to upstream, client: 74.7.230.16, server: scada.automystics.tech, request: "GET /robots.txt HTTP/2.0", upstream: "http://127.0.0.1:3003/robots.txt", host: "scada.automystics.tech"
+2026/07/18 09:55:12 [error] 3915795#3915795: *853 connect() failed (111: Connection refused) while connecting to upstream, client: 91.196.152.153, server: scada.automystics.tech, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:56:14 [error] 3915795#3915795: *874 connect() failed (111: Connection refused) while connecting to upstream, client: 62.113.113.43, server: scada.automystics.tech, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
+2026/07/18 09:56:14 [error] 3915795#3915795: *874 connect() failed (111: Connection refused) while connecting to upstream, client: 62.113.113.43, server: scada.automystics.tech, request: "GET / HTTP/1.1", upstream: "http://127.0.0.1:3003/", host: "scada.automystics.tech"
