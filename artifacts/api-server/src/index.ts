@@ -27,10 +27,11 @@ async function startServer(): Promise<void> {
     logger.error({ err }, "Failed to seed initial data");
   });
 
-  // Restore persisted fault simulations BEFORE accepting traffic so that
-  // any request or SSE connection made immediately after startup sees the
-  // correct fault state.  Errors inside initFaultStore are caught and logged.
-  await initFaultStore();
+  // Restore persisted fault simulations — non-fatal so the API starts even
+  // when the DB schema has not been migrated yet (e.g. fresh VPS deployment).
+  await initFaultStore().catch((err: unknown) => {
+    logger.warn({ err }, "initFaultStore skipped — DB tables may not exist yet");
+  });
 
   // Start IoT protocol drivers for all configured devices.
   // Non-fatal — log and continue if any driver fails to start.
@@ -39,13 +40,19 @@ async function startServer(): Promise<void> {
   });
 
   // Start durable ingestion retry worker (retries failed device_readings writes).
-  startRetryWorker();
+  try { startRetryWorker(); } catch (err) {
+    logger.warn({ err }, "startRetryWorker skipped — DB tables may not exist yet");
+  }
 
   // Start FTP/SFTP scheduled file-pull scheduler.
-  startFtpScheduler();
+  try { startFtpScheduler(); } catch (err) {
+    logger.warn({ err }, "startFtpScheduler skipped");
+  }
 
   // Start the device offline-detection sweep (60s interval).
-  startOfflineDetectionJob();
+  try { startOfflineDetectionJob(); } catch (err) {
+    logger.warn({ err }, "startOfflineDetectionJob skipped");
+  }
 
   // Now open the port
   await new Promise<void>((resolve, reject) => {
