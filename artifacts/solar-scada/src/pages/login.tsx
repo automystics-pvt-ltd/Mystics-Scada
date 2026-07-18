@@ -1,100 +1,157 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { Zap, RotateCcw, ArrowLeft, CheckCircle2, Loader2, Mail } from "lucide-react";
+import { Zap, Mail, Loader2, CheckCircle2, RotateCcw, ArrowLeft, Clock } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 const BASE = import.meta.env.BASE_URL;
 
-function fmt(ms: number) {
-  const s = Math.max(0, Math.ceil(ms / 1000));
-  return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
-}
-
-// ── Step 1: Email ────────────────────────────────────────────────────────────
-
-function EmailStep({ onSuccess }: {
-  onSuccess: (email: string, masked: string, ttl: number, smtp: boolean) => void;
+// ── Step 1: Email ─────────────────────────────────────────────────────────────
+function EmailStep({ onSent }: {
+  onSent: (email: string, masked: string, ttl: number, cooldown: number) => void;
 }) {
-  const [email, setEmail]   = useState("");
-  const [error, setError]   = useState<string | null>(null);
+  const [email, setEmail]     = useState("");
+  const [error, setError]     = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function go(e: React.FormEvent) {
+  async function send(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
       const r = await fetch(`${BASE}api/auth/login/email`, {
-        method: "POST",
-        credentials: "include",
+        method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim() }),
       });
       const b = await r.json() as {
         ok?: boolean; maskedEmail?: string; expiresInMs?: number;
-        mailerEnabled?: boolean; message?: string;
+        resendCooldownMs?: number; message?: string; secondsLeft?: number;
       };
-      if (!r.ok) { setError(b.message ?? "Access denied."); return; }
-      onSuccess(email.trim().toLowerCase(), b.maskedEmail ?? email, b.expiresInMs ?? 300_000, b.mailerEnabled ?? false);
+      if (!r.ok) {
+        setError(b.message ?? "Access denied.");
+        setLoading(false);
+        return;
+      }
+      onSent(
+        email.trim().toLowerCase(),
+        b.maskedEmail ?? email,
+        b.expiresInMs ?? 300_000,
+        b.resendCooldownMs ?? 50_000,
+      );
     } catch {
       setError("Could not reach the server. Please try again.");
-    } finally {
       setLoading(false);
     }
   }
 
   return (
-    <form onSubmit={go} className="space-y-4">
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">Operator Email</label>
-        <div className="relative">
-          <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+    <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+      <h2 className="text-2xl font-bold text-gray-900 mb-1">Sign in</h2>
+      <p className="text-sm text-gray-500 mb-6">
+        Enter your email address to receive a one-time password.
+      </p>
+      <form onSubmit={send} className="space-y-4">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            Email address
+          </label>
           <input
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
             autoFocus
-            autoComplete="email"
-            placeholder="operator@example.com"
-            className="w-full bg-input/50 border border-input rounded-md py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all text-foreground placeholder:text-muted-foreground/50"
+            placeholder="you@example.com"
+            className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
           />
         </div>
-      </div>
-
-      {error && (
-        <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
-          <span>{error}</span>
-        </div>
-      )}
-
-      <button
-        type="submit"
-        disabled={loading || !email}
-        className="w-full mt-2 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground font-medium py-2.5 rounded-md transition-colors flex justify-center items-center gap-2 shadow-sm"
-      >
-        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-        {loading ? "Sending code…" : "Send verification code"}
-      </button>
-    </form>
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+            {error}
+          </p>
+        )}
+        <button
+          type="submit"
+          disabled={loading || !email.trim()}
+          className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-all shadow-sm"
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+          {loading ? "Sending…" : "Send OTP"}
+        </button>
+      </form>
+    </div>
   );
 }
 
-// ── Step 2: OTP ──────────────────────────────────────────────────────────────
+// ── Step 2: Sending animation ─────────────────────────────────────────────────
+function SendingStep({ masked, onReady }: { masked: string; onReady: () => void }) {
+  const [countdown, setCountdown] = useState(3);
+  const [progress, setProgress]   = useState(0);
 
-function OtpStep({ email, maskedEmail, expiresInMs, smtpEnabled, onBack }: {
-  email: string; maskedEmail: string; expiresInMs: number; smtpEnabled: boolean; onBack: () => void;
+  useEffect(() => {
+    const start = Date.now();
+    const total = 3000;
+    const tick = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const pct = Math.min(elapsed / total, 1);
+      setProgress(pct);
+      setCountdown(Math.max(0, Math.ceil((total - elapsed) / 1000)));
+      if (pct >= 1) { clearInterval(tick); onReady(); }
+    }, 50);
+    return () => clearInterval(tick);
+  }, [onReady]);
+
+  const r = 36, circ = 2 * Math.PI * r;
+  const strokeOffset = circ * (1 - progress);
+
+  return (
+    <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md flex flex-col items-center text-center">
+      <div className="relative mb-6">
+        <svg width="96" height="96" className="-rotate-90">
+          <circle cx="48" cy="48" r={r} fill="none" stroke="#e5e7eb" strokeWidth="6" />
+          <circle
+            cx="48" cy="48" r={r} fill="none"
+            stroke="#6366f1" strokeWidth="6"
+            strokeDasharray={circ}
+            strokeDashoffset={strokeOffset}
+            strokeLinecap="round"
+            style={{ transition: "stroke-dashoffset 0.05s linear" }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Clock className="h-8 w-8 text-indigo-500" />
+        </div>
+      </div>
+      <h3 className="text-xl font-bold text-gray-900 mb-2">OTP sent!</h3>
+      <p className="text-sm text-gray-500">
+        Check your inbox at{" "}
+        <span className="font-semibold text-gray-800">{masked}</span>
+      </p>
+      <p className="text-sm text-indigo-600 font-medium mt-2">
+        OTP input available in {countdown}s
+      </p>
+    </div>
+  );
+}
+
+// ── Step 3: OTP entry ─────────────────────────────────────────────────────────
+function OtpStep({
+  email, masked, expiresInMs, cooldownMs, onBack, onResent,
+}: {
+  email: string; masked: string; expiresInMs: number; cooldownMs: number;
+  onBack: () => void;
+  onResent: (ttl: number, cd: number) => void;
 }) {
   const [, setLocation] = useLocation();
   const qc = useQueryClient();
-  const [otp, setOtp]       = useState("");
-  const [error, setError]   = useState<string | null>(null);
+  const [digits, setDigits]   = useState(["", "", "", "", "", ""]);
+  const [error, setError]     = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [msLeft, setMsLeft]   = useState(expiresInMs);
-  const [resendMs, setResendMs] = useState(50_000);
-  const ref = useRef<HTMLInputElement>(null);
+  const [cdLeft, setCdLeft]   = useState(cooldownMs);
+  const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
-  useEffect(() => { ref.current?.focus(); }, []);
+  useEffect(() => { inputs.current[0]?.focus(); }, []);
 
   useEffect(() => {
     if (msLeft <= 0) return;
@@ -103,184 +160,212 @@ function OtpStep({ email, maskedEmail, expiresInMs, smtpEnabled, onBack }: {
   }, [msLeft]);
 
   useEffect(() => {
-    if (resendMs <= 0) return;
-    const id = setInterval(() => setResendMs(p => Math.max(0, p - 1000)), 1000);
+    if (cdLeft <= 0) return;
+    const id = setInterval(() => setCdLeft(p => Math.max(0, p - 1000)), 1000);
     return () => clearInterval(id);
-  }, [resendMs]);
+  }, [cdLeft]);
+
+  function fmtExpiry(ms: number) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+  }
+
+  function handleDigit(i: number, val: string) {
+    const d = val.replace(/\D/g, "").slice(-1);
+    const next = [...digits];
+    next[i] = d;
+    setDigits(next);
+    if (d && i < 5) inputs.current[i + 1]?.focus();
+  }
+
+  function handleKey(i: number, e: React.KeyboardEvent) {
+    if (e.key === "Backspace" && !digits[i] && i > 0) inputs.current[i - 1]?.focus();
+    if (e.key === "ArrowLeft"  && i > 0) inputs.current[i - 1]?.focus();
+    if (e.key === "ArrowRight" && i < 5) inputs.current[i + 1]?.focus();
+  }
+
+  function handlePaste(e: React.ClipboardEvent) {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const next = ["", "", "", "", "", ""];
+    for (let i = 0; i < text.length; i++) next[i] = text[i];
+    setDigits(next);
+    inputs.current[Math.min(text.length, 5)]?.focus();
+  }
+
+  const otp = digits.join("");
 
   async function verify(e: React.FormEvent) {
     e.preventDefault();
+    if (otp.length < 6) return;
     setError(null);
     setLoading(true);
     try {
       const r = await fetch(`${BASE}api/auth/login/verify-otp`, {
-        method: "POST",
-        credentials: "include",
+        method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp: otp.trim() }),
+        body: JSON.stringify({ email, otp }),
       });
       const b = await r.json() as { ok?: boolean; message?: string };
-      if (!r.ok) { setError(b.message ?? "Incorrect code. Please try again."); return; }
+      if (!r.ok) { setError(b.message ?? "Incorrect code."); setLoading(false); return; }
       await qc.invalidateQueries({ queryKey: ["auth", "me"] });
       setLocation("/");
     } catch {
       setError("Could not reach the server.");
-    } finally {
       setLoading(false);
     }
   }
 
   async function resend() {
-    if (resendMs > 0) return;
-    setError(null);
+    if (cdLeft > 0) return;
     try {
       const r = await fetch(`${BASE}api/auth/login/resend`, {
-        method: "POST",
-        credentials: "include",
+        method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      const b = await r.json() as { ok?: boolean; expiresInMs?: number; message?: string };
-      if (r.ok) { setMsLeft(b.expiresInMs ?? 300_000); setResendMs(50_000); setOtp(""); }
-      else setError(b.message ?? "Could not resend.");
+      const b = await r.json() as {
+        ok?: boolean; expiresInMs?: number; resendCooldownMs?: number; message?: string;
+      };
+      if (r.ok) {
+        setDigits(["", "", "", "", "", ""]);
+        setError(null);
+        onResent(b.expiresInMs ?? 300_000, b.resendCooldownMs ?? 50_000);
+        setMsLeft(b.expiresInMs ?? 300_000);
+        setCdLeft(b.resendCooldownMs ?? 50_000);
+        inputs.current[0]?.focus();
+      } else {
+        setError(b.message ?? "Could not resend.");
+      }
     } catch {
       setError("Could not reach the server.");
     }
   }
 
   return (
-    <form onSubmit={verify} className="space-y-4">
-      <div>
-        <p className="text-sm text-muted-foreground">
-          We sent a 6-digit code to{" "}
-          <span className="font-semibold text-foreground">{maskedEmail}</span>
-        </p>
-        {!smtpEnabled && (
-          <p className="mt-2 text-xs text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 rounded px-3 py-1.5">
-            Email delivery not configured — contact your administrator for the code.
+    <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+      <h2 className="text-2xl font-bold text-gray-900 mb-1">Check your email</h2>
+      <p className="text-sm text-gray-500 mb-1">We sent a 6-digit code to</p>
+      <p className="text-sm font-semibold text-gray-800 mb-6">{masked}</p>
+
+      <form onSubmit={verify} className="space-y-5">
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-semibold text-gray-700">One-Time Password</label>
+            <span className={`text-xs font-mono font-semibold tabular-nums ${msLeft < 60_000 ? "text-red-500" : "text-indigo-500"}`}>
+              {msLeft > 0 ? `Expires ${fmtExpiry(msLeft)}` : "Expired"}
+            </span>
+          </div>
+
+          {/* 6 individual digit boxes */}
+          <div className="flex gap-2 justify-between" onPaste={handlePaste}>
+            {digits.map((d, i) => (
+              <input
+                key={i}
+                ref={el => { inputs.current[i] = el; }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={d}
+                onChange={e => handleDigit(i, e.target.value)}
+                onKeyDown={e => handleKey(i, e)}
+                disabled={msLeft === 0}
+                className="w-12 h-14 text-center text-xl font-bold border-2 rounded-xl text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ borderColor: d ? "#6366f1" : "#d1d5db" }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+            {error}
           </p>
         )}
-      </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-foreground">Verification Code</label>
-          <span className={`text-xs font-mono tabular-nums font-semibold ${msLeft < 60_000 ? "text-destructive" : "text-muted-foreground"}`}>
-            {msLeft > 0 ? `Expires ${fmt(msLeft)}` : "Expired"}
-          </span>
-        </div>
-        <input
-          ref={ref}
-          type="password"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          maxLength={6}
-          value={otp}
-          onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-          placeholder="• • • • • •"
-          required
-          autoComplete="one-time-code"
-          disabled={msLeft === 0}
-          className="w-full bg-input/50 border-2 border-primary/40 focus:border-primary rounded-md py-3 text-center text-2xl font-mono tracking-[0.5em] text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:ring-1 focus:ring-primary transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-        />
-      </div>
-
-      {error && (
-        <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
-          {error}
-        </div>
-      )}
-
-      <button
-        type="submit"
-        disabled={loading || otp.length < 6 || msLeft === 0}
-        className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground font-medium py-2.5 rounded-md transition-colors flex justify-center items-center gap-2 shadow-sm"
-      >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-        {loading ? "Verifying…" : "Access Control Room"}
-      </button>
-
-      <div className="flex items-center justify-between pt-1">
         <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          type="submit"
+          disabled={loading || otp.length < 6 || msLeft === 0}
+          className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-all shadow-sm"
         >
-          <ArrowLeft className="h-3 w-3" /> Use different email
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+          {loading ? "Verifying…" : "Verify OTP"}
         </button>
-        <button
-          type="button"
-          onClick={resend}
-          disabled={resendMs > 0}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          <RotateCcw className="h-3 w-3" />
-          {resendMs > 0 ? `Resend (${Math.ceil(resendMs / 1000)}s)` : "Resend code"}
-        </button>
-      </div>
-    </form>
+
+        <div className="flex items-center justify-between pt-1">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            <ArrowLeft className="h-3 w-3" /> Use different email
+          </button>
+          <button
+            type="button"
+            onClick={resend}
+            disabled={cdLeft > 0}
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <RotateCcw className="h-3 w-3" />
+            {cdLeft > 0 ? `Resend OTP (${Math.ceil(cdLeft / 1000)}s)` : "Resend OTP"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 
-// ── Main page ────────────────────────────────────────────────────────────────
-
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function Login() {
-  const [step, setStep]     = useState<"email" | "otp">("email");
-  const [email, setEmail]   = useState("");
-  const [masked, setMasked] = useState("");
-  const [ttl, setTtl]       = useState(300_000);
-  const [smtp, setSmtp]     = useState(false);
+  const [step, setStep]         = useState<"email" | "sending" | "otp">("email");
+  const [email, setEmail]       = useState("");
+  const [masked, setMasked]     = useState("");
+  const [ttl, setTtl]           = useState(300_000);
+  const [cooldown, setCooldown] = useState(50_000);
+
+  const handleSent = (e: string, m: string, t: number, cd: number) => {
+    setEmail(e); setMasked(m); setTtl(t); setCooldown(cd);
+    setStep("sending");
+  };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Background glow */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 opacity-20">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[100px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[100px]" />
-      </div>
-
-      <div className="w-full max-w-md bg-card border border-border rounded-xl shadow-2xl z-10 relative overflow-hidden">
-        {/* Top accent bar */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-primary via-primary/80 to-primary/40" />
-
-        <div className="p-8">
-          {/* Logo */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-14 h-14 bg-muted rounded-2xl flex items-center justify-center mb-4 border border-border shadow-inner">
-              <Zap className="h-7 w-7 text-primary" />
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Solar SCADA</h1>
-            <p className="text-sm text-muted-foreground mt-1">Automystics Technologies</p>
-          </div>
-
-          {/* Step indicator */}
-          <div className="flex items-center gap-2 mb-6">
-            <div className="flex items-center gap-1.5">
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${step === "email" ? "bg-primary text-primary-foreground" : "bg-primary/20 text-primary"}`}>
-                {step === "otp" ? "✓" : "1"}
-              </div>
-              <span className="text-xs text-muted-foreground">Email</span>
-            </div>
-            <div className="flex-1 h-px bg-border" />
-            <div className="flex items-center gap-1.5">
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${step === "otp" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                2
-              </div>
-              <span className="text-xs text-muted-foreground">Verify</span>
-            </div>
-          </div>
-
-          {step === "email"
-            ? <EmailStep onSuccess={(e, m, t, s) => { setEmail(e); setMasked(m); setTtl(t); setSmtp(s); setStep("otp"); }} />
-            : <OtpStep email={email} maskedEmail={masked} expiresInMs={ttl} smtpEnabled={smtp} onBack={() => setStep("email")} />
-          }
-
-          <div className="mt-8 text-center text-xs text-muted-foreground border-t border-border pt-5">
-            <p>Supervisory Control and Data Acquisition</p>
-            <p className="mt-1">Version 2.4.1 · Secure OTP Login</p>
-          </div>
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-6 gap-8"
+      style={{ background: "linear-gradient(160deg,#0f1629 0%,#131b36 50%,#191040 100%)" }}
+    >
+      {/* Header */}
+      <div className="flex flex-col items-center text-center select-none">
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-lg"
+          style={{ background: "linear-gradient(135deg,#6366f1,#4f46e5)" }}
+        >
+          <Zap className="h-7 w-7 text-white" strokeWidth={2.5} />
         </div>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Solar SCADA</h1>
+        <p className="text-sm text-slate-400 mt-1">Automystics Technologies</p>
       </div>
+
+      {/* Steps */}
+      {step === "email" && (
+        <EmailStep onSent={handleSent} />
+      )}
+      {step === "sending" && (
+        <SendingStep masked={masked} onReady={() => setStep("otp")} />
+      )}
+      {step === "otp" && (
+        <OtpStep
+          email={email}
+          masked={masked}
+          expiresInMs={ttl}
+          cooldownMs={cooldown}
+          onBack={() => setStep("email")}
+          onResent={(t, cd) => { setTtl(t); setCooldown(cd); }}
+        />
+      )}
+
+      <p className="text-xs text-slate-600 text-center">
+        Supervisory Control and Data Acquisition · Version 2.4.1
+      </p>
     </div>
   );
 }
