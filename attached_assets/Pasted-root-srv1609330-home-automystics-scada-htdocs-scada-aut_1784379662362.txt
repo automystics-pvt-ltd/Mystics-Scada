@@ -1,0 +1,185 @@
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# ENV=/home/automystics-scada/htdocs/scada.automystics.tech/.env
+
+# Remove any old SMTP lines and write correct ones
+python3 - << 'EOF'
+import re, pathlib
+env = pathlib.Path("/home/automystics-scada/htdocs/scada.automystics.tech/.env")
+txt = env.read_text() if env.exists() else ""
+# Remove old SMTP lines
+txt = re.sub(r'^SMTP_.*\n?', '', txt, flags=re.MULTILINE)
+# Add correct SMTP block
+txt += """
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=automystics.ai@gmail.com
+SMTP_PASS=isstxaebdsvabwzq
+SMTP_FROM=Mystics Platform <automystics.ai@gmail.com>
+"""
+env.write_text(txt)
+print("✅ .env updated")
+print(txt[-300:])
+EOF
+
+# Restart API to pick up new env
+systemctl restart solar-scada-api && sleep 5
+✅ .env updated
+da:scada@localhost:5432/solar_scada
+SESSION_SECRET=6ca3bcf52ffd52b17d45a44b0f8fd971ae562c32bdc1688460c3f773165f95cd
+PORT=3003
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=automystics.ai@gmail.com
+SMTP_PASS=isstxaebdsvabwzq
+SMTP_FROM=Mystics Platform <automystics.ai@gmail.com>
+
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# # Check SMTP connection
+curl -s http://127.0.0.1:8080/api/smtp-test | python3 -m json.tool
+
+# Trigger OTP and confirm email is sent
+curl -s -X POST http://127.0.0.1:8080/api/platform-admin/login/email \
+  -H "Content-Type: application/json" \
+  -d '{"email":"automystics.com@gmail.com"}' | python3 -m json.tool
+Expecting value: line 1 column 1 (char 0)
+Expecting value: line 1 column 1 (char 0)
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# python3 - << 'EOF'
+import urllib.request, shutil, subprocess, os, time, re, pathlib
+
+BASE = "https://b374b4f9-0594-4265-a46a-a2422069eeba-00-2eey4le8q0k3m.sisko.replit.dev/api"
+DIR  = "/home/automystics-scada/htdocs/scada.automystics.tech"
+
+# 1 — Download pre-built API + frontend
+print("Downloading API dist...")
+urllib.request.urlretrieve(f"{BASE}/dist/api.mjs", "/tmp/api.mjs")
+print(f"  {os.path.getsize('/tmp/api.mjs'):,} bytes OK")
+shutil.copy("/tmp/api.mjs", f"{DIR}/artifacts/api-server/dist/index.mjs")
+
+print("Downloading frontend...")
+urllib.request.urlretrieve(f"{BASE}/dist/frontend.tar.gz", "/tmp/fe.tar.gz")
+print(f"  {os.path.getsize('/tmp/fe.tar.gz'):,} bytes OK")
+shutil.rmtree(f"{DIR}/artifacts/solar-scada/dist/public", ignore_errors=True)
+os.makedirs(f"{DIR}/artifacts/solar-scada/dist", exist_ok=True)
+subprocess.run(["tar","xzf","/tmp/fe.tar.gz","-C",f"{DIR}/artifacts/solar-scada/dist/"], check=True)
+
+# 2 — Fix SMTP in .env (strip spaces from Gmail App Password)
+env_path = pathlib.Path(f"{DIR}/.env")
+txt = env_path.read_text() if env_path.exists() else ""
+txt = re.sub(r'^SMTP_.*\n?', '', txt, flags=re.MULTILINE).rstrip()
+txt += """
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=automystics.ai@gmail.com
+SMTP_PASS=isstxaebdsvabwzq
+SMTP_FROM=Mystics Platform <automystics.ai@gmail.com>
+"""
+env_path.write_text(txt)
+print("SMTP env vars written OK")
+
+# 3 — Restart services
+print("Restarting services...")
+subprocess.run(["systemctl","restart","solar-scada-api"], check=True)
+EOFnt("Done — running verification...")solar-scada-proxy"])
+Downloading API dist...
+  3,731,569 bytes OK
+Downloading frontend...
+  311,239 bytes OK
+SMTP env vars written OK
+Restarting services...
+Done — running verification...
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# # Should show connected:true
+curl -s http://127.0.0.1:8080/api/smtp-test | python3 -m json.tool
+
+# Should show ok:true, mailerEnabled:true
+curl -s -X POST http://127.0.0.1:8080/api/platform-admin/login/email \
+  -H "Content-Type: application/json" \
+  -d '{"email":"automystics.com@gmail.com"}' | python3 -m json.tool
+
+# Get OTP from logs
+journalctl -u solar-scada-api -n 20 --no-pager | grep -E "OTP|SMTP"
+Expecting value: line 1 column 1 (char 0)
+Expecting value: line 1 column 1 (char 0)
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# # Check service status
+systemctl status solar-scada-api --no-pager -l | head -30
+
+# Check what's actually on port 8080
+ss -tlnp | grep 8080 || echo "Nothing on port 8080"
+
+# Check the dist file exists
+ls -lh /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/dist/index.mjs
+
+# Check .env has DATABASE_URL and SESSION_SECRET
+grep -E "DATABASE_URL|SESSION_SECRET|PORT" /home/automystics-scada/htdocs/scada.automystics.tech/.env
+● solar-scada-api.service - Solar SCADA API Server
+     Loaded: loaded (/etc/systemd/system/solar-scada-api.service; enabled; preset: enabled)
+     Active: activating (auto-restart) (Result: exit-code) since Sat 2026-07-18 12:53:31 UTC; 2s ago
+    Process: 687460 ExecStart=/usr/bin/node --enable-source-maps /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/dist/index.mjs (code=exited, status=1/FAILURE)
+   Main PID: 687460 (code=exited, status=1/FAILURE)
+        CPU: 3.480s
+LISTEN 0      511          0.0.0.0:8080       0.0.0.0:*    users:(("node",pid=1291563,fd=22))                                                                                                                 
+-rw-rw-r-- 1 root root 3.6M Jul 18 12:52 /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/dist/index.mjs
+DATABASE_URL=postgresql://scada:scada@localhost:5432/solar_scada
+SESSION_SECRET=6ca3bcf52ffd52b17d45a44b0f8fd971ae562c32bdc1688460c3f773165f95cd
+PORT=3003
+SMTP_PORT=587
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# git stash
+git pull origin main
+bash deploy.sh
+No local changes to save
+remote: Enumerating objects: 45, done.
+remote: Counting objects: 100% (45/45), done.
+remote: Compressing objects: 100% (10/10), done.
+remote: Total 29 (delta 22), reused 26 (delta 19), pack-reused 0 (from 0)
+Unpacking objects: 100% (29/29), 7.34 KiB | 417.00 KiB/s, done.
+From https://github.com/automystics-pvt-ltd/Mystics-Scada
+ * branch            main       -> FETCH_HEAD
+   7892a6d..208556b  main       -> origin/main
+Updating 24c0a0f..208556b
+error: The following untracked working tree files would be overwritten by merge:
+        artifacts/api-server/src/lib/mailer.ts
+        artifacts/api-server/src/routes/auth-otp.ts
+        artifacts/api-server/src/routes/platform-admin-auth.ts
+        artifacts/solar-scada/src/pages/platform-admin-login.tsx
+Please move or remove them before you merge.
+Aborting
+bash: deploy.sh: No such file or directory
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# python3 -c "
+import urllib.request, os, subprocess, time
+dest = '/home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/dist/index.mjs'
+print('Downloading new API...')
+urllib.request.urlretrieve('https://b374b4f9-0594-4265-a46a-a2422069eeba-00-2eey4le8q0k3m.sisko.replit.dev/api/dist/api.mjs', dest)
+print('Downloaded:', os.path.getsize(dest), 'bytes')
+subprocess.run(['systemctl','restart','solar-scada-api'], check=True)
+time.sleep(6)
+import urllib.request as u2
+res = u2.urlopen('http://127.0.0.1:8080/api/smtp-test')
+print('API response:', res.read().decode())
+"
+Downloading new API...
+Downloaded: 3731569 bytes
+Traceback (most recent call last):
+  File "<string>", line 10, in <module>
+  File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 521, in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 630, in http_response
+    response = self.parent.error(
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 559, in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 639, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 404: Not Found
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# grep -q "^SMTP_HOST" /home/automystics-scada/htdocs/scada.automystics.tech/.env || printf '\nSMTP_HOST=smtp.gmail.com\nSMTP_PORT=587\nSMTP_SECURE=false\nSMTP_USER=automystics.ai@gmail.com\nSMTP_PASS=isstxaebdsvabwzq\nSMTP_FROM=Mystics Platform <automystics.ai@gmail.com>\n' >> /home/automystics-scada/htdocs/scada.automystics.tech/.env && systemctl restart solar-scada-api && sleep 5
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# journalctl -u solar-scada-api -n 10 --no-pager | grep SMTP
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# journalctl -u solar-scada-api -n 10 --no-pager | grep SMTP
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# 
