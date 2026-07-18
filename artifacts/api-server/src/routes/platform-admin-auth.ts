@@ -1,44 +1,36 @@
 /**
- * Platform Admin Authentication — two-step email OTP flow
+ * Platform Admin Authentication — SMTP OTP + master passcode bypass
  *
- * Step 1: POST /platform-admin/login/email
- *   - Validates email against whitelist
- *   - Generates a 6-digit OTP (stored in-memory, 5-min TTL)
- *   - Returns masked email for display
- *   - Master override: passcode 666666 always works regardless of email OTP
+ * Flow:
+ *   1. POST /platform-admin/login/email    → validate whitelist, generate OTP, send email
+ *   2. POST /platform-admin/login/verify-otp → verify OTP or master passcode (666666)
+ *   3. POST /platform-admin/login/resend   → resend with 50s cooldown
+ *   4. POST /platform-admin/login/logout   → clear session
  *
- * Step 2: POST /platform-admin/login/verify-otp
- *   - Verifies OTP (or master passcode 666666)
- *   - Sets scada_session cookie as the platform super-admin
- *
- * POST /platform-admin/login/resend  — resend with 50s cooldown
- * POST /platform-admin/login/logout  — clear session
+ * On success: sets the standard scada_session cookie as the platform super-admin.
  */
 
 import { Router, type IRouter } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { SESSION_COOKIE, type SessionPayload } from "../middleware/authenticate";
+import { sendOtpEmail, mailerEnabled } from "../lib/mailer";
 import crypto from "crypto";
 
 const router: IRouter = Router();
 
-// ── Config ────────────────────────────────────────────────────────────────────
+// ── Config ─────────────────────────────────────────────────────────────────
 
 const WHITELISTED_EMAILS = new Set([
   "automystics.com@gmail.com",
   "anandakumar.mani012@gmail.com",
 ]);
 
-/** Master bypass — always accepted regardless of generated OTP */
+/** Master bypass — always works regardless of generated OTP */
 const MASTER_PASSCODE = process.env.PLATFORM_ADMIN_PASSCODE ?? "666666";
 
-/** OTP TTL in milliseconds (5 minutes) */
-const OTP_TTL_MS = 5 * 60 * 1000;
-
-/** Resend cooldown in milliseconds (50 seconds) */
-const RESEND_COOLDOWN_MS = 50 * 1000;
-
+const OTP_TTL_MS        = 5 * 60 * 1000;   // 5 minutes
+const RESEND_COOLDOWN_MS = 50 * 1000;       // 50 seconds
 const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function sessionCookieOptions() {
@@ -52,38 +44,34 @@ function sessionCookieOptions() {
   };
 }
 
-// ── In-memory OTP store ───────────────────────────────────────────────────────
+// ── OTP store (in-memory, TTL purged every 10 min) ──────────────────────────
 
 interface OtpRecord {
   otp: string;
   expiresAt: number;
-  resendAllowedAt: number;
+  cooldownUntil: number;
 }
 
 const otpStore = new Map<string, OtpRecord>();
 
-// Purge expired OTPs every 10 minutes
 setInterval(() => {
   const now = Date.now();
-  for (const [email, rec] of otpStore) {
-    if (now > rec.expiresAt) otpStore.delete(email);
-  }
+  for (const [k, v] of otpStore) if (now > v.expiresAt) otpStore.delete(k);
 }, 10 * 60 * 1000);
 
-function generateOtp(): string {
+function newOtp(): string {
   return String(crypto.randomInt(100000, 999999));
 }
 
 function maskEmail(email: string): string {
   const [local, domain] = email.split("@");
   if (!local || !domain) return email;
-  const visible = local.slice(0, 2);
-  return `${visible}${"*".repeat(Math.max(local.length - 2, 6))}@${domain}`;
+  return `${local.slice(0, 2)}${"*".repeat(Math.max(local.length - 2, 8))}@${domain}`;
 }
 
-// ── Helper: look up the platform super-admin DB user ─────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
-async function createSuperAdminSession(): Promise<SessionPayload | null> {
+async function getSuperAdminSession(): Promise<SessionPayload | null> {
   const [admin] = await db
     .select()
     .from(usersTable)
@@ -93,21 +81,25 @@ async function createSuperAdminSession(): Promise<SessionPayload | null> {
   return { userId: admin.id, orgId: admin.orgId, roleId: admin.roleId };
 }
 
-// ── POST /platform-admin/login/email ─────────────────────────────────────────
-// Step 1 — validate email, generate OTP
+function isMasterPasscode(provided: string): boolean {
+  const a = Buffer.from(MASTER_PASSCODE.padEnd(32));
+  const b = Buffer.from(provided.padEnd(32));
+  return a.length === b.length && crypto.timingSafeEqual(a, b) && provided === MASTER_PASSCODE;
+}
 
-router.post("/platform-admin/login/email", (req, res) => {
+// ── POST /platform-admin/login/email ────────────────────────────────────────
+
+router.post("/platform-admin/login/email", async (req, res) => {
   const { email } = req.body as { email?: unknown };
 
   if (typeof email !== "string" || !email.trim()) {
-    res.status(400).json({ error: "invalid_body", message: "email is required" });
+    res.status(400).json({ error: "invalid_body", message: "Email is required." });
     return;
   }
 
-  const normalised = email.trim().toLowerCase();
+  const normalized = email.trim().toLowerCase();
 
-  if (!WHITELISTED_EMAILS.has(normalised)) {
-    // Constant-time-ish: don't reveal whether the email exists
+  if (!WHITELISTED_EMAILS.has(normalized)) {
     res.status(403).json({
       error: "not_whitelisted",
       message: "This email address is not authorised for platform access.",
@@ -115,138 +107,149 @@ router.post("/platform-admin/login/email", (req, res) => {
     return;
   }
 
-  // Check resend cooldown
-  const existing = otpStore.get(normalised);
-  if (existing && Date.now() < existing.resendAllowedAt) {
-    const secondsLeft = Math.ceil((existing.resendAllowedAt - Date.now()) / 1000);
+  const existing = otpStore.get(normalized);
+  const now = Date.now();
+
+  if (existing && now < existing.cooldownUntil) {
+    const s = Math.ceil((existing.cooldownUntil - now) / 1000);
     res.status(429).json({
       error: "resend_cooldown",
-      message: `Please wait ${secondsLeft}s before requesting a new code.`,
-      secondsLeft,
-      maskedEmail: maskEmail(normalised),
+      message: `Please wait ${s}s before requesting a new code.`,
+      secondsLeft: s,
+      maskedEmail: maskEmail(normalized),
+      expiresInMs: Math.max(0, existing.expiresAt - now),
+      resendCooldownMs: existing.cooldownUntil - now,
+      mailerEnabled,
     });
     return;
   }
 
-  const otp = generateOtp();
-  const now = Date.now();
-  otpStore.set(normalised, {
+  const otp = newOtp();
+  otpStore.set(normalized, {
     otp,
     expiresAt: now + OTP_TTL_MS,
-    resendAllowedAt: now + RESEND_COOLDOWN_MS,
+    cooldownUntil: now + RESEND_COOLDOWN_MS,
   });
 
-  // TODO: send otp via email (nodemailer/SES) when SMTP_HOST is configured
-  // For now the master passcode 666666 always works as fallback.
-  req.log?.info({ email: normalised }, "Platform admin OTP generated");
+  // Fire-and-forget — don't block the response on SMTP
+  sendOtpEmail(normalized, otp).catch((err: unknown) => {
+    req.log?.error({ err, email: normalized }, "Failed to send platform admin OTP email");
+  });
+
+  req.log?.info({ email: normalized, mailerEnabled }, "Platform admin OTP generated");
 
   res.json({
     ok: true,
-    maskedEmail: maskEmail(normalised),
+    maskedEmail: maskEmail(normalized),
     expiresInMs: OTP_TTL_MS,
     resendCooldownMs: RESEND_COOLDOWN_MS,
+    mailerEnabled,
   });
 });
 
-// ── POST /platform-admin/login/resend ────────────────────────────────────────
+// ── POST /platform-admin/login/resend ───────────────────────────────────────
 
-router.post("/platform-admin/login/resend", (req, res) => {
+router.post("/platform-admin/login/resend", async (req, res) => {
   const { email } = req.body as { email?: unknown };
 
   if (typeof email !== "string" || !email.trim()) {
-    res.status(400).json({ error: "invalid_body", message: "email is required" });
+    res.status(400).json({ error: "invalid_body", message: "Email is required." });
     return;
   }
 
-  const normalised = email.trim().toLowerCase();
+  const normalized = email.trim().toLowerCase();
 
-  if (!WHITELISTED_EMAILS.has(normalised)) {
+  if (!WHITELISTED_EMAILS.has(normalized)) {
     res.status(403).json({ error: "not_whitelisted", message: "Email not authorised." });
     return;
   }
 
-  const existing = otpStore.get(normalised);
-  if (existing && Date.now() < existing.resendAllowedAt) {
-    const secondsLeft = Math.ceil((existing.resendAllowedAt - Date.now()) / 1000);
-    res.status(429).json({ error: "resend_cooldown", message: `Wait ${secondsLeft}s`, secondsLeft });
+  const existing = otpStore.get(normalized);
+  const now = Date.now();
+
+  if (existing && now < existing.cooldownUntil) {
+    const s = Math.ceil((existing.cooldownUntil - now) / 1000);
+    res.status(429).json({ error: "resend_cooldown", message: `Wait ${s}s`, secondsLeft: s });
     return;
   }
 
-  const otp = generateOtp();
-  const now = Date.now();
-  otpStore.set(normalised, {
+  const otp = newOtp();
+  otpStore.set(normalized, {
     otp,
     expiresAt: now + OTP_TTL_MS,
-    resendAllowedAt: now + RESEND_COOLDOWN_MS,
+    cooldownUntil: now + RESEND_COOLDOWN_MS,
   });
 
-  req.log?.info({ email: normalised }, "Platform admin OTP resent");
-  res.json({ ok: true, maskedEmail: maskEmail(normalised), expiresInMs: OTP_TTL_MS, resendCooldownMs: RESEND_COOLDOWN_MS });
+  sendOtpEmail(normalized, otp).catch((err: unknown) => {
+    req.log?.error({ err }, "Failed to resend platform admin OTP");
+  });
+
+  res.json({
+    ok: true,
+    maskedEmail: maskEmail(normalized),
+    expiresInMs: OTP_TTL_MS,
+    resendCooldownMs: RESEND_COOLDOWN_MS,
+    mailerEnabled,
+  });
 });
 
-// ── POST /platform-admin/login/verify-otp ────────────────────────────────────
-// Step 2 — verify OTP, set session
+// ── POST /platform-admin/login/verify-otp ───────────────────────────────────
 
 router.post("/platform-admin/login/verify-otp", async (req, res) => {
   const { email, otp } = req.body as { email?: unknown; otp?: unknown };
 
   if (typeof email !== "string" || !email.trim()) {
-    res.status(400).json({ error: "invalid_body", message: "email is required" });
+    res.status(400).json({ error: "invalid_body", message: "Email is required." });
     return;
   }
   if (typeof otp !== "string" || !otp.trim()) {
-    res.status(400).json({ error: "invalid_body", message: "otp is required" });
+    res.status(400).json({ error: "invalid_body", message: "OTP is required." });
     return;
   }
 
-  const normalised = email.trim().toLowerCase();
-  const providedOtp = otp.trim();
+  const normalized = email.trim().toLowerCase();
+  const provided   = otp.trim();
 
-  if (!WHITELISTED_EMAILS.has(normalised)) {
+  if (!WHITELISTED_EMAILS.has(normalized)) {
     res.status(403).json({ error: "not_whitelisted", message: "Email not authorised." });
     return;
   }
 
-  // Always accept the master passcode via timing-safe compare
-  const masterBuf = Buffer.from(MASTER_PASSCODE.padEnd(32));
-  const providedBuf = Buffer.from(providedOtp.padEnd(32));
-  const isMaster =
-    masterBuf.length === providedBuf.length &&
-    crypto.timingSafeEqual(masterBuf, providedBuf) &&
-    providedOtp === MASTER_PASSCODE;
+  // Master passcode always works
+  if (!isMasterPasscode(provided)) {
+    const record = otpStore.get(normalized);
 
-  if (!isMaster) {
-    // Check generated OTP
-    const record = otpStore.get(normalised);
     if (!record) {
-      res.status(401).json({ error: "no_otp", message: "No OTP found for this email. Please request a new code." });
+      res.status(401).json({
+        error: "no_otp",
+        message: "No verification code found. Please request a new one.",
+      });
       return;
     }
     if (Date.now() > record.expiresAt) {
-      otpStore.delete(normalised);
-      res.status(401).json({ error: "otp_expired", message: "OTP has expired. Please request a new code." });
+      otpStore.delete(normalized);
+      res.status(401).json({ error: "otp_expired", message: "Code expired. Please request a new one." });
       return;
     }
-    if (record.otp !== providedOtp) {
+    if (record.otp !== provided) {
       res.status(401).json({ error: "invalid_otp", message: "Incorrect code. Please try again." });
       return;
     }
-    // Valid — consume it
-    otpStore.delete(normalised);
+    otpStore.delete(normalized); // consume
   }
 
-  const payload = await createSuperAdminSession();
+  const payload = await getSuperAdminSession();
   if (!payload) {
-    res.status(500).json({ error: "no_admin_user", message: "Platform admin account not found." });
+    res.status(500).json({ error: "no_admin_user", message: "Platform admin account not found. Run the seed." });
     return;
   }
 
   res.cookie(SESSION_COOKIE, JSON.stringify(payload), sessionCookieOptions());
-  req.log?.info({ email: normalised, method: isMaster ? "master" : "otp" }, "Platform admin authenticated");
+  req.log?.info({ email: normalized, method: isMasterPasscode(provided) ? "master" : "otp" }, "Platform admin authenticated");
   res.json({ ok: true });
 });
 
-// ── POST /platform-admin/login/logout ────────────────────────────────────────
+// ── POST /platform-admin/login/logout ───────────────────────────────────────
 
 router.post("/platform-admin/login/logout", (_req, res) => {
   res.clearCookie(SESSION_COOKIE, { path: "/" });

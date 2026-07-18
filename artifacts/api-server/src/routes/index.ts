@@ -31,6 +31,22 @@ router.use(healthRouter);
 router.use(authRouter);
 router.use(platformAdminAuthRouter);
 
+// Temporary: serve deploy.sh so the VPS can curl it without GitHub access
+import { readFileSync, existsSync } from "fs";
+import { join, resolve } from "path";
+router.get("/deploy.sh", (_req, res) => {
+  // Try workspace root (two levels up from artifacts/api-server)
+  const candidates = [
+    resolve(process.cwd(), "../../deploy.sh"),
+    resolve(process.cwd(), "deploy.sh"),
+    "/home/automystics-scada/htdocs/scada.automystics.tech/deploy.sh",
+  ];
+  const p = candidates.find(existsSync);
+  if (!p) { res.status(404).end("deploy.sh not found"); return; }
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.send(readFileSync(p, "utf8"));
+});
+
 // Edge Gateway Agent ingest routes — authenticate via bearer gateway token,
 // not a browser session cookie, so they must sit outside `authenticate`.
 router.use(gatewayAgentRouter);
