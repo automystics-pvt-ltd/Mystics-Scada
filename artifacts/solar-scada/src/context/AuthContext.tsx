@@ -34,12 +34,15 @@ const AuthContext = createContext<AuthContextValue>({
   logout: async () => {},
 });
 
-async function fetchMe(): Promise<AuthUser> {
+async function fetchMe(): Promise<AuthUser | null> {
   const res = await fetch(`${import.meta.env.BASE_URL}api/auth/me`, {
     credentials: "include",
   });
-  if (!res.ok) throw new Error("unauthenticated");
-  return res.json() as Promise<AuthUser>;
+  if (!res.ok) return null;
+  const data = await res.json() as AuthUser & { authenticated?: boolean };
+  // 200 { authenticated: false } means no session — no error, just not logged in
+  if (data.authenticated === false) return null;
+  return data;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

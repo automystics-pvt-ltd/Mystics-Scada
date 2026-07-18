@@ -134,7 +134,8 @@ router.get("/auth/me", async (req, res) => {
   const session = parseSession(raw);
 
   if (!session) {
-    res.status(401).json({ error: "unauthenticated", message: "Not logged in" });
+    // Return 200 so the browser console stays clean — frontend checks `authenticated`
+    res.json({ authenticated: false });
     return;
   }
 
@@ -146,7 +147,7 @@ router.get("/auth/me", async (req, res) => {
 
   if (!user || user.orgId !== session.orgId) {
     res.clearCookie(SESSION_COOKIE, { path: "/" });
-    res.status(401).json({ error: "unauthenticated", message: "Session expired" });
+    res.json({ authenticated: false });
     return;
   }
 
