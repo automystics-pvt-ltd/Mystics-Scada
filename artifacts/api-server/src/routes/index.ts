@@ -60,6 +60,15 @@ router.get("/src/app-tsx",            (_req, res) => serveFile(repoFile("artifac
 router.get("/src/login-tsx",          (_req, res) => serveFile(repoFile("artifacts/solar-scada/src/pages/login.tsx"), res));
 router.get("/src/platform-admin-tsx", (_req, res) => serveFile(repoFile("artifacts/solar-scada/src/pages/platform-admin-login.tsx"), res));
 
+// Full DB schema SQL — VPS runs this to create all tables
+router.get("/dist/schema.sql", (_req, res) => {
+  const p = repoFile("lib/db/drizzle/schema_clean.sql");
+  if (!existsSync(p)) { res.status(404).end("schema not generated"); return; }
+  res.setHeader("Content-Type", "text/plain");
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(p);
+});
+
 // Pre-built dist — VPS downloads and replaces, no build step needed
 router.get("/dist/api.mjs", (_req, res) => {
   const p = resolve(process.cwd(), "dist/index.mjs");
