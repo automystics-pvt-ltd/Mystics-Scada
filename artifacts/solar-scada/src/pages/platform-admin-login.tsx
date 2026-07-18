@@ -55,10 +55,16 @@ function EmailStep({ onSent }: {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim() }),
       });
-      const b = await r.json() as {
-        ok?: boolean; maskedEmail?: string; expiresInMs?: number;
-        resendCooldownMs?: number; message?: string; mailerEnabled?: boolean;
-      };
+      // Safe JSON parse — server may return HTML on 404 if API is outdated
+      const text = await r.text();
+      let b: { ok?: boolean; maskedEmail?: string; expiresInMs?: number; resendCooldownMs?: number; message?: string; mailerEnabled?: boolean } = {};
+      try { b = JSON.parse(text); } catch {
+        setError(r.status === 404
+          ? "API route not found — the server needs to be updated."
+          : `Server error (${r.status}). Please try again.`);
+        setLoading(false);
+        return;
+      }
       if (!r.ok) {
         setError(b.message ?? "Access denied.");
         setLoading(false);
@@ -72,7 +78,7 @@ function EmailStep({ onSent }: {
         b.mailerEnabled ?? false,
       );
     } catch {
-      setError("Could not reach the server. Please try again.");
+      setError("Network error — could not reach the server.");
       setLoading(false);
     }
   }
