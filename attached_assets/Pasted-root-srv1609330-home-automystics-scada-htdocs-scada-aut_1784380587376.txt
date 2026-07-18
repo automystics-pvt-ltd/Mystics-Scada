@@ -1,0 +1,47 @@
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# journalctl -u solar-scada-api -n 30 --no-pager
+Jul 18 13:15:34 srv1609330 node[728413]: {"level":30,"time":1784380534819,"pid":728413,"hostname":"srv1609330","msg":"Skipping demo credential seed (production mode)"}
+Jul 18 13:15:34 srv1609330 node[728413]: {"level":30,"time":1784380534821,"pid":728413,"hostname":"srv1609330","restored":0,"expiredHandled":0,"msg":"Fault store critical restore complete"}
+Jul 18 13:15:34 srv1609330 node[728413]: {"level":30,"time":1784380534910,"pid":728413,"hostname":"srv1609330","msg":"DriverRegistry: initializing drivers for all configured devices"}
+Jul 18 13:15:35 srv1609330 node[728413]: {"level":30,"time":1784380535296,"pid":728413,"hostname":"srv1609330","started":17,"total":17,"msg":"DriverRegistry: initialization complete"}
+Jul 18 13:15:35 srv1609330 node[728413]: (node:728413) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+Jul 18 13:15:35 srv1609330 node[728413]: (Use `node --trace-deprecation ...` to show where the warning was created)
+Jul 18 13:15:35 srv1609330 node[728413]: {"level":30,"time":1784380535296,"pid":728413,"hostname":"srv1609330","msg":"IngestionRetryWorker: starting"}
+Jul 18 13:15:35 srv1609330 node[728413]: {"level":30,"time":1784380535296,"pid":728413,"hostname":"srv1609330","msg":"FtpScheduler: starting"}
+Jul 18 13:15:35 srv1609330 node[728413]: {"level":50,"time":1784380535307,"pid":728413,"hostname":"srv1609330","err":{"type":"Error","message":"listen EADDRINUSE: address already in use :::3003","stack":"Error: listen EADDRINUSE: address already in use :::3003\n    at Server.setupListenHandle [as _listen2] (node:net:2008:16)\n    at listenInCluster (node:net:2065:12)\n    at Server.listen (node:net:2170:7)\n    at app2.listen (/home/automystics-scada/htdocs/scada.automystics.tech/node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js:605:24)\n    at <anonymous> (/home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/src/index.ts:63:2)\n    at new Promise (<anonymous>)\n    at startServer (/home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/src/index.ts:63:2)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)","code":"EADDRINUSE","errno":-98,"syscall":"listen","address":"::","port":3003},"msg":"Server failed to start"}
+Jul 18 13:15:35 srv1609330 systemd[1]: solar-scada-api.service: Main process exited, code=exited, status=1/FAILURE
+Jul 18 13:15:35 srv1609330 systemd[1]: solar-scada-api.service: Failed with result 'exit-code'.
+Jul 18 13:15:35 srv1609330 systemd[1]: solar-scada-api.service: Consumed 4.029s CPU time.
+Jul 18 13:15:41 srv1609330 systemd[1]: solar-scada-api.service: Scheduled restart job, restart counter is at 17.
+Jul 18 13:15:41 srv1609330 systemd[1]: Started solar-scada-api.service - Solar SCADA API Server.
+Jul 18 13:15:43 srv1609330 node[728720]: [PlatformAdmin] Whitelisted emails: [ 'automystics.com@gmail.com', 'anandakumar.mani012@gmail.com' ]
+Jul 18 13:15:43 srv1609330 node[728720]: [PlatformAdmin] Master passcode set: true
+Jul 18 13:15:43 srv1609330 node[728720]: {"level":40,"time":1784380543617,"pid":728720,"hostname":"srv1609330","frontendDist":"/home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/artifacts/solar-scada/dist/public","msg":"Frontend dist not found — skipping static serving"}
+Jul 18 13:15:44 srv1609330 node[728720]: {"level":30,"time":1784380544000,"pid":728720,"hostname":"srv1609330","count":13,"msg":"System device templates ensured"}
+Jul 18 13:15:44 srv1609330 node[728720]: {"level":30,"time":1784380544000,"pid":728720,"hostname":"srv1609330","msg":"Skipping demo credential seed (production mode)"}
+Jul 18 13:15:44 srv1609330 node[728720]: {"level":30,"time":1784380544004,"pid":728720,"hostname":"srv1609330","restored":0,"expiredHandled":0,"msg":"Fault store critical restore complete"}
+Jul 18 13:15:44 srv1609330 node[728720]: {"level":30,"time":1784380544098,"pid":728720,"hostname":"srv1609330","msg":"DriverRegistry: initializing drivers for all configured devices"}
+Jul 18 13:15:44 srv1609330 node[728720]: {"level":30,"time":1784380544408,"pid":728720,"hostname":"srv1609330","started":17,"total":17,"msg":"DriverRegistry: initialization complete"}
+Jul 18 13:15:44 srv1609330 node[728720]: (node:728720) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+Jul 18 13:15:44 srv1609330 node[728720]: (Use `node --trace-deprecation ...` to show where the warning was created)
+Jul 18 13:15:45 srv1609330 node[728720]: {"level":30,"time":1784380544408,"pid":728720,"hostname":"srv1609330","msg":"IngestionRetryWorker: starting"}
+Jul 18 13:15:45 srv1609330 node[728720]: {"level":30,"time":1784380544409,"pid":728720,"hostname":"srv1609330","msg":"FtpScheduler: starting"}
+Jul 18 13:15:45 srv1609330 node[728720]: {"level":50,"time":1784380544420,"pid":728720,"hostname":"srv1609330","err":{"type":"Error","message":"listen EADDRINUSE: address already in use :::3003","stack":"Error: listen EADDRINUSE: address already in use :::3003\n    at Server.setupListenHandle [as _listen2] (node:net:2008:16)\n    at listenInCluster (node:net:2065:12)\n    at Server.listen (node:net:2170:7)\n    at app2.listen (/home/automystics-scada/htdocs/scada.automystics.tech/node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js:605:24)\n    at <anonymous> (/home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/src/index.ts:63:2)\n    at new Promise (<anonymous>)\n    at startServer (/home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/src/index.ts:63:2)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)","code":"EADDRINUSE","errno":-98,"syscall":"listen","address":"::","port":3003},"msg":"Server failed to start"}
+Jul 18 13:15:45 srv1609330 systemd[1]: solar-scada-api.service: Main process exited, code=exited, status=1/FAILURE
+Jul 18 13:15:45 srv1609330 systemd[1]: solar-scada-api.service: Failed with result 'exit-code'.
+Jul 18 13:15:45 srv1609330 systemd[1]: solar-scada-api.service: Consumed 4.270s CPU time.
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# ss -tlnp | grep 8080
+systemctl status solar-scada-api --no-pager -l | head -20
+LISTEN 0      511          0.0.0.0:8080       0.0.0.0:*    users:(("node",pid=723600,fd=22))                                                                                                                  
+● solar-scada-api.service - Solar SCADA API Server
+     Loaded: loaded (/etc/systemd/system/solar-scada-api.service; enabled; preset: enabled)
+     Active: active (running) since Sat 2026-07-18 13:15:59 UTC; 1s ago
+   Main PID: 729301 (MainThread)
+      Tasks: 7 (limit: 19144)
+     Memory: 74.9M (peak: 74.9M)
+        CPU: 1.511s
+     CGroup: /system.slice/solar-scada-api.service
+             └─729301 /usr/bin/node --enable-source-maps /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/dist/index.mjs
+
+Jul 18 13:15:59 srv1609330 systemd[1]: solar-scada-api.service: Scheduled restart job, restart counter is at 19.
+Jul 18 13:15:59 srv1609330 systemd[1]: Started solar-scada-api.service - Solar SCADA API Server.
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# 
