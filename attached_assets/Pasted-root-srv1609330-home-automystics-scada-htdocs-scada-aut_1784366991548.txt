@@ -1,0 +1,109 @@
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# ss -tlnp | grep 8080
+LISTEN 0      511          0.0.0.0:8080       0.0.0.0:*    users:(("node",pid=1291563,fd=22))                                                                                                                 
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# curl -s http://127.0.0.1:8080/api/healthz
+{"status":"ok"}root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# cat /etc/nginx/sites-available/solar-scada
+cat: /etc/nginx/sites-available/solar-scada: No such file or directory
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# cat > /etc/nginx/sites-available/solar-scada << 'EOF'
+server {
+    listen 80;
+    server_name scada.automystics.tech;
+
+    # Serve the React frontend (built static files)
+    root /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/solar-scada/dist/public;
+    index index.html;
+
+    # API requests → Node.js backend
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_cache_bypass $http_upgrade;
+        proxy_buffering off;
+        proxy_read_timeout 3600s;
+    }
+
+    # React SPA fallback
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+EOF
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# ln -s /etc/nginx/sites-available/solar-scada /etc/nginx/sites-enabled/
+nginx -t
+systemctl restart nginx
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/ctr.tamilagavetrikalagam.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/erp.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/erp.mmwear.in.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/kalvicore.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/kuralai.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/mysticsaudit.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/mysticscivil.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/mysticshr.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/mysticsinv.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/scada.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/solarnexus.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/tkprabhu.tamilagavetrikalagam.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/ungalrajeev.tamilagavetrikalagam.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/ungaludansarath.tamilagavetrikalagam.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/ungalvignesh.tamilagavetrikalagam.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/www.automystics.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/www.automystics.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/www.fitro360.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/www.fitro360.com.crt"
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# cd /home/automystics-scada/htdocs/scada.automystics.tech
+PORT=3000 BASE_PATH=/ pnpm --filter @workspace/solar-scada run build
+
+> @workspace/solar-scada@0.0.0 build /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/solar-scada
+> vite build --config vite.config.ts
+
+vite v7.3.6 building client environment for production...
+src/components/ui/tooltip.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+src/components/ui/label.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+src/components/ui/select.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+✓ 2040 modules transformed.
+dist/public/index.html                     1.38 kB │ gzip:   0.54 kB
+dist/public/assets/index-C5TEcnWh.css    158.31 kB │ gzip:  24.01 kB
+dist/public/assets/index-BPVLmOcK.js   1,025.11 kB │ gzip: 281.13 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 9.12s
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# # See all active Nginx configs
+ls /etc/nginx/sites-enabled/
+ls /etc/nginx/conf.d/
+
+# Find which config handles scada.automystics.tech
+grep -r "scada.automystics.tech" /etc/nginx/ 2>/dev/null
+ctr.tamilagavetrikalagam.com.conf             kuralai.automystics.tech.conf.bak.1778000544  solar-scada
+default.conf                                  mysticsaudit.automystics.tech                 tkprabhu.tamilagavetrikalagam.com.conf
+erp.automystics.tech.conf                     mysticsaudit.automystics.tech.conf            ungalrajeev.tamilagavetrikalagam.com.conf
+erp.automystics.tech.conf.bak                 mysticscivil.automystics.tech.conf            ungaludansarath.tamilagavetrikalagam.com.conf
+erp.mmwear.in.conf                            mysticshr.automystics.tech.conf               ungalvignesh.tamilagavetrikalagam.com.conf
+kalvicore.automystics.tech.conf               mysticsinv.automystics.tech.conf              www.automystics.com.conf
+kuralai.automystics.tech.conf                 scada.automystics.tech.conf                   www.fitro360.com.conf
+kuralai.automystics.tech.conf.bak.1777997518  solarnexus.automystics.tech.conf
+/etc/nginx/sites-enabled/scada.automystics.tech.conf:  ssl_certificate_key /etc/nginx/ssl-certificates/scada.automystics.tech.key;
+/etc/nginx/sites-enabled/scada.automystics.tech.conf:  ssl_certificate /etc/nginx/ssl-certificates/scada.automystics.tech.crt;
+/etc/nginx/sites-enabled/scada.automystics.tech.conf:  server_name scada.automystics.tech;
+/etc/nginx/sites-enabled/scada.automystics.tech.conf:  root /home/automystics-scada/htdocs/scada.automystics.tech;
+/etc/nginx/sites-available/solar-scada:    server_name scada.automystics.tech;
+/etc/nginx/sites-available/solar-scada:    root /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/solar-scada/dist/public;
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# # CyberPanel?
+ls /etc/lsws/ 2>/dev/null && echo "OpenLiteSpeed found"
+
+# Check what's actually serving port 80/443
+ss -tlnp | grep -E ':80|:443'
+LISTEN 0      511          0.0.0.0:80         0.0.0.0:*    users:(("nginx",pid=3872908,fd=38),("nginx",pid=3872906,fd=38),("nginx",pid=3872905,fd=38),("nginx",pid=3872904,fd=38),("nginx",pid=3872903,fd=38))
+LISTEN 0      511          0.0.0.0:443        0.0.0.0:*    users:(("nginx",pid=3872908,fd=39),("nginx",pid=3872906,fd=39),("nginx",pid=3872905,fd=39),("nginx",pid=3872904,fd=39),("nginx",pid=3872903,fd=39))
+LISTEN 0      511          0.0.0.0:8090       0.0.0.0:*    users:(("node /home/auto",pid=852146,fd=22))                                                                                                       
+LISTEN 0      511          0.0.0.0:8080       0.0.0.0:*    users:(("node",pid=1291563,fd=22))                                                                                                                 
+LISTEN 0      511             [::]:80            [::]:*    users:(("nginx",pid=3872908,fd=40),("nginx",pid=3872906,fd=40),("nginx",pid=3872905,fd=40),("nginx",pid=3872904,fd=40),("nginx",pid=3872903,fd=40))
+LISTEN 0      511             [::]:443           [::]:*    users:(("nginx",pid=3872908,fd=43),("nginx",pid=3872906,fd=43),("nginx",pid=3872905,fd=43),("nginx",pid=3872904,fd=43),("nginx",pid=3872903,fd=43))
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# 
