@@ -137,6 +137,119 @@ router.get("/superadmin/db/tables/:table/records", async (req, res) => {
   }
 });
 
+// ── GET /superadmin/db/tables/:table/indexes ──────────────────────────────────
+
+router.get("/superadmin/db/tables/:table/indexes", async (req, res) => {
+  const tableName = req.params["table"] ?? "";
+  if (!(await validateTable(tableName))) { res.status(404).json({ error: "table_not_found" }); return; }
+  try {
+    const rows = await db.execute(sql`
+      SELECT
+        i.relname AS "indexName",
+        ix.indisunique AS "isUnique",
+        ix.indisprimary AS "isPrimary",
+        array_to_string(array_agg(a.attname ORDER BY x.n), ', ') AS "columns",
+        pg_size_pretty(pg_relation_size(i.oid)) AS "size"
+      FROM pg_index ix
+      JOIN pg_class t ON t.oid = ix.indrelid
+      JOIN pg_class i ON i.oid = ix.indexrelid
+      JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = ANY(ix.indkey)
+      JOIN unnest(ix.indkey) WITH ORDINALITY AS x(num, n) ON a.attnum = x.num
+      WHERE t.relname = ${tableName} AND t.relkind = 'r'
+      GROUP BY i.relname, ix.indisunique, ix.indisprimary, i.oid
+      ORDER BY ix.indisprimary DESC, ix.indisunique DESC, i.relname
+    `);
+    res.json(rows);
+  } catch (e: unknown) { res.status(500).json({ error: String(e) }); }
+});
+
+// ── GET /superadmin/db/tables/:table/foreign-keys ─────────────────────────────
+
+router.get("/superadmin/db/tables/:table/foreign-keys", async (req, res) => {
+  const tableName = req.params["table"] ?? "";
+  if (!(await validateTable(tableName))) { res.status(404).json({ error: "table_not_found" }); return; }
+  try {
+    const rows = await db.execute(sql`
+      SELECT
+        kcu.column_name AS "column",
+        ccu.table_name AS "referencedTable",
+        ccu.column_name AS "referencedColumn",
+        rc.constraint_name AS "constraintName",
+        rc.delete_rule AS "onDelete",
+        rc.update_rule AS "onUpdate"
+      FROM information_schema.key_column_usage kcu
+      JOIN information_schema.referential_constraints rc
+        ON rc.constraint_name = kcu.constraint_name AND rc.constraint_schema = kcu.table_schema
+      JOIN information_schema.constraint_column_usage ccu
+        ON ccu.constraint_name = rc.unique_constraint_name AND ccu.constraint_schema = rc.unique_constraint_schema
+      WHERE kcu.table_schema = 'public' AND kcu.table_name = ${tableName}
+      ORDER BY kcu.column_name
+    `);
+    res.json(rows);
+  } catch (e: unknown) { res.status(500).json({ error: String(e) }); }
+});
+
+// ── GET /superadmin/db/connections ────────────────────────────────────────────
+
+router.get("/superadmin/db/connections", async (_req, res) => {
+  try {
+    const rows = await db.execute(sql`
+      SELECT
+        pid, usename AS user, application_name AS app,
+        client_addr AS "clientAddr", state,
+        wait_event_type AS "waitType", wait_event AS "waitEvent",
+        ROUND(EXTRACT(EPOCH FROM (now() - query_start))::numeric, 1) AS "queryAgeSecs",
+        ROUND(EXTRACT(EPOCH FROM (now() - state_change))::numeric, 1) AS "stateAgeSecs",
+        LEFT(query, 120) AS query
+      FROM pg_stat_activity
+      WHERE pid <> pg_backend_pid()
+      ORDER BY query_start DESC NULLS LAST
+      LIMIT 50
+    `);
+    const summary = await db.execute(sql`
+      SELECT state, count(*) AS count
+      FROM pg_stat_activity
+      WHERE pid <> pg_backend_pid()
+      GROUP BY state ORDER BY count DESC
+    `);
+    res.json({ connections: rows, summary });
+  } catch (e: unknown) { res.status(500).json({ error: String(e) }); }
+});
+
+// ── GET /superadmin/db/slow-queries ──────────────────────────────────────────
+
+router.get("/superadmin/db/slow-queries", async (_req, res) => {
+  try {
+    const rows = await db.execute(sql`
+      SELECT
+        pid, usename AS user, state,
+        wait_event_type AS "waitType", wait_event AS "waitEvent",
+        ROUND(EXTRACT(EPOCH FROM (now() - query_start))::numeric, 2) AS "durationSecs",
+        LEFT(query, 300) AS query
+      FROM pg_stat_activity
+      WHERE state = 'active'
+        AND query NOT ILIKE '%pg_stat_activity%'
+        AND query_start IS NOT NULL
+      ORDER BY query_start ASC
+      LIMIT 20
+    `);
+    res.json(rows);
+  } catch (e: unknown) { res.status(500).json({ error: String(e) }); }
+});
+
+// ── POST /superadmin/db/maintenance/reindex-table ─────────────────────────────
+
+router.post("/superadmin/db/maintenance/reindex-table", async (req, res) => {
+  const { table } = req.body as { table?: string };
+  if (!table) { res.status(400).json({ error: "table required" }); return; }
+  if (!(await validateTable(table))) { res.status(404).json({ error: "table_not_found" }); return; }
+  try {
+    await db.execute(sql.raw(`REINDEX TABLE "${table}"`));
+    req.log.info({ table }, "Super admin reindexed table");
+    res.json({ ok: true, message: `REINDEX TABLE "${table}" completed successfully` });
+  } catch (e: unknown) { res.status(500).json({ error: String(e) }); }
+});
+
 // ── PATCH /superadmin/db/tables/:table/records/:id ────────────────────────────
 
 router.patch("/superadmin/db/tables/:table/records/:id", async (req, res) => {
@@ -146,24 +259,38 @@ router.patch("/superadmin/db/tables/:table/records/:id", async (req, res) => {
     res.status(404).json({ error: "table_not_found" }); return;
   }
 
-  const { field, value } = req.body as { field?: string; value?: unknown };
-  if (!field) { res.status(400).json({ error: "field required" }); return; }
+  // Support both single-field { field, value } and multi-field { fields: Record<string,unknown> }
+  const body = req.body as { field?: string; value?: unknown; fields?: Record<string, unknown> };
+  const fieldsToUpdate: Record<string, unknown> = body.fields
+    ? body.fields
+    : body.field
+      ? { [body.field]: body.value }
+      : {};
 
-  // Validate field exists
+  if (Object.keys(fieldsToUpdate).length === 0) {
+    res.status(400).json({ error: "field or fields required" }); return;
+  }
+
+  // Validate all fields exist in table
   const allCols = await db.execute(sql`
     SELECT column_name FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = ${tableName}
   `);
   const colNames = (allCols as unknown as { column_name: string }[]).map((c) => c.column_name);
-  if (!colNames.includes(field)) {
-    res.status(400).json({ error: "invalid_field" }); return;
+  const invalidFields = Object.keys(fieldsToUpdate).filter(f => !colNames.includes(f));
+  if (invalidFields.length > 0) {
+    res.status(400).json({ error: "invalid_fields", fields: invalidFields }); return;
   }
 
   try {
+    // Build SET clause — each value parameterized via string escaping (no ORM support for dynamic multi-field)
+    const setParts = Object.entries(fieldsToUpdate)
+      .map(([k, v]) => `"${k}" = ${v === null ? "NULL" : `'${String(v).replace(/'/g, "''")}'`}`)
+      .join(", ");
     const updated = await db.execute(
-      sql.raw(`UPDATE "${tableName}" SET "${field}" = '${String(value).replace(/'/g, "''")}' WHERE id = '${recordId.replace(/'/g, "''")}' RETURNING *`)
+      sql.raw(`UPDATE "${tableName}" SET ${setParts} WHERE id = '${recordId.replace(/'/g, "''")}' RETURNING *`)
     );
-    req.log.info({ table: tableName, id: recordId, field }, "Super admin updated record");
+    req.log.info({ table: tableName, id: recordId, fields: Object.keys(fieldsToUpdate) }, "Super admin updated record");
     res.json({ record: (updated as unknown[])[0] ?? null });
   } catch (e: unknown) {
     res.status(500).json({ error: String(e) });
