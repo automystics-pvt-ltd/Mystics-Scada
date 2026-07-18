@@ -58,6 +58,22 @@ router.get("/src/app-tsx",            (_req, res) => serveFile(repoFile("artifac
 router.get("/src/login-tsx",          (_req, res) => serveFile(repoFile("artifacts/solar-scada/src/pages/login.tsx"), res));
 router.get("/src/platform-admin-tsx", (_req, res) => serveFile(repoFile("artifacts/solar-scada/src/pages/platform-admin-login.tsx"), res));
 
+// Pre-built dist — VPS downloads and replaces, no build step needed
+router.get("/dist/api.mjs", (_req, res) => {
+  const p = resolve(process.cwd(), "dist/index.mjs");
+  if (!existsSync(p)) { res.status(404).end("dist not built"); return; }
+  res.setHeader("Content-Type", "application/javascript");
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(p);
+});
+router.get("/dist/frontend.tar.gz", (_req, res) => {
+  const p = repoFile("artifacts/solar-scada/dist/frontend.tar.gz");
+  if (!existsSync(p)) { res.status(404).end("frontend tarball not found"); return; }
+  res.setHeader("Content-Type", "application/gzip");
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(p);
+});
+
 // Edge Gateway Agent ingest routes — authenticate via bearer gateway token,
 // not a browser session cookie, so they must sit outside `authenticate`.
 router.use(gatewayAgentRouter);
