@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import healthRouter from "./health";
 import authRouter from "./auth";
+import authOtpRouter from "./auth-otp";
 import platformAdminAuthRouter from "./platform-admin-auth";
 import portfolioRouter from "./portfolio";
 import plantsRouter from "./plants";
@@ -29,6 +30,7 @@ const router: IRouter = Router();
 // Always-public routes (no auth required)
 router.use(healthRouter);
 router.use(authRouter);
+router.use(authOtpRouter);
 router.use(platformAdminAuthRouter);
 
 // Temporary: serve deploy.sh so the VPS can curl it without GitHub access
