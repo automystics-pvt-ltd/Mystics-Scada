@@ -6,6 +6,8 @@ import { driverRegistry } from "./lib/drivers/registry";
 import { startRetryWorker } from "./lib/retryWorker";
 import { startFtpScheduler } from "./lib/ftpScheduler";
 import { startOfflineDetectionJob } from "./lib/offlineDetection";
+import { db, plantsTable } from "@workspace/db";
+import { loadDbPlant } from "./lib/simulation";
 
 const rawPort = process.env["PORT"];
 
@@ -25,6 +27,14 @@ async function startServer(): Promise<void> {
   // Seed data first (non-fatal — log and continue)
   await ensureSeedData().catch((err: unknown) => {
     logger.error({ err }, "Failed to seed initial data");
+  });
+
+  // Load user-created plants from DB into in-memory simulation layer
+  await db.select().from(plantsTable).then((rows) => {
+    for (const row of rows) loadDbPlant(row);
+    if (rows.length > 0) logger.info({ count: rows.length }, "Loaded DB plants into simulation");
+  }).catch((err: unknown) => {
+    logger.warn({ err }, "Could not load DB plants — plantsTable may not exist yet");
   });
 
   // Restore persisted fault simulations — non-fatal so the API starts even

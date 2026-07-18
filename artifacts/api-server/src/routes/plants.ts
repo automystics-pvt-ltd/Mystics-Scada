@@ -25,7 +25,7 @@ import { combinerStrings } from "../lib/combinerStrings";
 import { calcCombinerCount } from "../lib/combinerUtils";
 import { activeAlertCountsByPlant } from "../lib/alertCounts";
 import { resolveOrgId, orgCondition } from "../lib/orgScope";
-import { db, devicesTable } from "@workspace/db";
+import { db, devicesTable, plantsTable } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { deviceStatus, addPlant } from "../lib/simulation";
 
@@ -33,20 +33,64 @@ const router: IRouter = Router();
 
 // ── POST /plants — create a new plant (wizard) ──────────────────────────────
 router.post("/plants", async (req, res) => {
-  const session = (req as any).session as import("../middleware/authenticate").SessionPayload | undefined;
   const orgId = resolveOrgId(req);
   if (!orgId) {
     res.status(403).json({ error: "forbidden", message: "No organisation in session." });
     return;
   }
 
-  const { name, location } = req.body as { name?: unknown; location?: unknown };
-  if (typeof name !== "string" || !name.trim()) {
+  const body = req.body as {
+    name?: unknown; location?: unknown; capacityMw?: unknown;
+    trackerType?: unknown; timezoneOffsetHours?: unknown; commissionedYear?: unknown;
+  };
+
+  if (typeof body.name !== "string" || !body.name.trim()) {
     res.status(400).json({ error: "invalid_body", message: "Plant name is required." });
     return;
   }
 
-  const plant = addPlant(orgId, name.trim(), typeof location === "string" ? location.trim() : "");
+  const capacityMw          = Number(body.capacityMw)          || 10;
+  const timezoneOffsetHours = Number(body.timezoneOffsetHours) || 5.5;
+  const commissionedYear    = Number(body.commissionedYear)     || new Date().getFullYear();
+  const trackerType         = (typeof body.trackerType === "string" && body.trackerType) ? body.trackerType : "fixed_tilt";
+  const location            = typeof body.location === "string" ? body.location.trim() : "";
+
+  // Derive inverter count and rating from capacity
+  const inverterCount   = Math.max(1, Math.round(capacityMw * 0.4));
+  const inverterRatingKw = Math.round((capacityMw * 1000) / inverterCount);
+
+  // First add to in-memory simulation (gets a stable ID)
+  const plant = addPlant(orgId, {
+    name: body.name.trim(),
+    location,
+    capacityMw,
+    trackerType: trackerType as "fixed_tilt" | "single_axis_tracker",
+    timezoneOffsetHours,
+    commissionedYear,
+    inverterCount,
+    inverterRatingKw,
+    stringsPerInverter: 12,
+    weatherStationCount: Math.max(1, Math.round(capacityMw / 20)),
+    cloudinessSeed: 0.2,
+  });
+
+  // Persist to DB so it survives restarts
+  await db.insert(plantsTable).values({
+    id: plant.id,
+    orgId,
+    name: plant.name,
+    location: plant.location,
+    capacityMw: plant.capacityMw,
+    timezoneOffsetHours: plant.timezoneOffsetHours,
+    trackerType: plant.trackerType,
+    commissionedYear: plant.commissionedYear,
+    inverterCount: plant.inverterCount,
+    inverterRatingKw: plant.inverterRatingKw,
+    stringsPerInverter: plant.stringsPerInverter,
+    weatherStationCount: plant.weatherStationCount,
+    cloudinessSeed: plant.cloudinessSeed,
+  }).onConflictDoNothing();
+
   res.status(201).json({ id: plant.id, name: plant.name, location: plant.location });
 });
 

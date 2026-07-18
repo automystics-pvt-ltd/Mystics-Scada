@@ -112,39 +112,94 @@ export function getPlant(plantId: string): PlantConfig | undefined {
 /**
  * Dynamically register a new plant (created via the wizard).
  * Adds it to the in-memory PLANTS array and maps it to the given org.
- * Sensible simulation defaults are applied for unspecified fields.
  */
 export function addPlant(
   orgId: string,
-  name: string,
-  location: string,
+  opts: {
+    id?: string;
+    name: string;
+    location?: string;
+    capacityMw?: number;
+    timezoneOffsetHours?: number;
+    trackerType?: TrackerType;
+    commissionedYear?: number;
+    inverterCount?: number;
+    inverterRatingKw?: number;
+    stringsPerInverter?: number;
+    weatherStationCount?: number;
+    cloudinessSeed?: number;
+  },
 ): PlantConfig {
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 32);
-  // Ensure unique ID even if slug collides
-  const id = `plant-${slug}-${Date.now().toString(36)}`;
+  let id = opts.id;
+  if (!id) {
+    const slug = opts.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 32);
+    id = `plant-${slug}-${Date.now().toString(36)}`;
+  }
+
+  // Derive sensible inverter count from capacity if not provided
+  const capacityMw = opts.capacityMw ?? 10;
+  const inverterCount = opts.inverterCount ?? Math.max(1, Math.round(capacityMw * 0.4));
 
   const plant: PlantConfig = {
     id,
-    name,
-    location: location || "Unknown Location",
-    timezoneOffsetHours: 5.5,
-    capacityMw: 10,
-    trackerType: "fixed_tilt",
-    commissionedYear: new Date().getFullYear(),
-    inverterCount: 4,
-    inverterRatingKw: 1500,
-    stringsPerInverter: 12,
-    weatherStationCount: 1,
-    cloudinessSeed: 0.2,
+    name: opts.name,
+    location: opts.location || "Unknown Location",
+    timezoneOffsetHours: opts.timezoneOffsetHours ?? 5.5,
+    capacityMw,
+    trackerType: opts.trackerType ?? "fixed_tilt",
+    commissionedYear: opts.commissionedYear ?? new Date().getFullYear(),
+    inverterCount,
+    inverterRatingKw: opts.inverterRatingKw ?? Math.round((capacityMw * 1000) / inverterCount),
+    stringsPerInverter: opts.stringsPerInverter ?? 12,
+    weatherStationCount: opts.weatherStationCount ?? Math.max(1, Math.round(capacityMw / 20)),
+    cloudinessSeed: opts.cloudinessSeed ?? 0.2,
   };
 
-  PLANTS.push(plant);
+  // Avoid duplicates (e.g. called again on hot-reload or DB reload)
+  if (!PLANTS.find((p) => p.id === id)) {
+    PLANTS.push(plant);
+  }
   PLANT_ORG_MAP[id] = orgId;
   return plant;
+}
+
+/**
+ * Load a plant row from the DB into the in-memory simulation layer.
+ * Called at server startup after reading all rows from plantsTable.
+ */
+export function loadDbPlant(row: {
+  id: string;
+  orgId: string;
+  name: string;
+  location: string;
+  capacityMw: number;
+  timezoneOffsetHours: number;
+  trackerType: string;
+  commissionedYear: number;
+  inverterCount: number;
+  inverterRatingKw: number;
+  stringsPerInverter: number;
+  weatherStationCount: number;
+  cloudinessSeed: number;
+}): void {
+  addPlant(row.orgId, {
+    id: row.id,
+    name: row.name,
+    location: row.location,
+    capacityMw: row.capacityMw,
+    timezoneOffsetHours: row.timezoneOffsetHours,
+    trackerType: row.trackerType as TrackerType,
+    commissionedYear: row.commissionedYear,
+    inverterCount: row.inverterCount,
+    inverterRatingKw: row.inverterRatingKw,
+    stringsPerInverter: row.stringsPerInverter,
+    weatherStationCount: row.weatherStationCount,
+    cloudinessSeed: row.cloudinessSeed,
+  });
 }
 
 export function getPlantByInverterId(inverterId: string): PlantConfig | undefined {

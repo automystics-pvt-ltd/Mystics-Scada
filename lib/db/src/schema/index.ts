@@ -4,6 +4,9 @@
 // Core tenant model — must be exported before tables that reference it
 export * from "./organizations";
 
+// Plant sites (user-created via wizard, persisted to DB)
+export * from "./plants";
+
 // IoT device tables (templateTemplates must come before devices to avoid circular FK)
 export * from "./deviceTemplates";
 // Edge gateway tokens must come before devices (devices.gateway_id FK)
