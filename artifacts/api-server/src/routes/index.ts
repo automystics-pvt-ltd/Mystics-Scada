@@ -20,6 +20,7 @@ import deviceTemplatesRouter from "./deviceTemplates";
 import orgRouter from "./org";
 import notificationsRouter from "./notifications";
 import superadminRouter from "./superadmin";
+import superadminDbRouter from "./superadmin-db";
 import ftpSourcesRouter from "./ftpSources";
 import { gatewayAdminRouter, gatewayAgentRouter } from "./gateway";
 import { authenticate } from "../middleware/authenticate";
@@ -141,5 +142,6 @@ router.use(gatewayAdminRouter);
 
 // Super admin portal — requires authenticated + isSuperAdmin
 router.use(requireSuperAdmin, superadminRouter);
+router.use(requireSuperAdmin, superadminDbRouter);
 
 export default router;

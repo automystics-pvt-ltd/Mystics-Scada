@@ -30,6 +30,17 @@ import PlatformAdminLogin from '@/pages/platform-admin-login';
 import SuperAdminDashboard from '@/pages/superadmin-dashboard';
 import SuperAdminOrgs from '@/pages/superadmin-orgs';
 import SuperAdminOrgDetail from '@/pages/superadmin-org-detail';
+import SuperAdminDbAdmin from '@/pages/superadmin-db-admin';
+import SuperAdminUsers from '@/pages/superadmin-users';
+import SuperAdminFeatureFlags from '@/pages/superadmin-feature-flags';
+import SuperAdminAuditLogs from '@/pages/superadmin-audit-logs';
+import SuperAdminSystemHealth from '@/pages/superadmin-system-health';
+import SuperAdminBilling from '@/pages/superadmin-billing';
+import SuperAdminSecurity from '@/pages/superadmin-security';
+import SuperAdminOperations from '@/pages/superadmin-operations';
+import SuperAdminSupport from '@/pages/superadmin-support';
+import SuperAdminCommunications from '@/pages/superadmin-communications';
+import SuperAdminMaintenance from '@/pages/superadmin-maintenance';
 import DevicesPage from '@/pages/devices';
 import DeviceDetailPage from '@/pages/device-detail';
 import DeviceFirmwareReportPage from '@/pages/device-firmware-report';
@@ -95,6 +106,17 @@ function ProtectedRoutes() {
           <Route path="/superadmin" component={SuperAdminDashboard} />
           <Route path="/superadmin/orgs" component={SuperAdminOrgs} />
           <Route path="/superadmin/orgs/:orgId" component={SuperAdminOrgDetail} />
+          <Route path="/superadmin/db" component={SuperAdminDbAdmin} />
+          <Route path="/superadmin/users" component={SuperAdminUsers} />
+          <Route path="/superadmin/feature-flags" component={SuperAdminFeatureFlags} />
+          <Route path="/superadmin/audit-logs" component={SuperAdminAuditLogs} />
+          <Route path="/superadmin/system-health" component={SuperAdminSystemHealth} />
+          <Route path="/superadmin/billing" component={SuperAdminBilling} />
+          <Route path="/superadmin/security" component={SuperAdminSecurity} />
+          <Route path="/superadmin/operations" component={SuperAdminOperations} />
+          <Route path="/superadmin/support" component={SuperAdminSupport} />
+          <Route path="/superadmin/communications" component={SuperAdminCommunications} />
+          <Route path="/superadmin/maintenance" component={SuperAdminMaintenance} />
           <Route component={NotFound} />
         </Switch>
       </TelemetryStreamProvider>

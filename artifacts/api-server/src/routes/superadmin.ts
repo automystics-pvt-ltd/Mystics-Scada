@@ -461,4 +461,234 @@ router.delete("/superadmin/impersonate", (req, res) => {
   res.json({ ok: true });
 });
 
+// ── In-memory feature flag store ─────────────────────────────────────────────
+
+interface FeatureFlag {
+  key: string;
+  description: string;
+  enabled: boolean;
+  category: string;
+  orgOverrides: Record<string, boolean>;
+}
+
+const featureFlags = new Map<string, FeatureFlag>([
+  ["ai_insights",            { key: "ai_insights",            description: "AI-powered anomaly detection",    enabled: true,  category: "features", orgOverrides: {} }],
+  ["advanced_reporting",     { key: "advanced_reporting",     description: "PDF/CSV report generation",       enabled: true,  category: "features", orgOverrides: {} }],
+  ["edge_gateway",           { key: "edge_gateway",           description: "Edge gateway agent support",      enabled: true,  category: "features", orgOverrides: {} }],
+  ["maintenance_automation", { key: "maintenance_automation", description: "Auto work order creation",         enabled: false, category: "beta",     orgOverrides: {} }],
+  ["multi_site_dashboard",   { key: "multi_site_dashboard",   description: "Cross-site analytics",            enabled: false, category: "beta",     orgOverrides: {} }],
+  ["modbus_rtu",             { key: "modbus_rtu",             description: "Modbus RTU driver support",       enabled: true,  category: "drivers",  orgOverrides: {} }],
+  ["bacnet",                 { key: "bacnet",                 description: "BACnet/IP driver support",        enabled: true,  category: "drivers",  orgOverrides: {} }],
+  ["opcua",                  { key: "opcua",                  description: "OPC-UA driver support",           enabled: true,  category: "drivers",  orgOverrides: {} }],
+]);
+
+router.get("/superadmin/feature-flags", (_req, res) => {
+  res.json(Array.from(featureFlags.values()));
+});
+
+router.patch("/superadmin/feature-flags/:key", (req, res) => {
+  const key = (req.params["key"] as string) ?? "";
+  const flag = featureFlags.get(key);
+  if (!flag) { res.status(404).json({ error: "not_found" }); return; }
+  const { enabled, orgId } = req.body as { enabled?: boolean; orgId?: string };
+  if (orgId) {
+    if (enabled === undefined) {
+      delete flag.orgOverrides[orgId];
+    } else {
+      flag.orgOverrides[orgId] = enabled;
+    }
+  } else if (enabled !== undefined) {
+    flag.enabled = enabled;
+  }
+  req.log.info({ key, enabled, orgId }, "Super admin toggled feature flag");
+  res.json(flag);
+});
+
+router.delete("/superadmin/feature-flags/:key/org/:orgId", (req, res) => {
+  const key   = (req.params["key"]   as string) ?? "";
+  const orgId = (req.params["orgId"] as string) ?? "";
+  const flag  = featureFlags.get(key);
+  if (!flag) { res.status(404).json({ error: "not_found" }); return; }
+  delete flag.orgOverrides[orgId];
+  res.json(flag);
+});
+
+// ── GET /superadmin/system-health ─────────────────────────────────────────────
+
+router.get("/superadmin/system-health", async (_req, res) => {
+  const t0 = Date.now();
+  let dbConnected = false;
+  let dbLatencyMs = -1;
+  try {
+    const { sql: sqlTag } = await import("drizzle-orm");
+    await db.execute(sqlTag`SELECT 1`);
+    dbConnected = true;
+    dbLatencyMs = Date.now() - t0;
+  } catch { dbConnected = false; }
+
+  const mem = process.memoryUsage();
+  res.json({
+    uptime:      process.uptime(),
+    memory:      { rss: mem.rss, heapUsed: mem.heapUsed, heapTotal: mem.heapTotal, external: mem.external },
+    nodeVersion: process.version,
+    platform:    process.platform,
+    env:         process.env["NODE_ENV"] ?? "development",
+    db:          { connected: dbConnected, latencyMs: dbLatencyMs },
+    timestamp:   new Date().toISOString(),
+  });
+});
+
+// ── GET /superadmin/users ─────────────────────────────────────────────────────
+
+import { ilike, or } from "drizzle-orm";
+
+router.get("/superadmin/users", async (req, res) => {
+  const { orgId, status, search } = req.query as Record<string, string>;
+  const limit  = Math.min(200, parseInt(req.query["limit"]  as string) || 50);
+  const offset = Math.max(0,   parseInt(req.query["offset"] as string) || 0);
+
+  const { usersTable: ut, rolesTable: rt, organizationsTable: ot } = await import("@workspace/db");
+
+  let query = db
+    .select({
+      id:          ut.id,
+      name:        ut.name,
+      email:       ut.email,
+      status:      ut.status,
+      roleId:      ut.roleId,
+      roleName:    rt.name,
+      orgId:       ut.orgId,
+      orgName:     ot.name,
+      lastLoginAt: ut.lastLoginAt,
+      createdAt:   ut.createdAt,
+    })
+    .from(ut)
+    .leftJoin(rt, eq(ut.roleId, rt.id))
+    .leftJoin(ot, eq(ut.orgId, ot.id))
+    .$dynamic();
+
+  const conditions = [];
+  if (orgId)   conditions.push(eq(ut.orgId, orgId));
+  if (status)  conditions.push(eq(ut.status, status as "active" | "invited" | "suspended"));
+  if (search)  conditions.push(or(ilike(ut.name, `%${search}%`), ilike(ut.email, `%${search}%`))!);
+  if (conditions.length) query = query.where(and(...conditions));
+
+  const rows = await query.orderBy(desc(ut.createdAt)).limit(limit).offset(offset);
+
+  const [{ total }] = await db.select({ total: count() }).from(ut) as [{ total: number }];
+
+  res.json({ users: rows, total });
+});
+
+// ── GET /superadmin/audit-logs ────────────────────────────────────────────────
+
+router.get("/superadmin/audit-logs", async (req, res) => {
+  const { orgId, userId, action, resourceType } = req.query as Record<string, string>;
+  const limit  = Math.min(500, parseInt(req.query["limit"]  as string) || 100);
+  const offset = Math.max(0,   parseInt(req.query["offset"] as string) || 0);
+
+  const conditions = [];
+  if (orgId)        conditions.push(eq(auditLogsTable.orgId, orgId));
+  if (userId)       conditions.push(eq(auditLogsTable.userId, userId));
+  if (action)       conditions.push(eq(auditLogsTable.action, action));
+  if (resourceType) conditions.push(eq(auditLogsTable.resourceType, resourceType));
+
+  const rows = await db
+    .select({
+      id:           auditLogsTable.id,
+      orgId:        auditLogsTable.orgId,
+      userId:       auditLogsTable.userId,
+      actorName:    usersTable.name,
+      actorEmail:   usersTable.email,
+      action:       auditLogsTable.action,
+      resourceType: auditLogsTable.resourceType,
+      resourceId:   auditLogsTable.resourceId,
+      metadata:     auditLogsTable.metadata,
+      createdAt:    auditLogsTable.createdAt,
+    })
+    .from(auditLogsTable)
+    .leftJoin(usersTable, eq(auditLogsTable.userId, usersTable.id))
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(auditLogsTable.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  const [{ total }] = await db.select({ total: count() }).from(auditLogsTable) as [{ total: number }];
+
+  res.json({ logs: rows, total });
+});
+
+// ── GET /superadmin/billing ───────────────────────────────────────────────────
+
+router.get("/superadmin/billing", async (_req, res) => {
+  const MRR: Record<string, number> = { starter: 99, professional: 299, enterprise: 999 };
+  const orgs = await db
+    .select({
+      id:        organizationsTable.id,
+      name:      organizationsTable.name,
+      slug:      organizationsTable.slug,
+      planTier:  organizationsTable.planTier,
+      status:    organizationsTable.status,
+      createdAt: organizationsTable.createdAt,
+    })
+    .from(organizationsTable)
+    .orderBy(desc(organizationsTable.createdAt));
+
+  const enriched = await Promise.all(
+    orgs.map(async (org) => {
+      const [{ userCount }] = await db.select({ userCount: count() }).from(usersTable).where(eq(usersTable.orgId, org.id)) as [{ userCount: number }];
+      const plants = getOrgPlants(org.id);
+      return { ...org, userCount, plantCount: plants.length, mrr: MRR[org.planTier] ?? 0 };
+    })
+  );
+
+  const activeOrgs  = enriched.filter((o) => o.status === "active");
+  const totalMrr    = activeOrgs.reduce((s, o) => s + o.mrr, 0);
+  const byTier      = { starter: 0, professional: 0, enterprise: 0, suspended: 0 };
+  for (const o of enriched) {
+    if (o.status === "suspended") byTier.suspended++;
+    else byTier[o.planTier as keyof typeof byTier] = (byTier[o.planTier as keyof typeof byTier] ?? 0) + 1;
+  }
+
+  res.json({ summary: { ...byTier, totalMrr }, orgs: enriched });
+});
+
+// ── GET /superadmin/security ──────────────────────────────────────────────────
+
+router.get("/superadmin/security", async (_req, res) => {
+  const SECURITY_ACTIONS = ["login", "login_failed", "password_changed", "user_created", "user_deleted", "role_changed", "superadmin_login", "impersonation_started"];
+
+  const events = await db
+    .select({
+      id:           auditLogsTable.id,
+      orgId:        auditLogsTable.orgId,
+      userId:       auditLogsTable.userId,
+      actorName:    usersTable.name,
+      actorEmail:   usersTable.email,
+      action:       auditLogsTable.action,
+      resourceType: auditLogsTable.resourceType,
+      resourceId:   auditLogsTable.resourceId,
+      metadata:     auditLogsTable.metadata,
+      createdAt:    auditLogsTable.createdAt,
+    })
+    .from(auditLogsTable)
+    .leftJoin(usersTable, eq(auditLogsTable.userId, usersTable.id))
+    .where(inArray(auditLogsTable.action, SECURITY_ACTIONS))
+    .orderBy(desc(auditLogsTable.createdAt))
+    .limit(200);
+
+  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const recent   = events.filter((e) => new Date(e.createdAt) >= since24h);
+
+  const summary = {
+    failedLogins24h:      recent.filter((e) => e.action === "login_failed").length,
+    activeUsers24h:       new Set(recent.filter((e) => e.action === "login").map((e) => e.userId)).size,
+    superAdminActions24h: recent.filter((e) => e.action === "superadmin_login" || e.action === "impersonation_started").length,
+    total:                events.length,
+  };
+
+  res.json({ events, summary });
+});
+
 export default router;
+
