@@ -30,6 +30,7 @@ function buildWhitelist(): Set<string> {
   }
   // Default fallback
   return new Set([
+    "automystics.ai@gmail.com",
     "automystics.com@gmail.com",
     "anandakumar.mani012@gmail.com",
     "anand02.pm@gmail.com",

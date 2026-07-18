@@ -64,9 +64,13 @@ pnpm --filter @workspace/db run db:push \\
 
 # ── 5. Restart services ────────────────────────────────────────────────────────
 log "[5/6] Restarting services..."
+# Kill any zombie node process still holding port 8080 before restart
+log "  Clearing port 8080..."
+fuser -k 8080/tcp 2>/dev/null || true
+sleep 2
 systemctl daemon-reload
 systemctl restart solar-scada-api
-sleep 4
+sleep 5
 systemctl restart solar-scada-proxy 2>/dev/null || true
 sleep 2
 
