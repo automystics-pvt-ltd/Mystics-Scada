@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import healthRouter from "./health";
 import authRouter from "./auth";
+import platformAdminAuthRouter from "./platform-admin-auth";
 import portfolioRouter from "./portfolio";
 import plantsRouter from "./plants";
 import invertersRouter from "./inverters";
@@ -28,6 +29,7 @@ const router: IRouter = Router();
 // Always-public routes (no auth required)
 router.use(healthRouter);
 router.use(authRouter);
+router.use(platformAdminAuthRouter);
 
 // Edge Gateway Agent ingest routes — authenticate via bearer gateway token,
 // not a browser session cookie, so they must sit outside `authenticate`.

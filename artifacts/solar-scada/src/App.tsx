@@ -26,6 +26,7 @@ import AdminUsers from '@/pages/admin-users';
 import AdminRoles from '@/pages/admin-roles';
 import Settings from '@/pages/settings';
 import NotFound from '@/pages/not-found';
+import PlatformAdminLogin from '@/pages/platform-admin-login';
 import SuperAdminDashboard from '@/pages/superadmin-dashboard';
 import SuperAdminOrgs from '@/pages/superadmin-orgs';
 import SuperAdminOrgDetail from '@/pages/superadmin-org-detail';
@@ -104,7 +105,9 @@ function ProtectedRoutes() {
 function Router() {
   return (
     <Switch>
-      {/* Login is always public — outside the AuthGuard */}
+      {/* Platform admin login — always public, separate from regular auth */}
+      <Route path="/platform-admin" component={PlatformAdminLogin} />
+      {/* Regular login is always public — outside the AuthGuard */}
       <Route path="/login" component={Login} />
       <Route component={ProtectedRoutes} />
     </Switch>
