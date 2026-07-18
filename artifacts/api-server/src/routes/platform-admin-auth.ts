@@ -32,6 +32,7 @@ function buildWhitelist(): Set<string> {
   return new Set([
     "automystics.com@gmail.com",
     "anandakumar.mani012@gmail.com",
+    "anand02.pm@gmail.com",
   ]);
 }
 
