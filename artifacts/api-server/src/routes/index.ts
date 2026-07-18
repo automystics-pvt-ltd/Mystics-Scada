@@ -39,6 +39,7 @@ router.use(smtpTestRouter);
 // ── File delivery endpoints — VPS uses wget to pull latest source files ──────
 import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
+import { DEPLOY_SCRIPT } from "../lib/deploy-script";
 
 // Resolve a path relative to the monorepo root (2 levels up from api-server CWD)
 function repoFile(...parts: string[]): string {
@@ -52,7 +53,12 @@ function serveFile(filePath: string, res: import("express").Response): void {
   res.send(readFileSync(filePath, "utf8"));
 }
 
-router.get("/deploy.sh", (_req, res) => serveFile(repoFile("deploy.sh"), res));
+// deploy.sh is embedded inline — always works, even when the file doesn't exist on disk
+router.get("/deploy.sh", (_req, res) => {
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  res.send(DEPLOY_SCRIPT);
+});
 router.get("/src/auth-otp",           (_req, res) => serveFile(repoFile("artifacts/api-server/src/routes/auth-otp.ts"), res));
 router.get("/src/platform-admin-auth",(_req, res) => serveFile(repoFile("artifacts/api-server/src/routes/platform-admin-auth.ts"), res));
 router.get("/src/mailer",             (_req, res) => serveFile(repoFile("artifacts/api-server/src/lib/mailer.ts"), res));
