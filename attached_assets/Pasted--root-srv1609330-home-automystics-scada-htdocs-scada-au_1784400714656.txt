@@ -1,0 +1,76 @@
+
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# # Check what's actually running and why the route isn't found
+systemctl status solar-scada-api --no-pager
+echo "---"
+journalctl -u solar-scada-api -n 20 --no-pager
+echo "---"
+# Direct hit on the API — bypassing any proxy
+curl -v http://127.0.0.1:8080/api/healthz 2>&1 | head -20
+echo "---"
+# What port is the API actually bound to?
+ss -tlnp | grep -E "8080|3000|4000"
+echo "---"
+# Confirm the binary on disk is the new one
+ls -lh artifacts/api-server/dist/index.mjs
+grep -c "DEPLOY_SCRIPT\|embed" artifacts/api-server/dist/index.mjs || echo "string not found in binary"
+● solar-scada-api.service - Solar SCADA API Server
+     Loaded: loaded (/etc/systemd/system/solar-scada-api.service; enabled; preset: enabled)
+     Active: activating (auto-restart) (Result: exit-code) since Sat 2026-07-18 18:51:04 UTC; 3s ago
+    Process: 1297302 ExecStart=/usr/bin/node --enable-source-maps /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/dist/index.mjs (code=exited, status=1/FAILURE)
+   Main PID: 1297302 (code=exited, status=1/FAILURE)
+        CPU: 3.584s
+
+Jul 18 18:51:04 srv1609330 systemd[1]: solar-scada-api.service: Main process exited, code=exited, status=1/FAILURE
+Jul 18 18:51:04 srv1609330 systemd[1]: solar-scada-api.service: Failed with result 'exit-code'.
+Jul 18 18:51:04 srv1609330 systemd[1]: solar-scada-api.service: Consumed 3.584s CPU time.
+---
+Jul 18 18:51:02 srv1609330 node[1297302]:   'automystics.com@gmail.com',
+Jul 18 18:51:02 srv1609330 node[1297302]:   'anandakumar.mani012@gmail.com',
+Jul 18 18:51:02 srv1609330 node[1297302]:   'anand02.pm@gmail.com'
+Jul 18 18:51:02 srv1609330 node[1297302]: ]
+Jul 18 18:51:02 srv1609330 node[1297302]: [PlatformAdmin] Master passcode set: true
+Jul 18 18:51:03 srv1609330 node[1297302]: {"level":40,"time":1784400663120,"pid":1297302,"hostname":"srv1609330","frontendDist":"/home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/artifacts/solar-scada/dist/public","msg":"Frontend dist not found — skipping static serving"}
+Jul 18 18:51:03 srv1609330 node[1297302]: {"level":30,"time":1784400663315,"pid":1297302,"hostname":"srv1609330","count":13,"msg":"System device templates ensured"}
+Jul 18 18:51:03 srv1609330 node[1297302]: {"level":30,"time":1784400663315,"pid":1297302,"hostname":"srv1609330","msg":"Skipping demo credential seed (production mode)"}
+Jul 18 18:51:03 srv1609330 node[1297302]: {"level":40,"time":1784400663321,"pid":1297302,"hostname":"srv1609330","err":{"type":"_DrizzleQueryError","message":"Failed query: select \"id\", \"org_id\", \"name\", \"location\", \"capacity_mw\", \"timezone_offset_hours\", \"tracker_type\", \"commissioned_year\", \"inverter_count\", \"inverter_rating_kw\", \"strings_per_inverter\", \"weather_station_count\", \"cloudiness_seed\", \"created_at\", \"updated_at\" from \"plants\"\nparams: : relation \"plants\" does not exist","stack":"Error: Failed query: select \"id\", \"org_id\", \"name\", \"location\", \"capacity_mw\", \"timezone_offset_hours\", \"tracker_type\", \"commissioned_year\", \"inverter_count\", \"inverter_rating_kw\", \"strings_per_inverter\", \"weather_station_count\", \"cloudiness_seed\", \"created_at\", \"updated_at\" from \"plants\"\nparams: \n    at NodePgPreparedQuery.queryWithCache (/home/automystics-scada/htdocs/scada.automystics.tech/node_modules/.pnpm/mqtt-packet@9.0.2/node_modules/mqtt-packet/writeToStream.js:190:7)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async <anonymous> (/home/automystics-scada/htdocs/scada.automystics.tech/node_modules/.pnpm/mqtt-packet@9.0.2/node_modules/mqtt-packet/writeToStream.js:592:3)\n    at async startServer (/home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/src/index.ts:63:2)\ncaused by: error: relation \"plants\" does not exist\n    at <anonymous> (/home/automystics-scada/htdocs/scada.automystics.tech/node_modules/.pnpm/pg-pool@3.14.0_pg@8.22.0/node_modules/pg-pool/index.js:48:10)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async <anonymous> (/home/automystics-scada/htdocs/scada.automystics.tech/node_modules/.pnpm/mqtt-packet@9.0.2/node_modules/mqtt-packet/writeToStream.js:601:15)\n    at async NodePgPreparedQuery.queryWithCache (/home/automystics-scada/htdocs/scada.automystics.tech/node_modules/.pnpm/mqtt-packet@9.0.2/node_modules/mqtt-packet/writeToStream.js:186:5)\n    at async <anonymous> (/home/automystics-scada/htdocs/scada.automystics.tech/node_modules/.pnpm/mqtt-packet@9.0.2/node_modules/mqtt-packet/writeToStream.js:592:3)\n    at async startServer (/home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/src/index.ts:63:2)","query":"select \"id\", \"org_id\", \"name\", \"location\", \"capacity_mw\", \"timezone_offset_hours\", \"tracker_type\", \"commissioned_year\", \"inverter_count\", \"inverter_rating_kw\", \"strings_per_inverter\", \"weather_station_count\", \"cloudiness_seed\", \"created_at\", \"updated_at\" from \"plants\"","params":[]},"msg":"Could not load DB plants — plantsTable may not exist yet"}
+Jul 18 18:51:03 srv1609330 node[1297302]: {"level":30,"time":1784400663903,"pid":1297302,"hostname":"srv1609330","restored":0,"expiredHandled":0,"msg":"Fault store critical restore complete"}
+Jul 18 18:51:03 srv1609330 node[1297302]: {"level":30,"time":1784400663916,"pid":1297302,"hostname":"srv1609330","msg":"DriverRegistry: initializing drivers for all configured devices"}
+Jul 18 18:51:04 srv1609330 node[1297302]: {"level":30,"time":1784400664116,"pid":1297302,"hostname":"srv1609330","started":17,"total":17,"msg":"DriverRegistry: initialization complete"}
+Jul 18 18:51:04 srv1609330 node[1297302]: (node:1297302) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+Jul 18 18:51:04 srv1609330 node[1297302]: (Use `node --trace-deprecation ...` to show where the warning was created)
+Jul 18 18:51:04 srv1609330 node[1297302]: {"level":30,"time":1784400664117,"pid":1297302,"hostname":"srv1609330","msg":"IngestionRetryWorker: starting"}
+Jul 18 18:51:04 srv1609330 node[1297302]: {"level":30,"time":1784400664117,"pid":1297302,"hostname":"srv1609330","msg":"FtpScheduler: starting"}
+Jul 18 18:51:04 srv1609330 node[1297302]: {"level":50,"time":1784400664199,"pid":1297302,"hostname":"srv1609330","err":{"type":"Error","message":"listen EADDRINUSE: address already in use :::8080","stack":"Error: listen EADDRINUSE: address already in use :::8080\n    at Server.setupListenHandle [as _listen2] (node:net:2008:16)\n    at listenInCluster (node:net:2065:12)\n    at Server.listen (node:net:2170:7)\n    at app2.listen (/home/automystics-scada/htdocs/scada.automystics.tech/node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js:617:21)\n    at <anonymous> (/home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/src/index.ts:63:2)\n    at new Promise (<anonymous>)\n    at startServer (/home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/src/index.ts:63:2)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)","code":"EADDRINUSE","errno":-98,"syscall":"listen","address":"::","port":8080},"msg":"Server failed to start"}
+Jul 18 18:51:04 srv1609330 systemd[1]: solar-scada-api.service: Main process exited, code=exited, status=1/FAILURE
+Jul 18 18:51:04 srv1609330 systemd[1]: solar-scada-api.service: Failed with result 'exit-code'.
+Jul 18 18:51:04 srv1609330 systemd[1]: solar-scada-api.service: Consumed 3.584s CPU time.
+---
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:8080...
+* Connected to 127.0.0.1 (127.0.0.1) port 8080
+> GET /api/healthz HTTP/1.1
+> Host: 127.0.0.1:8080
+> User-Agent: curl/8.5.0
+> Accept: */*
+> 
+< HTTP/1.1 200 OK
+< Cross-Origin-Opener-Policy: same-origin
+< Cross-Origin-Resource-Policy: cross-origin
+< Origin-Agent-Cluster: ?1
+< Referrer-Policy: no-referrer
+< Strict-Transport-Security: max-age=31536000; includeSubDomains
+< X-Content-Type-Options: nosniff
+< X-DNS-Prefetch-Control: off
+< X-Download-Options: noopen
+< X-Frame-Options: SAMEORIGIN
+< X-Permitted-Cross-Domain-Policies: none
+---
+LISTEN 0      4096       127.0.0.1:14000      0.0.0.0:*    users:(("php-fpm7.4",pid=1082250,fd=8))                                                                                                            
+LISTEN 0      4096       127.0.0.1:13000      0.0.0.0:*    users:(("php-fpm7.3",pid=1082248,fd=8))                                                                                                            
+LISTEN 0      511          0.0.0.0:8080       0.0.0.0:*    users:(("node",pid=1238021,fd=22))                                                                                                                 
+LISTEN 0      511                *:3000             *:*    users:(("node",pid=2467313,fd=26))                                                                                                                 
+---
+-rw-rw-r-- 1 root root 3.8M Jul 18 18:48 artifacts/api-server/dist/index.mjs
+6
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# 

@@ -4,6 +4,12 @@ import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from "url";
+
+// Reliable repo-root resolution: go three levels up from the compiled
+// binary (artifacts/api-server/dist/index.mjs → repo root).
+// This works regardless of the systemd WorkingDirectory setting.
+const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 import router from "./routes";
 import { logger } from "./lib/logger";
 
@@ -50,7 +56,7 @@ app.use("/api", router);
 // relative to the repo root (where the systemd service WorkingDirectory points).
 const frontendDist =
   process.env.FRONTEND_DIST ??
-  path.join(process.cwd(), "artifacts/solar-scada/dist/public");
+  path.join(REPO_ROOT, "artifacts/solar-scada/dist/public");
 
 if (fs.existsSync(frontendDist)) {
   app.use(express.static(frontendDist));
