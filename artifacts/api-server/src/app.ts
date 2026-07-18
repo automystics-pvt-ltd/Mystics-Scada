@@ -2,6 +2,8 @@ import express, { type Express } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
+import path from "path";
+import fs from "fs";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
@@ -42,5 +44,23 @@ app.use(express.text({ type: "text/csv", limit: "10mb" }));
 app.use(cookieParser(process.env.SESSION_SECRET));
 
 app.use("/api", router);
+
+// Serve the React frontend in production
+// FRONTEND_DIST can be set in .env; defaults to the built solar-scada output
+// relative to the repo root (where the systemd service WorkingDirectory points).
+const frontendDist =
+  process.env.FRONTEND_DIST ??
+  path.join(process.cwd(), "artifacts/solar-scada/dist/public");
+
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  // SPA fallback — every non-API route returns index.html
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(frontendDist, "index.html"));
+  });
+  logger.info({ frontendDist }, "Serving frontend static files");
+} else {
+  logger.warn({ frontendDist }, "Frontend dist not found — skipping static serving");
+}
 
 export default app;
