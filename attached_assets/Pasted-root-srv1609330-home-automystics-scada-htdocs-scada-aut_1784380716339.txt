@@ -1,0 +1,32 @@
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# ss -tlnp | grep 8080
+systemctl status solar-scada-api --no-pager -l | head -20
+LISTEN 0      511          0.0.0.0:8080       0.0.0.0:*    users:(("node",pid=723600,fd=22))                                                                                                                  
+● solar-scada-api.service - Solar SCADA API Server
+     Loaded: loaded (/etc/systemd/system/solar-scada-api.service; enabled; preset: enabled)
+     Active: active (running) since Sat 2026-07-18 13:15:59 UTC; 1s ago
+   Main PID: 729301 (MainThread)
+      Tasks: 7 (limit: 19144)
+     Memory: 74.9M (peak: 74.9M)
+        CPU: 1.511s
+     CGroup: /system.slice/solar-scada-api.service
+             └─729301 /usr/bin/node --enable-source-maps /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/dist/index.mjs
+
+Jul 18 13:15:59 srv1609330 systemd[1]: solar-scada-api.service: Scheduled restart job, restart counter is at 19.
+Jul 18 13:15:59 srv1609330 systemd[1]: Started solar-scada-api.service - Solar SCADA API Server.
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# # 1. Remove PORT from .env so neither service gets it from there
+sed -i '/^PORT=/d' /home/automystics-scada/htdocs/scada.automystics.tech/.env
+grep "^PORT" /home/automystics-scada/htdocs/scada.automystics.tech/.env || echo "PORT removed OK"
+
+# 2. Show current service files so we add PORT in the right place
+grep -n "Environment\|EnvironmentFile\|ExecStart\|Install" /etc/systemd/system/solar-scada-api.service
+grep -n "Environment\|EnvironmentFile\|ExecStart\|Install" /etc/systemd/system/solar-scada-proxy.service
+PORT removed OK
+6:Environment=PORT=8080
+10:EnvironmentFile=/home/automystics-scada/htdocs/scada.automystics.tech/.env
+11:ExecStart=/usr/bin/node --enable-source-maps /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/dist/index.mjs
+15:[Install]
+8:ExecStart=/usr/bin/node serve.mjs
+11:Environment=PORT=3003
+12:Environment=API_PORT=8080
+13:Environment=NODE_ENV=production
+14:[Install]
