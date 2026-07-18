@@ -3,6 +3,7 @@ import healthRouter from "./health";
 import authRouter from "./auth";
 import authOtpRouter from "./auth-otp";
 import platformAdminAuthRouter from "./platform-admin-auth";
+import smtpTestRouter from "./smtp-test";
 import portfolioRouter from "./portfolio";
 import plantsRouter from "./plants";
 import invertersRouter from "./inverters";
@@ -32,6 +33,7 @@ router.use(healthRouter);
 router.use(authRouter);
 router.use(authOtpRouter);
 router.use(platformAdminAuthRouter);
+router.use(smtpTestRouter);
 
 // ── File delivery endpoints — VPS uses wget to pull latest source files ──────
 import { readFileSync, existsSync } from "fs";
