@@ -5,7 +5,11 @@
  * frame directly into the React Query cache so every component that subscribes
  * to portfolio / plant queries refreshes without a separate HTTP poll.
  *
- * Returns { connected, lastSync, tickCount } for UI indicators.
+ * Also maintains a per-plant power history ring buffer (last 40 points ≈ 2 min
+ * at 3 s intervals) that the portfolio page can use for real sparklines instead
+ * of synthetic ones.
+ *
+ * Returns { connected, lastSync, tickCount, plantHistory } for UI indicators.
  */
 
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -27,14 +31,22 @@ interface SseNotification {
   createdAt: string;
 }
 
-export interface TelemetryState {
-  connected:  boolean;
-  lastSync:   Date | null;
-  tickCount:  number;
+export interface PlantPowerPoint {
+  ts: string;
+  powerKw: number;
 }
 
-const SSE_URL = "/api/stream/telemetry";
+export interface TelemetryState {
+  connected:    boolean;
+  lastSync:     Date | null;
+  tickCount:    number;
+  /** Per-plant live power history (ring buffer of last 40 SSE frames). */
+  plantHistory: Record<string, PlantPowerPoint[]>;
+}
+
+const SSE_URL = `${import.meta.env.BASE_URL}api/stream/telemetry`;
 const RECONNECT_DELAY_MS = 3_000;
+const HISTORY_SIZE = 40; // ~2 min at 3s intervals
 
 export function useTelemetryStream(): TelemetryState {
   const queryClient = useQueryClient();
@@ -42,9 +54,10 @@ export function useTelemetryStream(): TelemetryState {
   const retryRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [state, setState] = useState<TelemetryState>({
-    connected: false,
-    lastSync:  null,
-    tickCount: 0,
+    connected:    false,
+    lastSync:     null,
+    tickCount:    0,
+    plantHistory: {},
   });
 
   const connect = useCallback(() => {
@@ -82,9 +95,9 @@ export function useTelemetryStream(): TelemetryState {
         const payload = JSON.parse(evt.data) as {
           timestamp: string;
           fleet: {
-            totalPowerMw:   number;
-            totalEnergyMwh: number;
-            avgPr:          number;
+            totalPowerMw:    number;
+            totalEnergyMwh:  number;
+            avgPr:           number;
             totalCapacityMw: number;
           };
           plants: Array<{
@@ -108,15 +121,16 @@ export function useTelemetryStream(): TelemetryState {
             if (!old) return old;
             return {
               ...old,
-              totalCurrentPowerMw:    payload.fleet.totalPowerMw,
+              totalCurrentPowerMw:     payload.fleet.totalPowerMw,
               totalGenerationTodayMwh: payload.fleet.totalEnergyMwh,
-              avgPr:                  payload.fleet.avgPr,
+              avgPr:                   payload.fleet.avgPr,
               plants: (old.plants ?? []).map((p: any) => {
                 const live = payload.plants.find((lp) => lp.id === p.id);
                 if (!live) return p;
                 return {
                   ...p,
                   currentPowerKw:  live.powerKw,
+                  todayEnergyKwh:  live.energyKwh,
                   pr:              live.pr,
                   availabilityPct: live.availabilityPct,
                   healthStatus:    live.health,
@@ -134,25 +148,41 @@ export function useTelemetryStream(): TelemetryState {
               if (!old) return old;
               return {
                 ...old,
-                currentPowerKw:   live.powerKw,
-                todayEnergyKwh:   live.energyKwh,
-                pr:               live.pr,
-                availabilityPct:  live.availabilityPct,
-                healthStatus:     live.health,
-                irradiancePoaWm2: live.irradianceWm2,
-                irradianceGhiWm2: Math.round(live.irradianceWm2 * 0.95),
+                currentPowerKw:      live.powerKw,
+                todayEnergyKwh:      live.energyKwh,
+                pr:                  live.pr,
+                availabilityPct:     live.availabilityPct,
+                healthStatus:        live.health,
+                irradiancePoaWm2:    live.irradianceWm2,
+                irradianceGhiWm2:    Math.round(live.irradianceWm2 * 0.95),
                 offlineInverterCount: live.offlineInverters,
-                lastUpdated:      ts,
+                lastUpdated:         ts,
               };
             },
           );
         }
 
-        setState(prev => ({
-          connected: true,
-          lastSync:  ts,
-          tickCount: prev.tickCount + 1,
-        }));
+        // ── Append to per-plant power history ring buffer ───────────────
+        setState(prev => {
+          const nextHistory = { ...prev.plantHistory };
+          for (const live of payload.plants) {
+            const existing = nextHistory[live.id] ?? [];
+            const point: PlantPowerPoint = { ts: payload.timestamp, powerKw: live.powerKw };
+            // Avoid duplicate timestamps
+            if (existing.length > 0 && existing[existing.length - 1]!.ts === payload.timestamp) {
+              nextHistory[live.id] = existing;
+              continue;
+            }
+            const next = [...existing, point];
+            nextHistory[live.id] = next.length > HISTORY_SIZE ? next.slice(next.length - HISTORY_SIZE) : next;
+          }
+          return {
+            connected:    true,
+            lastSync:     ts,
+            tickCount:    prev.tickCount + 1,
+            plantHistory: nextHistory,
+          };
+        });
       } catch (err) {
         console.warn("[telemetry-stream] parse error", err);
       }

@@ -1,38 +1,23 @@
 import { useGetPortfolioSummary, useListAlerts, getGetPortfolioSummaryQueryKey, getListAlertsQueryKey } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout";
-import { KpiCard, HealthBadge, LiveValue, GenerationRing, StatCard } from "@/components/ui/scada";
-import { Zap, Activity, AlertTriangle, Battery, Power, ArrowRight, XCircle, Brain } from "lucide-react";
+import { KpiCard, HealthBadge, LiveValue, GenerationRing } from "@/components/ui/scada";
+import { Zap, Activity, AlertTriangle, Battery, Power, ArrowRight, XCircle, Brain, Radio } from "lucide-react";
 import { Link } from "wouter";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { computeHealthScore, healthScoreColor } from "@/lib/plantHierarchy";
-import { HealthScoreGauge } from "@/components/ui/scada";
+import { useTelemetry } from "@/context/TelemetryStreamContext";
 
 const BASE = import.meta.env.BASE_URL as string;
 
-/** Synthetic hourly sparkline derived from plant metadata (no extra API call). */
-function plantSparkline(capacityKw: number, currentPowerKw: number): { v: number }[] {
-  const now = new Date();
-  const hour = now.getHours() + now.getMinutes() / 60;
-  const points: { v: number }[] = [];
-  for (let h = 7; h <= 19; h++) {
-    const solar = Math.max(0, Math.sin(((h - 7) / 12) * Math.PI));
-    // add mild random variance seeded by capacity
-    const jitter = (Math.sin(capacityKw + h * 7) + 1) / 2;
-    const v = h <= hour ? solar * capacityKw * (0.85 + jitter * 0.12) : 0;
-    points.push({ v: Math.round(v) });
-  }
-  return points;
-}
-
 export default function PortfolioDashboard() {
   const { data: summary, isLoading } = useGetPortfolioSummary({
-    query: { refetchInterval: 10000, queryKey: getGetPortfolioSummaryQueryKey() }
+    query: { refetchInterval: 30_000, queryKey: getGetPortfolioSummaryQueryKey() }
   });
 
   const { data: alerts } = useListAlerts(
     { status: "open" },
-    { query: { refetchInterval: 15000, queryKey: getListAlertsQueryKey({ status: "open" }) } }
+    { query: { refetchInterval: 30_000, queryKey: getListAlertsQueryKey({ status: "open" }) } }
   );
 
   const { data: insightsSummary } = useQuery<{ total: number; critical: number; warning: number; info: number } | null>({
@@ -45,6 +30,9 @@ export default function PortfolioDashboard() {
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
+
+  // Real-time SSE power history per plant — drives live sparklines
+  const { connected, lastSync, tickCount, plantHistory } = useTelemetry();
 
   const criticalAlerts = useMemo(() => alerts?.filter(a => a.severity === "critical") ?? [], [alerts]);
   const fleetUtilPct = summary && summary.totalCapacityMw > 0
@@ -61,9 +49,19 @@ export default function PortfolioDashboard() {
             <h1 className="text-2xl font-bold tracking-tight">Portfolio Overview</h1>
             <p className="text-sm text-muted-foreground mt-1">Fleet-wide realtime generation and health</p>
           </div>
-          <div className="flex items-center space-x-2 text-sm bg-muted/50 px-3 py-1.5 rounded border border-border">
-            <Activity className="h-4 w-4 text-status-normal animate-pulse-subtle" />
-            <span className="font-mono text-muted-foreground">Live — 10 s</span>
+          <div className={`flex items-center space-x-2 text-sm px-3 py-1.5 rounded border ${
+            connected
+              ? "bg-status-normal/8 border-status-normal/20 text-status-normal"
+              : "bg-muted/50 border-border text-muted-foreground"
+          }`}>
+            <Radio className={`h-4 w-4 ${connected ? "animate-pulse" : ""}`} />
+            <span className="font-mono">
+              {connected
+                ? lastSync
+                  ? `Live · ${Math.round((Date.now() - lastSync.getTime()) / 1000)}s ago`
+                  : "Live"
+                : "Connecting…"}
+            </span>
           </div>
         </div>
 
@@ -180,7 +178,12 @@ export default function PortfolioDashboard() {
 
           {/* Plant cards */}
           <div className="xl:col-span-3">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Plant Status</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Plant Status</h2>
+              <span className="text-[10px] text-muted-foreground font-mono">
+                {tickCount > 0 ? `${tickCount} SSE frames received` : "Waiting for stream…"}
+              </span>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {isLoading
                 ? Array.from({ length: 4 }).map((_, i) => (
@@ -193,7 +196,12 @@ export default function PortfolioDashboard() {
                       : plant.healthStatus === "warning"
                         ? "hsl(38 92% 50%)"
                         : "hsl(0 84% 60%)";
-                    const sparkData = plantSparkline(plant.capacityKw, plant.currentPowerKw);
+
+                    // Real sparkline from SSE ring buffer; fall back to synthetic if not yet received
+                    const sseHistory = plantHistory[plant.id];
+                    const sparkData: { v: number }[] = sseHistory && sseHistory.length >= 2
+                      ? sseHistory.map(p => ({ v: p.powerKw }))
+                      : _syntheticSparkline(plant.capacityKw, plant.currentPowerKw);
 
                     const healthScore = computeHealthScore(
                       plant.pr,
@@ -262,14 +270,18 @@ export default function PortfolioDashboard() {
                             </div>
                           </div>
 
-                          {/* Mini sparkline */}
+                          {/* Live / synthetic sparkline */}
                           <div className="mt-3 -mx-1 opacity-60 group-hover:opacity-100 transition-opacity">
                             <div className="h-10">
-                              <_Sparkline data={sparkData} color={ringColor} />
+                              <_Sparkline data={sparkData} color={ringColor} isLive={!!(sseHistory && sseHistory.length >= 2)} />
                             </div>
                           </div>
 
-                          <div className="mt-2 flex justify-end">
+                          <div className="mt-2 flex justify-between items-center">
+                            {sseHistory && sseHistory.length >= 2
+                              ? <span className="text-[9px] text-status-normal/60 font-mono">● {sseHistory.length} live pts</span>
+                              : <span className="text-[9px] text-muted-foreground/40 font-mono">est. curve</span>
+                            }
                             <span className="text-xs text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               Open plant <ArrowRight className="w-3 h-3" />
                             </span>
@@ -286,8 +298,22 @@ export default function PortfolioDashboard() {
   );
 }
 
-/* Inline mini sparkline — pure SVG, no recharts dependency */
-function _Sparkline({ data, color }: { data: { v: number }[]; color: string }) {
+/* ── Synthetic sparkline fallback (used before SSE history arrives) ─────── */
+function _syntheticSparkline(capacityKw: number, currentPowerKw: number): { v: number }[] {
+  const now = new Date();
+  const hour = now.getHours() + now.getMinutes() / 60;
+  const points: { v: number }[] = [];
+  for (let h = 7; h <= 19; h++) {
+    const solar = Math.max(0, Math.sin(((h - 7) / 12) * Math.PI));
+    const jitter = (Math.sin(capacityKw + h * 7) + 1) / 2;
+    const v = h <= hour ? solar * capacityKw * (0.85 + jitter * 0.12) : 0;
+    points.push({ v: Math.round(v) });
+  }
+  return points;
+}
+
+/* ── Inline mini sparkline — pure SVG ───────────────────────────────────── */
+function _Sparkline({ data, color, isLive }: { data: { v: number }[]; color: string; isLive: boolean }) {
   if (!data || data.length < 2) return null;
 
   const W = 200;
@@ -306,19 +332,23 @@ function _Sparkline({ data, color }: { data: { v: number }[]; color: string }) {
     vals.slice(1).map((v, i) => `L${px(i + 1)},${py(v)}`).join(" ") +
     ` L${px(vals.length - 1)},${H} Z`;
 
-  // Use a unique gradient id per color to avoid SVG id collisions across cards
-  const gradId = `ps-${color.replace(/[^a-z0-9]/gi, "")}`;
+  // Use stable gradient ids based on color+live flag
+  const gradId = `ps-${color.replace(/[^a-z0-9]/gi, "")}-${isLive ? "l" : "s"}`;
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" preserveAspectRatio="none">
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%"  stopColor={color} stopOpacity={0.3} />
+          <stop offset="5%"  stopColor={color} stopOpacity={isLive ? 0.4 : 0.25} />
           <stop offset="95%" stopColor={color} stopOpacity={0} />
         </linearGradient>
       </defs>
       <path d={areaPath} fill={`url(#${gradId})`} />
-      <polyline points={pts} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth={isLive ? 2 : 1.5} strokeLinejoin="round" strokeLinecap="round" />
+      {/* Live dot at the end */}
+      {isLive && vals.length > 0 && (
+        <circle cx={px(vals.length - 1)} cy={py(vals[vals.length - 1]!)} r={2.5} fill={color} />
+      )}
     </svg>
   );
 }

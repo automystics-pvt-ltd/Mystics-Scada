@@ -143,12 +143,7 @@ interface FirmwareHistoryEntry {
   detectedAt: string;
 }
 
-const PLANT_NAMES: Record<string, string> = {
-  "plant-thar":       "Thar Desert Solar Farm",
-  "plant-sundarbans": "Sundarbans Solar Park",
-  "plant-deccan":     "Deccan Plateau Array",
-  "plant-coastal":    "Coastal Ridge Plant",
-};
+// Plant names loaded from API at render time — no hardcoded dict
 
 function typeLabel(t: string) {
   return t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -265,6 +260,18 @@ export default function DeviceDetailPage() {
       if (!r.ok) return [];
       return r.json() as Promise<{ id: string; name: string; revokedAt: string | null }[]>;
     },
+  });
+
+  // Plant names from API — replaces the old hardcoded PLANT_NAMES dict
+  const { data: plantsMap = {} } = useQuery<Record<string, string>>({
+    queryKey: ["plants-name-map"],
+    queryFn: async () => {
+      const r = await fetch(`${BASE}api/plants`, { credentials: "include" });
+      if (!r.ok) return {};
+      const arr = await r.json() as { id: string; name: string }[];
+      return Object.fromEntries(arr.map(p => [p.id, p.name]));
+    },
+    staleTime: 5 * 60_000,
   });
 
   const { data: device, isLoading } = useQuery<Device>({
@@ -574,7 +581,7 @@ export default function DeviceDetailPage() {
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {typeLabel(device.type)} · {device.protocol.toUpperCase()} ·{" "}
-                {PLANT_NAMES[device.plantId] ?? device.plantId}
+                {plantsMap[device.plantId] ?? device.plantId}
               </p>
             </div>
             {canManage && (

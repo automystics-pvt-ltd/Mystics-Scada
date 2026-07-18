@@ -11,15 +11,16 @@ import { KpiCard, HealthBadge, LiveValue, GenerationRing } from "@/components/ui
 import { Link, useParams } from "wouter";
 import {
   Sun, Thermometer, Activity, Zap, Network, Cpu, BarChart4, CloudLightning,
-  Wind, Droplets, ArrowLeft, TrendingUp, Brain, ChevronDown, ChevronUp,
-  TrendingDown, AlertTriangle, Layers,
+  Wind, ArrowLeft, TrendingUp, Brain, ChevronDown, ChevronUp,
+  AlertTriangle, Layers, Radio, WifiOff,
 } from "lucide-react";
-import { computeHealthScore, healthScoreColor, syntheticSparkline } from "@/lib/plantHierarchy";
+import { computeHealthScore, healthScoreColor } from "@/lib/plantHierarchy";
 import { HealthScoreGauge } from "@/components/ui/scada";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SvgAreaChart, MiniLineChart } from "@/components/ui/svg-charts";
 import { HeartPulse } from "lucide-react";
+import { usePlantTelemetryStream, type LiveInverter } from "@/hooks/usePlantTelemetryStream";
 
 const BASE = import.meta.env.BASE_URL as string;
 
@@ -48,15 +49,14 @@ const PLANT_SEV = {
 } as const;
 
 const SUB_NAV = (plantId: string) => [
-  { name: "Overview",          href: `/plants/${plantId}`,           icon: null },
-  { name: "Single Line Diagram", href: `/plants/${plantId}/sld`,     icon: Network },
-  { name: "Zones",             href: `/plants/${plantId}/zones`,     icon: Layers },
-  { name: "Inverters",         href: `/plants/${plantId}/inverters`, icon: Cpu },
-  { name: "Weather",           href: `/plants/${plantId}/weather`,   icon: CloudLightning },
-  { name: "Analytics",         href: `/plants/${plantId}/analytics`, icon: BarChart4 },
+  { name: "Overview",            href: `/plants/${plantId}`,           icon: null },
+  { name: "Single Line Diagram", href: `/plants/${plantId}/sld`,       icon: Network },
+  { name: "Zones",               href: `/plants/${plantId}/zones`,     icon: Layers },
+  { name: "Inverters",           href: `/plants/${plantId}/inverters`, icon: Cpu },
+  { name: "Weather",             href: `/plants/${plantId}/weather`,   icon: CloudLightning },
+  { name: "Analytics",           href: `/plants/${plantId}/analytics`, icon: BarChart4 },
 ];
 
-// InverterStatus → dot color
 const STATUS_DOT: Record<string, string> = {
   running:   "bg-status-normal",
   standby:   "bg-status-warning",
@@ -64,20 +64,50 @@ const STATUS_DOT: Record<string, string> = {
   comm_lost: "bg-status-offline",
 };
 
+const STATUS_LABEL: Record<string, string> = {
+  running:   "Running",
+  standby:   "Standby",
+  fault:     "Fault",
+  comm_lost: "Comm Lost",
+};
+
+/** Build a merged inverter list: use live SSE data where available, poll data otherwise. */
+function mergeInverters(
+  polled: any[] | undefined,
+  live: LiveInverter[] | undefined,
+): any[] {
+  if (!polled?.length) return [];
+  if (!live?.length) return polled;
+  return polled.map(inv => {
+    const lv = live.find(l => l.index === inv.index);
+    if (!lv) return inv;
+    return {
+      ...inv,
+      status:        lv.status,
+      acPowerKw:     lv.acPowerKw,
+      dcPowerKw:     lv.dcPowerKw,
+      acVoltageV:    lv.acVoltageV,
+      acCurrentA:    lv.acCurrentA,
+      efficiencyPct: lv.efficiencyPct,
+      temperatureC:  lv.temperatureC,
+    };
+  });
+}
+
 export default function PlantDashboard() {
   const { plantId } = useParams();
   const pid = plantId || "";
 
   const { data: plant, isLoading, isError } = useGetPlant(pid, {
-    query: { enabled: !!pid, refetchInterval: 10000, queryKey: getGetPlantQueryKey(pid) }
+    query: { enabled: !!pid, refetchInterval: 30_000, queryKey: getGetPlantQueryKey(pid) }
   });
 
   const { data: yieldData } = useGetPlantYield(pid, { period: "daily" }, {
     query: { enabled: !!pid, queryKey: getGetPlantYieldQueryKey(pid, { period: "daily" }) }
   });
 
-  const { data: inverters } = useListInverters(pid, {
-    query: { enabled: !!pid, refetchInterval: 15000, queryKey: getListInvertersQueryKey(pid) }
+  const { data: polledInverters } = useListInverters(pid, {
+    query: { enabled: !!pid, refetchInterval: 30_000, queryKey: getListInvertersQueryKey(pid) }
   });
 
   const { data: deviceHealth } = useQuery<DeviceHealthSummary>({
@@ -88,7 +118,7 @@ export default function PlantDashboard() {
       return r.json() as Promise<DeviceHealthSummary>;
     },
     enabled: !!pid,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
   });
 
   const [insightsExpanded, setInsightsExpanded] = useState(true);
@@ -103,6 +133,28 @@ export default function PlantDashboard() {
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
+
+  // ── Real-time SSE for inverter-level data ───────────────────────────────
+  const liveStream = usePlantTelemetryStream(pid || null);
+
+  // Ring buffer of live power readings for a micro power-trend sparkline
+  const [powerHistory, setPowerHistory] = useState<{ label: string; value: number }[]>([]);
+  const prevPowerRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!liveStream.latest) return;
+    const pw = liveStream.latest.powerKw;
+    if (pw === prevPowerRef.current) return;
+    prevPowerRef.current = pw;
+    setPowerHistory(prev => {
+      const ts = new Date(liveStream.latest!.timestamp);
+      const label = ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const next = [...prev, { label, value: pw }];
+      return next.length > 60 ? next.slice(next.length - 60) : next;
+    });
+  }, [liveStream.latest]);
+
+  // Merged inverter list (SSE live overrides poll data)
+  const inverters = mergeInverters(polledInverters as any[] | undefined, liveStream.latest?.inverters);
 
   if (isError) {
     return (
@@ -120,16 +172,23 @@ export default function PlantDashboard() {
   }
 
   /* Derived data ─────────────────────────────── */
-  const todayKwh  = plant?.todayEnergyKwh ?? 0;
-  const capacityKw = plant?.capacityKw ?? 1;
-  // Simple daily target: capacity × irradiance hours estimate (5 h/day avg)
+  const todayKwh    = plant?.todayEnergyKwh ?? 0;
+  const capacityKw  = plant?.capacityKw ?? 1;
   const dailyTargetKwh = capacityKw * 5;
   const genProgressPct = Math.min(100, (todayKwh / dailyTargetKwh) * 100);
-
-  const chartPoints = yieldData?.points ?? [];
-
-  const now = new Date();
+  const chartPoints    = yieldData?.points ?? [];
+  const now            = new Date();
   const currentHourLabel = `${now.getHours()}:00`;
+
+  // Live irradiance — prefer SSE frame, fall back to plant API field
+  const liveIrradiance  = liveStream.latest?.irradianceWm2 ?? plant?.irradiancePoaWm2 ?? null;
+  const liveHealth      = liveStream.latest?.health ?? plant?.healthStatus ?? "offline";
+  const livePower       = liveStream.latest?.powerKw ?? plant?.currentPowerKw ?? null;
+  const livePr          = liveStream.latest?.pr ?? plant?.pr ?? null;
+
+  const offlineCount = inverters.filter(inv =>
+    inv.status === "fault" || inv.status === "comm_lost"
+  ).length;
 
   return (
     <AppLayout>
@@ -144,10 +203,10 @@ export default function PlantDashboard() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{plant?.name ?? "Plant Dashboard"}</h1>
-            {plant && <HealthBadge status={plant.healthStatus} className="mt-0.5" />}
+            {plant && <HealthBadge status={liveHealth as any} className="mt-0.5" />}
             {plant && (() => {
               const score = computeHealthScore(
-                plant.pr,
+                livePr ?? 0,
                 plant.availabilityPct,
                 { critical: plant.alertCounts?.critical ?? 0, major: plant.alertCounts?.major ?? 0 },
               );
@@ -160,13 +219,24 @@ export default function PlantDashboard() {
                 </div>
               );
             })()}
+            {/* Live SSE indicator */}
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-medium ${
+              liveStream.connected
+                ? "bg-status-normal/8 border-status-normal/20 text-status-normal"
+                : "bg-muted/50 border-border text-muted-foreground"
+            }`}>
+              {liveStream.connected
+                ? <Radio className="h-3 w-3 animate-pulse" />
+                : <WifiOff className="h-3 w-3" />}
+              {liveStream.connected ? "SSE Live" : "Polling"}
+            </div>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
             {plant?.region} · {plant?.capacityKw ? (plant.capacityKw / 1000).toFixed(2) : "--"} MWp installed
           </p>
         </div>
 
-        {/* Sub-nav tabs — scrollable on mobile */}
+        {/* Sub-nav tabs */}
         <div className="border-b border-border -mx-4 px-4 md:mx-0 md:px-0">
           <nav className="-mb-px flex gap-5 overflow-x-auto scrollbar-none">
             {SUB_NAV(pid).map(item => (
@@ -186,12 +256,12 @@ export default function PlantDashboard() {
           </nav>
         </div>
 
-        {/* Live KPIs */}
+        {/* Live KPIs — SSE-driven with flash on change */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard title="Live Power"      value={plant?.currentPowerKw} unit="kW"  precision={0} icon={Zap}      loading={isLoading} className="border-primary/20 bg-primary/5" />
-          <KpiCard title="Today's Energy"  value={plant?.todayEnergyKwh} unit="kWh" precision={0} icon={Activity}  loading={isLoading} />
-          <KpiCard title="Performance Ratio" value={plant?.pr}           unit="%"   precision={1} icon={BarChart4} loading={isLoading} trend={{ value: +(((plant?.pr ?? 0) - 80)).toFixed(1), label: "vs 80% target", positive: (plant?.pr ?? 0) >= 80 }} />
-          <KpiCard title="Availability"    value={plant?.availabilityPct} unit="%"  precision={1} icon={TrendingUp} loading={isLoading} />
+          <KpiCard title="Live Power"        value={livePower}              unit="kW"  precision={0} icon={Zap}      loading={isLoading} className="border-primary/20 bg-primary/5" />
+          <KpiCard title="Today's Energy"    value={plant?.todayEnergyKwh}  unit="kWh" precision={0} icon={Activity}  loading={isLoading} />
+          <KpiCard title="Performance Ratio" value={livePr}                 unit="%"   precision={1} icon={BarChart4} loading={isLoading} trend={{ value: +(((livePr ?? 0) - 80)).toFixed(1), label: "vs 80% target", positive: (livePr ?? 0) >= 80 }} />
+          <KpiCard title="Availability"      value={plant?.availabilityPct} unit="%"   precision={1} icon={TrendingUp} loading={isLoading} />
         </div>
 
         {/* Generation progress + Power chart */}
@@ -255,18 +325,44 @@ export default function PlantDashboard() {
           </div>
         </div>
 
+        {/* Live power trend (from SSE ring buffer) */}
+        {powerHistory.length >= 4 && (
+          <div className="bg-card border border-card-border rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Radio className="w-4 h-4 text-status-normal animate-pulse" />
+                Real-Time Power Trend
+              </h3>
+              <span className="text-[10px] text-muted-foreground font-mono">
+                {powerHistory.length} pts · 3s interval · SSE
+              </span>
+            </div>
+            <MiniLineChart
+              color="hsl(var(--primary))"
+              points={powerHistory}
+            />
+            <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
+              <span>{powerHistory[0]?.label}</span>
+              <span className="font-mono text-foreground font-semibold">
+                {livePower != null ? `${livePower >= 1000 ? (livePower / 1000).toFixed(2) + " MW" : livePower.toFixed(0) + " kW"}` : "--"}
+              </span>
+              <span>{powerHistory[powerHistory.length - 1]?.label} (now)</span>
+            </div>
+          </div>
+        )}
+
         {/* Environment + Inverter matrix */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* Environment */}
+          {/* Environment / Site Conditions */}
           <div className="bg-card border border-card-border rounded-xl p-5">
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"><Sun className="w-4 h-4 text-status-warning" /> Site Conditions</h3>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { label: "Irradiance POA", value: plant?.irradiancePoaWm2, unit: "W/m²", icon: Sun, warn: false },
-                { label: "Irradiance GHI", value: plant?.irradianceGhiWm2, unit: "W/m²", icon: Sun, warn: false },
-                { label: "Module Temp",    value: plant?.moduleTempC,       unit: "°C",   icon: Thermometer, warn: (plant?.moduleTempC ?? 0) > 55 },
-                { label: "Ambient Temp",   value: plant?.ambientTempC,      unit: "°C",   icon: Wind,        warn: false },
+                { label: "Irradiance POA",   value: liveIrradiance,              unit: "W/m²", icon: Sun,         warn: false },
+                { label: "Irradiance GHI",   value: liveIrradiance != null ? Math.round(liveIrradiance * 0.95) : null, unit: "W/m²", icon: Sun, warn: false },
+                { label: "Module Temp",       value: plant?.moduleTempC,           unit: "°C",   icon: Thermometer, warn: (plant?.moduleTempC ?? 0) > 55 },
+                { label: "Ambient Temp",      value: plant?.ambientTempC,          unit: "°C",   icon: Wind,        warn: false },
               ].map(({ label, value, unit, icon: Icon, warn }) => (
                 <div key={label} className="space-y-1 bg-muted/30 rounded-lg p-3 border border-border/50">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -278,25 +374,31 @@ export default function PlantDashboard() {
                     unit={unit}
                     precision={1}
                     valueClassName={`text-xl ${warn ? "text-status-warning" : ""}`}
+                    flash
                   />
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Inverter health matrix */}
+          {/* Inverter health matrix — live from SSE */}
           <div className="bg-card border border-card-border rounded-xl p-5 flex flex-col">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold flex items-center gap-2"><Cpu className="w-4 h-4" /> Inverter Health</h3>
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Cpu className="w-4 h-4" /> Inverter Health
+                {liveStream.connected && (
+                  <span className="text-[9px] font-mono text-status-normal ml-1">● LIVE</span>
+                )}
+              </h3>
               <Link href={`/plants/${pid}/inverters`} className="text-xs text-primary hover:underline">View all →</Link>
             </div>
 
             {/* Summary row */}
             <div className="grid grid-cols-3 gap-3 mb-4">
               {[
-                { label: "Online",  value: (plant?.inverterCount ?? 0) - (plant?.offlineInverterCount ?? 0), cls: "text-status-normal" },
-                { label: "Offline", value: plant?.offlineInverterCount ?? 0,                                  cls: "text-status-fault" },
-                { label: "Alerts",  value: plant?.alertCounts.major ?? 0,                                     cls: "text-status-warning" },
+                { label: "Online",  value: inverters.filter(i => i.status === "running").length, cls: "text-status-normal" },
+                { label: "Standby", value: inverters.filter(i => i.status === "standby").length, cls: "text-status-warning" },
+                { label: "Fault",   value: offlineCount,                                          cls: "text-status-fault" },
               ].map(({ label, value, cls }) => (
                 <div key={label} className="bg-muted/30 rounded-lg p-2.5 text-center border border-border/50">
                   <div className={`text-2xl font-bold font-mono ${cls}`}>{isLoading ? "--" : value}</div>
@@ -309,10 +411,10 @@ export default function PlantDashboard() {
             <div className="flex-1 overflow-hidden">
               {inverters && inverters.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
-                  {inverters.map(inv => (
-                    <Link key={inv.id} href={`/plants/${pid}/inverters/${inv.id}`}>
+                  {inverters.map((inv: any) => (
+                    <Link key={inv.id ?? inv.index} href={`/plants/${pid}/inverters/${inv.id ?? inv.index}`}>
                       <div
-                        title={`${inv.name}: ${inv.status} · ${inv.acPowerKw?.toFixed(0) ?? 0} kW`}
+                        title={`${inv.name ?? `INV-${inv.index}`}: ${STATUS_LABEL[inv.status] ?? inv.status} · ${inv.acPowerKw?.toFixed(0) ?? 0} kW · ${inv.temperatureC?.toFixed(0) ?? "--"}°C`}
                         className={`w-6 h-6 rounded-sm border border-white/10 cursor-pointer hover:scale-125 transition-transform ${STATUS_DOT[inv.status] ?? "bg-muted"}`}
                       />
                     </Link>
@@ -328,12 +430,37 @@ export default function PlantDashboard() {
                   {(["running","standby","fault","comm_lost"] as const).map(s => (
                     <span key={s} className="flex items-center gap-1">
                       <span className={`inline-block w-3 h-3 rounded-sm ${STATUS_DOT[s]}`} />
-                      {s === "comm_lost" ? "Comm Lost" : s.charAt(0).toUpperCase() + s.slice(1)}
+                      {STATUS_LABEL[s]}
                     </span>
                   ))}
                 </div>
               )}
             </div>
+
+            {/* Aggregate live stats from SSE */}
+            {liveStream.latest && liveStream.latest.inverters.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-border grid grid-cols-3 gap-3">
+                {[
+                  {
+                    label: "Total AC",
+                    value: `${(liveStream.latest.inverters.reduce((s, i) => s + i.acPowerKw, 0) / 1000).toFixed(1)} MW`,
+                  },
+                  {
+                    label: "Avg Eff.",
+                    value: `${(liveStream.latest.inverters.filter(i => i.efficiencyPct > 0).reduce((s, i, _, a) => s + i.efficiencyPct / a.length, 0)).toFixed(1)}%`,
+                  },
+                  {
+                    label: "Avg Temp",
+                    value: `${(liveStream.latest.inverters.filter(i => i.temperatureC > 0).reduce((s, i, _, a) => s + i.temperatureC / a.length, 0)).toFixed(0)}°C`,
+                  },
+                ].map(({ label, value }) => (
+                  <div key={label} className="bg-muted/30 rounded-lg p-2 text-center border border-border/50">
+                    <div className="text-[10px] text-muted-foreground">{label}</div>
+                    <div className="text-sm font-mono font-semibold mt-0.5">{value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
