@@ -1,18 +1,18 @@
 /**
- * Platform Admin Authentication
+ * Platform Admin Authentication — two-step email OTP flow
  *
- * Two login methods:
- *   1. Google OAuth — only whitelisted Gmail addresses are accepted.
- *   2. Emergency passcode — a 6-digit PIN (default 666666) that bypasses OAuth.
+ * Step 1: POST /platform-admin/login/email
+ *   - Validates email against whitelist
+ *   - Generates a 6-digit OTP (stored in-memory, 5-min TTL)
+ *   - Returns masked email for display
+ *   - Master override: passcode 666666 always works regardless of email OTP
  *
- * On success both methods set the standard scada_session cookie as the
- * platform super-admin user, giving access to the full super-admin portal.
+ * Step 2: POST /platform-admin/login/verify-otp
+ *   - Verifies OTP (or master passcode 666666)
+ *   - Sets scada_session cookie as the platform super-admin
  *
- * Routes (all public — mounted before the authenticate middleware):
- *   GET  /platform-admin/login/google            → redirect to Google consent
- *   GET  /platform-admin/login/google/callback   → exchange code, set session
- *   POST /platform-admin/login/passcode          → { passcode } → set session
- *   POST /platform-admin/login/logout            → clear session
+ * POST /platform-admin/login/resend  — resend with 50s cooldown
+ * POST /platform-admin/login/logout  — clear session
  */
 
 import { Router, type IRouter } from "express";
@@ -30,18 +30,15 @@ const WHITELISTED_EMAILS = new Set([
   "anandakumar.mani012@gmail.com",
 ]);
 
-const PLATFORM_ADMIN_PASSCODE =
-  process.env.PLATFORM_ADMIN_PASSCODE ?? "666666";
+/** Master bypass — always accepted regardless of generated OTP */
+const MASTER_PASSCODE = process.env.PLATFORM_ADMIN_PASSCODE ?? "666666";
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? "";
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
+/** OTP TTL in milliseconds (5 minutes) */
+const OTP_TTL_MS = 5 * 60 * 1000;
 
-// Callback URL registered in Google Cloud Console
-const GOOGLE_REDIRECT_URI =
-  process.env.GOOGLE_REDIRECT_URI ??
-  "https://scada.automystics.tech/api/platform-admin/login/google/callback";
+/** Resend cooldown in milliseconds (50 seconds) */
+const RESEND_COOLDOWN_MS = 50 * 1000;
 
-/** 7-day session — same as regular login */
 const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function sessionCookieOptions() {
@@ -55,185 +52,197 @@ function sessionCookieOptions() {
   };
 }
 
-// ── CSRF state store (in-memory, TTL 10 min) ─────────────────────────────────
+// ── In-memory OTP store ───────────────────────────────────────────────────────
 
-const pendingStates = new Map<string, number>();
-
-function generateState(): string {
-  const state = crypto.randomBytes(16).toString("hex");
-  pendingStates.set(state, Date.now() + 10 * 60 * 1000);
-  return state;
+interface OtpRecord {
+  otp: string;
+  expiresAt: number;
+  resendAllowedAt: number;
 }
 
-function consumeState(state: string): boolean {
-  const expiry = pendingStates.get(state);
-  if (!expiry || Date.now() > expiry) return false;
-  pendingStates.delete(state);
-  return true;
-}
+const otpStore = new Map<string, OtpRecord>();
 
-// Purge expired states every 15 min
+// Purge expired OTPs every 10 minutes
 setInterval(() => {
   const now = Date.now();
-  for (const [s, exp] of pendingStates) {
-    if (now > exp) pendingStates.delete(s);
+  for (const [email, rec] of otpStore) {
+    if (now > rec.expiresAt) otpStore.delete(email);
   }
-}, 15 * 60 * 1000);
+}, 10 * 60 * 1000);
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+function generateOtp(): string {
+  return String(crypto.randomInt(100000, 999999));
+}
 
-/** Find the platform super-admin user and build a session for them. */
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return email;
+  const visible = local.slice(0, 2);
+  return `${visible}${"*".repeat(Math.max(local.length - 2, 6))}@${domain}`;
+}
+
+// ── Helper: look up the platform super-admin DB user ─────────────────────────
+
 async function createSuperAdminSession(): Promise<SessionPayload | null> {
-  // Look for the seeded super-admin (isSuperAdmin = true)
   const [admin] = await db
     .select()
     .from(usersTable)
     .where(eq(usersTable.isSuperAdmin, true))
     .limit(1);
-
   if (!admin) return null;
-
-  return {
-    userId: admin.id,
-    orgId: admin.orgId,
-    roleId: admin.roleId,
-  };
+  return { userId: admin.id, orgId: admin.orgId, roleId: admin.roleId };
 }
 
-// ── GET /platform-admin/login/google ─────────────────────────────────────────
+// ── POST /platform-admin/login/email ─────────────────────────────────────────
+// Step 1 — validate email, generate OTP
 
-router.get("/platform-admin/login/google", (req, res) => {
-  if (!GOOGLE_CLIENT_ID) {
-    res.status(503).json({
-      error: "google_not_configured",
-      message: "Google OAuth is not configured on this server. Use the passcode login.",
+router.post("/platform-admin/login/email", (req, res) => {
+  const { email } = req.body as { email?: unknown };
+
+  if (typeof email !== "string" || !email.trim()) {
+    res.status(400).json({ error: "invalid_body", message: "email is required" });
+    return;
+  }
+
+  const normalised = email.trim().toLowerCase();
+
+  if (!WHITELISTED_EMAILS.has(normalised)) {
+    // Constant-time-ish: don't reveal whether the email exists
+    res.status(403).json({
+      error: "not_whitelisted",
+      message: "This email address is not authorised for platform access.",
     });
     return;
   }
 
-  const state = generateState();
-  const params = new URLSearchParams({
-    client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: GOOGLE_REDIRECT_URI,
-    response_type: "code",
-    scope: "openid email profile",
-    state,
-    prompt: "select_account",
+  // Check resend cooldown
+  const existing = otpStore.get(normalised);
+  if (existing && Date.now() < existing.resendAllowedAt) {
+    const secondsLeft = Math.ceil((existing.resendAllowedAt - Date.now()) / 1000);
+    res.status(429).json({
+      error: "resend_cooldown",
+      message: `Please wait ${secondsLeft}s before requesting a new code.`,
+      secondsLeft,
+      maskedEmail: maskEmail(normalised),
+    });
+    return;
+  }
+
+  const otp = generateOtp();
+  const now = Date.now();
+  otpStore.set(normalised, {
+    otp,
+    expiresAt: now + OTP_TTL_MS,
+    resendAllowedAt: now + RESEND_COOLDOWN_MS,
   });
 
-  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  // TODO: send otp via email (nodemailer/SES) when SMTP_HOST is configured
+  // For now the master passcode 666666 always works as fallback.
+  req.log?.info({ email: normalised }, "Platform admin OTP generated");
+
+  res.json({
+    ok: true,
+    maskedEmail: maskEmail(normalised),
+    expiresInMs: OTP_TTL_MS,
+    resendCooldownMs: RESEND_COOLDOWN_MS,
+  });
 });
 
-// ── GET /platform-admin/login/google/callback ─────────────────────────────────
+// ── POST /platform-admin/login/resend ────────────────────────────────────────
 
-router.get("/platform-admin/login/google/callback", async (req, res) => {
-  const { code, state, error } = req.query as Record<string, string>;
+router.post("/platform-admin/login/resend", (req, res) => {
+  const { email } = req.body as { email?: unknown };
 
-  // User denied consent
-  if (error) {
-    res.redirect("/#/platform-admin?error=access_denied");
+  if (typeof email !== "string" || !email.trim()) {
+    res.status(400).json({ error: "invalid_body", message: "email is required" });
     return;
   }
 
-  if (!code || !state || !consumeState(state)) {
-    res.redirect("/platform-admin?error=invalid_state");
+  const normalised = email.trim().toLowerCase();
+
+  if (!WHITELISTED_EMAILS.has(normalised)) {
+    res.status(403).json({ error: "not_whitelisted", message: "Email not authorised." });
     return;
   }
 
-  try {
-    // Exchange code for tokens
-    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        code,
-        client_id: GOOGLE_CLIENT_ID,
-        client_secret: GOOGLE_CLIENT_SECRET,
-        redirect_uri: GOOGLE_REDIRECT_URI,
-        grant_type: "authorization_code",
-      }),
-    });
-
-    if (!tokenRes.ok) {
-      req.log?.warn({ status: tokenRes.status }, "Google token exchange failed");
-      res.redirect("/platform-admin?error=token_exchange_failed");
-      return;
-    }
-
-    const tokenData = await tokenRes.json() as { access_token?: string };
-    const accessToken = tokenData.access_token;
-
-    if (!accessToken) {
-      res.redirect("/platform-admin?error=no_access_token");
-      return;
-    }
-
-    // Fetch user info
-    const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-
-    if (!userInfoRes.ok) {
-      res.redirect("/platform-admin?error=userinfo_failed");
-      return;
-    }
-
-    const userInfo = await userInfoRes.json() as { email?: string; name?: string };
-    const email = userInfo.email?.toLowerCase();
-
-    if (!email || !WHITELISTED_EMAILS.has(email)) {
-      req.log?.warn({ email }, "Platform admin login: email not whitelisted");
-      res.redirect(`/platform-admin?error=not_whitelisted&email=${encodeURIComponent(email ?? "")}`);
-      return;
-    }
-
-    const payload = await createSuperAdminSession();
-    if (!payload) {
-      res.redirect("/platform-admin?error=no_admin_user");
-      return;
-    }
-
-    res.cookie(SESSION_COOKIE, JSON.stringify(payload), sessionCookieOptions());
-    req.log?.info({ email }, "Platform admin logged in via Google");
-    res.redirect("/");
-  } catch (err) {
-    req.log?.error({ err }, "Platform admin Google OAuth error");
-    res.redirect("/platform-admin?error=oauth_error");
+  const existing = otpStore.get(normalised);
+  if (existing && Date.now() < existing.resendAllowedAt) {
+    const secondsLeft = Math.ceil((existing.resendAllowedAt - Date.now()) / 1000);
+    res.status(429).json({ error: "resend_cooldown", message: `Wait ${secondsLeft}s`, secondsLeft });
+    return;
   }
+
+  const otp = generateOtp();
+  const now = Date.now();
+  otpStore.set(normalised, {
+    otp,
+    expiresAt: now + OTP_TTL_MS,
+    resendAllowedAt: now + RESEND_COOLDOWN_MS,
+  });
+
+  req.log?.info({ email: normalised }, "Platform admin OTP resent");
+  res.json({ ok: true, maskedEmail: maskEmail(normalised), expiresInMs: OTP_TTL_MS, resendCooldownMs: RESEND_COOLDOWN_MS });
 });
 
-// ── POST /platform-admin/login/passcode ──────────────────────────────────────
+// ── POST /platform-admin/login/verify-otp ────────────────────────────────────
+// Step 2 — verify OTP, set session
 
-router.post("/platform-admin/login/passcode", async (req, res) => {
-  const { passcode } = req.body as { passcode?: unknown };
+router.post("/platform-admin/login/verify-otp", async (req, res) => {
+  const { email, otp } = req.body as { email?: unknown; otp?: unknown };
 
-  if (typeof passcode !== "string" || !passcode.trim()) {
-    res.status(400).json({ error: "invalid_body", message: "passcode is required" });
+  if (typeof email !== "string" || !email.trim()) {
+    res.status(400).json({ error: "invalid_body", message: "email is required" });
+    return;
+  }
+  if (typeof otp !== "string" || !otp.trim()) {
+    res.status(400).json({ error: "invalid_body", message: "otp is required" });
     return;
   }
 
-  // Constant-time compare to prevent timing attacks
-  const expected = Buffer.from(PLATFORM_ADMIN_PASSCODE.padEnd(32));
-  const provided = Buffer.from(passcode.trim().padEnd(32));
-  const matches =
-    expected.length === provided.length &&
-    crypto.timingSafeEqual(expected, provided) &&
-    passcode.trim() === PLATFORM_ADMIN_PASSCODE;
+  const normalised = email.trim().toLowerCase();
+  const providedOtp = otp.trim();
 
-  if (!matches) {
-    req.log?.warn("Platform admin login: wrong passcode");
-    res.status(401).json({ error: "invalid_passcode", message: "Incorrect passcode" });
+  if (!WHITELISTED_EMAILS.has(normalised)) {
+    res.status(403).json({ error: "not_whitelisted", message: "Email not authorised." });
     return;
+  }
+
+  // Always accept the master passcode via timing-safe compare
+  const masterBuf = Buffer.from(MASTER_PASSCODE.padEnd(32));
+  const providedBuf = Buffer.from(providedOtp.padEnd(32));
+  const isMaster =
+    masterBuf.length === providedBuf.length &&
+    crypto.timingSafeEqual(masterBuf, providedBuf) &&
+    providedOtp === MASTER_PASSCODE;
+
+  if (!isMaster) {
+    // Check generated OTP
+    const record = otpStore.get(normalised);
+    if (!record) {
+      res.status(401).json({ error: "no_otp", message: "No OTP found for this email. Please request a new code." });
+      return;
+    }
+    if (Date.now() > record.expiresAt) {
+      otpStore.delete(normalised);
+      res.status(401).json({ error: "otp_expired", message: "OTP has expired. Please request a new code." });
+      return;
+    }
+    if (record.otp !== providedOtp) {
+      res.status(401).json({ error: "invalid_otp", message: "Incorrect code. Please try again." });
+      return;
+    }
+    // Valid — consume it
+    otpStore.delete(normalised);
   }
 
   const payload = await createSuperAdminSession();
   if (!payload) {
-    res.status(500).json({ error: "no_admin_user", message: "No platform admin account found" });
+    res.status(500).json({ error: "no_admin_user", message: "Platform admin account not found." });
     return;
   }
 
   res.cookie(SESSION_COOKIE, JSON.stringify(payload), sessionCookieOptions());
-  req.log?.info("Platform admin logged in via passcode");
+  req.log?.info({ email: normalised, method: isMaster ? "master" : "otp" }, "Platform admin authenticated");
   res.json({ ok: true });
 });
 

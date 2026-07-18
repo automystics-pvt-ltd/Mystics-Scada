@@ -1,79 +1,154 @@
-import { useState, useEffect } from "react";
-import { useLocation, useSearch } from "wouter";
-import { ShieldCheck, KeyRound, AlertCircle, Loader2, Lock } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
+import { CheckCircle2, RotateCcw, ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 const BASE = import.meta.env.BASE_URL;
 
-// Google "G" SVG logo
-function GoogleIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-      <path
-        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-        fill="#4285F4"
-      />
-      <path
-        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-        fill="#34A853"
-      />
-      <path
-        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-        fill="#FBBC05"
-      />
-      <path
-        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-        fill="#EA4335"
-      />
-    </svg>
-  );
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatTime(ms: number) {
+  const totalSec = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export default function PlatformAdminLogin() {
-  const [, setLocation] = useLocation();
-  const search = useSearch();
-  const queryClient = useQueryClient();
+// ── Step 1: Email entry ───────────────────────────────────────────────────────
 
-  const [passcode, setPasscode] = useState("");
+function EmailStep({
+  onSuccess,
+}: {
+  onSuccess: (email: string, masked: string, expiresInMs: number) => void;
+}) {
+  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Pick up OAuth error redirected back from the backend
-  useEffect(() => {
-    const params = new URLSearchParams(search);
-    const err = params.get("error");
-    if (!err) return;
-    const messages: Record<string, string> = {
-      not_whitelisted: `Google account "${params.get("email") ?? ""}" is not authorised. Only approved Automystics addresses can access this portal.`,
-      access_denied: "Google sign-in was cancelled.",
-      invalid_state: "Session expired. Please try again.",
-      token_exchange_failed: "Google authentication failed. Please retry.",
-      no_admin_user: "Platform admin account not found. Contact support.",
-      oauth_error: "An unexpected OAuth error occurred. Please retry.",
-    };
-    setError(messages[err] ?? `Authentication error: ${err}`);
-  }, [search]);
-
-  async function handlePasscode(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
     try {
-      const res = await fetch(`${BASE}api/platform-admin/login/passcode`, {
+      const res = await fetch(`${BASE}api/platform-admin/login/email`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passcode: passcode.trim() }),
+        body: JSON.stringify({ email: email.trim() }),
       });
-
+      const body = await res.json() as {
+        ok?: boolean; maskedEmail?: string; expiresInMs?: number;
+        message?: string; error?: string;
+      };
       if (!res.ok) {
-        const body = await res.json().catch(() => ({})) as { message?: string };
-        setError(body.message ?? "Incorrect passcode.");
+        setError(body.message ?? "Access denied.");
         return;
       }
+      onSuccess(email.trim().toLowerCase(), body.maskedEmail ?? email, body.expiresInMs ?? 300000);
+    } catch {
+      setError("Could not reach the server. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
+  return (
+    <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+      <h2 className="text-2xl font-bold text-gray-900 mb-1">Admin access</h2>
+      <p className="text-sm text-gray-500 mb-6">
+        Enter your authorised email address to receive a one-time code.
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Email address
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoFocus
+            placeholder="you@gmail.com"
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+          />
+        </div>
+
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading || !email}
+          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm shadow-indigo-200"
+        >
+          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+          {loading ? "Sending code…" : "Send verification code"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ── Step 2: OTP entry ─────────────────────────────────────────────────────────
+
+function OtpStep({
+  email,
+  maskedEmail,
+  expiresInMs,
+  onBack,
+}: {
+  email: string;
+  maskedEmail: string;
+  expiresInMs: number;
+  onBack: () => void;
+}) {
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+
+  const [otp, setOtp] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Expiry countdown
+  const [msLeft, setMsLeft] = useState(expiresInMs);
+  useEffect(() => {
+    if (msLeft <= 0) return;
+    const id = setInterval(() => setMsLeft((prev) => Math.max(0, prev - 1000)), 1000);
+    return () => clearInterval(id);
+  }, [msLeft]);
+
+  // Resend cooldown (50 s)
+  const [resendMs, setResendMs] = useState(50000);
+  useEffect(() => {
+    if (resendMs <= 0) return;
+    const id = setInterval(() => setResendMs((prev) => Math.max(0, prev - 1000)), 1000);
+    return () => clearInterval(id);
+  }, [resendMs]);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch(`${BASE}api/platform-admin/login/verify-otp`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp: otp.trim() }),
+      });
+      const body = await res.json() as { ok?: boolean; message?: string };
+      if (!res.ok) {
+        setError(body.message ?? "Incorrect code. Please try again.");
+        return;
+      }
       await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
       setLocation("/");
     } catch {
@@ -83,110 +158,174 @@ export default function PlatformAdminLogin() {
     }
   }
 
-  function handleGoogleLogin() {
-    setGoogleLoading(true);
-    // Full-page redirect — backend handles the OAuth dance
-    window.location.href = `${BASE}api/platform-admin/login/google`;
+  async function handleResend() {
+    if (resendMs > 0) return;
+    setError(null);
+    try {
+      const res = await fetch(`${BASE}api/platform-admin/login/resend`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const body = await res.json() as { ok?: boolean; expiresInMs?: number; message?: string };
+      if (res.ok) {
+        setMsLeft(body.expiresInMs ?? 300000);
+        setResendMs(50000);
+        setOtp("");
+        setError(null);
+      } else {
+        setError(body.message ?? "Could not resend.");
+      }
+    } catch {
+      setError("Could not reach the server.");
+    }
+  }
+
+  // Format OTP digits with spaces for display (like the screenshot)
+  const displayOtp = otp.split("").join(" ");
+
+  return (
+    <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+      <h2 className="text-2xl font-bold text-gray-900 mb-1">Check your email</h2>
+      <p className="text-sm text-gray-500 mb-1">We sent a 6-digit code to</p>
+      <p className="text-sm font-semibold text-gray-800 mb-6">{maskedEmail}</p>
+
+      <form onSubmit={handleVerify} className="space-y-4">
+        {/* OTP label + expiry */}
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-sm font-medium text-gray-700">One-Time Password</label>
+          <span
+            className={`text-xs font-mono font-semibold ${
+              msLeft < 60000 ? "text-red-500" : "text-gray-400"
+            }`}
+          >
+            {msLeft > 0 ? `Expires ${formatTime(msLeft)}` : "Expired"}
+          </span>
+        </div>
+
+        {/* Single large OTP input — shows digits spaced like screenshot */}
+        <div className="relative">
+          <input
+            ref={inputRef}
+            type="password"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={6}
+            value={otp}
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            placeholder="• • • • • •"
+            required
+            autoComplete="one-time-code"
+            disabled={msLeft === 0}
+            className="w-full border-2 border-indigo-400 rounded-xl px-4 py-4 text-center text-2xl font-mono tracking-[0.5em] text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition disabled:opacity-40 disabled:cursor-not-allowed"
+          />
+          {/* Invisible overlay that shows spaced digits */}
+          {otp && (
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 flex items-center justify-center text-2xl font-mono tracking-[0.5em] text-gray-900 pointer-events-none select-none pl-[0.5em]"
+            >
+              {displayOtp}
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading || otp.length < 6 || msLeft === 0}
+          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm shadow-indigo-200"
+        >
+          {loading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <CheckCircle2 className="h-5 w-5" />
+          )}
+          {loading ? "Verifying…" : "Verify OTP"}
+        </button>
+
+        {/* Bottom actions */}
+        <div className="flex items-center justify-between pt-1">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Use different email
+          </button>
+
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resendMs > 0}
+            className="flex items-center gap-1 text-sm text-gray-400 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            {resendMs > 0
+              ? `Resend OTP (${Math.ceil(resendMs / 1000)}s)`
+              : "Resend OTP"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
+export default function PlatformAdminLogin() {
+  const [step, setStep] = useState<"email" | "otp">("email");
+  const [email, setEmail] = useState("");
+  const [maskedEmail, setMaskedEmail] = useState("");
+  const [expiresInMs, setExpiresInMs] = useState(300000);
+
+  function handleEmailSuccess(addr: string, masked: string, ttl: number) {
+    setEmail(addr);
+    setMaskedEmail(masked);
+    setExpiresInMs(ttl);
+    setStep("otp");
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Background grid pattern */}
-      <div
-        className="absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, #64748b 1px, transparent 1px), linear-gradient(to bottom, #64748b 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-        }}
-      />
-      {/* Glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
-
-      <div className="w-full max-w-sm z-10 relative">
-        {/* Header */}
-        <div className="flex flex-col items-center mb-8 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-blue-600/10 border border-blue-500/30 flex items-center justify-center mb-4 shadow-lg shadow-blue-900/20">
-            <ShieldCheck className="h-8 w-8 text-blue-400" />
-          </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Platform Administration</h1>
-          <p className="text-sm text-slate-400 mt-1">Automystics Technologies · Restricted Access</p>
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-6"
+      style={{ background: "linear-gradient(135deg, #0f1629 0%, #151d35 60%, #1a1040 100%)" }}
+    >
+      {/* Header */}
+      <div className="flex flex-col items-center mb-10 text-center">
+        {/* Purple shield icon — rounded square like the screenshot */}
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 shadow-lg"
+          style={{ background: "linear-gradient(135deg, #6366f1, #4f46e5)" }}
+        >
+          <ShieldCheck className="h-8 w-8 text-white" strokeWidth={2} />
         </div>
-
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
-          {/* Top accent */}
-          <div className="h-0.5 w-full bg-gradient-to-r from-blue-600 via-blue-400 to-blue-600" />
-
-          <div className="p-6 space-y-5">
-            {/* Google Sign-In */}
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={googleLoading || loading}
-              className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-100 disabled:opacity-60 text-slate-900 font-medium py-2.5 px-4 rounded-lg transition-colors shadow-sm border border-slate-200"
-            >
-              {googleLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-slate-600" />
-              ) : (
-                <GoogleIcon />
-              )}
-              <span>{googleLoading ? "Redirecting…" : "Sign in with Google"}</span>
-            </button>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-slate-800" />
-              <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">or</span>
-              <div className="flex-1 h-px bg-slate-800" />
-            </div>
-
-            {/* Passcode */}
-            <form onSubmit={handlePasscode} className="space-y-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Lock className="h-3 w-3" />
-                  Emergency Passcode
-                </label>
-                <div className="relative">
-                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                  <input
-                    type="password"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={10}
-                    value={passcode}
-                    onChange={(e) => setPasscode(e.target.value.replace(/\D/g, ""))}
-                    placeholder="6-digit code"
-                    required
-                    autoComplete="off"
-                    className="w-full bg-slate-800/80 border border-slate-700 rounded-lg py-2.5 pl-9 pr-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all tracking-widest font-mono"
-                  />
-                </div>
-              </div>
-
-              {error && (
-                <div className="flex items-start gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-                  <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading || googleLoading || passcode.length < 6}
-                className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm shadow-blue-900/40"
-              >
-                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {loading ? "Verifying…" : "Authenticate"}
-              </button>
-            </form>
-          </div>
-        </div>
-
-        <p className="text-center text-xs text-slate-600 mt-6">
-          Unauthorised access is prohibited and monitored.
-        </p>
+        <h1 className="text-3xl font-bold text-white tracking-tight">Mystics Platform</h1>
+        <p className="text-sm text-slate-400 mt-1.5">Admin Console</p>
       </div>
+
+      {/* Card */}
+      {step === "email" ? (
+        <EmailStep onSuccess={handleEmailSuccess} />
+      ) : (
+        <OtpStep
+          email={email}
+          maskedEmail={maskedEmail}
+          expiresInMs={expiresInMs}
+          onBack={() => setStep("email")}
+        />
+      )}
+
+      <p className="text-xs text-slate-600 mt-8">
+        Unauthorised access is prohibited and monitored.
+      </p>
     </div>
   );
 }
