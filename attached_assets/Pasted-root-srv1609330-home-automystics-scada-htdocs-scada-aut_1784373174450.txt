@@ -1,0 +1,32 @@
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# grep -i "database\|postgres" /home/automystics-scada/htdocs/scada.automystics.tech/.env
+DATABASE_URL=postgresql://scada:scada@localhost:5432/solar_scada
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# # See what password is in .env
+DB_URL=$(grep DATABASE_URL /home/automystics-scada/htdocs/scada.automystics.tech/.env | cut -d= -f2-)
+echo "Current URL: $DB_URL"
+
+# Extract password from URL and reset postgres user to match
+DB_PASS=$(echo $DB_URL | sed 's/.*:\/\/[^:]*:\([^@]*\)@.*/\1/')
+echo "Setting scada user password to: $DB_PASS"
+sudo -u postgres psql -c "ALTER USER scada WITH PASSWORD '$DB_PASS';"
+Current URL: postgresql://scada:scada@localhost:5432/solar_scada
+Setting scada user password to: scada
+ERROR:  role "scada" does not exist
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# # Check current WorkingDirectory
+grep WorkingDirectory /etc/systemd/system/solar-scada-api.service
+
+# Set FRONTEND_DIST explicitly so it always resolves correctly
+sed -i '/^Environment=NODE_ENV/a Environment=FRONTEND_DIST=/home/automystics-scada/htdocs/scada.automystics.tech/artifacts/solar-scada/dist/public' \
+  /etc/systemd/system/solar-scada-api.service
+
+systemctl daemon-reload
+systemctl restart solar-scada-api
+sleep 4
+systemctl status solar-scada-api --no-pager | tail -5
+WorkingDirectory=/home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server
+     Loaded: loaded (/etc/systemd/system/solar-scada-api.service; enabled; preset: enabled)
+     Active: activating (auto-restart) (Result: exit-code) since Sat 2026-07-18 11:11:52 UTC; 2s ago
+    Process: 401864 ExecStart=/usr/bin/node --enable-source-maps /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/dist/index.mjs (code=exited, status=1/FAILURE)
+   Main PID: 401864 (code=exited, status=1/FAILURE)
+        CPU: 1.995s
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# curl -s http://127.0.0.1:8080/api/healthz
+{"status":"ok"}root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# 
