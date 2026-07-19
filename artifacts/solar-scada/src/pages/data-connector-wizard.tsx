@@ -900,6 +900,8 @@ export default function DataConnectorWizardPage() {
   const queryClient       = useQueryClient();
   const [step, setStep]   = useState(0);
   const [state, setState] = useState<WizardState>(defaultState());
+  const [activatedDevice, setActivatedDevice] = useState<{ id: string; ingestToken?: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   function update(patch: Partial<WizardState>) {
     setState((prev) => ({ ...prev, ...patch }));
@@ -1042,19 +1044,15 @@ export default function DataConnectorWizardPage() {
       void queryClient.invalidateQueries({ queryKey: ["device-templates"] });
       const ingestToken = device.config?.ingestToken;
       if (state.sourceType === "http_push" && ingestToken) {
-        const ingestUrl = `${window.location.origin}/api/ingest/${ingestToken}`;
-        toast({
-          title: "Device activated — copy your ingest URL",
-          description: ingestUrl,
-          duration: 20000,
-        });
+        // Stay on wizard and show dedicated success screen — do NOT navigate away
+        setActivatedDevice({ id: device.id, ingestToken });
       } else {
         toast({
           title: "Data source activated!",
           description: `${state.deviceName} is now connected. The driver will start collecting data shortly.`,
         });
+        navigate(`/devices/${device.id}`);
       }
-      navigate(`/devices/${device.id}`);
     },
     onError: (e: Error) => {
       toast({ title: "Activation failed", description: e.message, variant: "destructive" });
@@ -1079,6 +1077,71 @@ export default function DataConnectorWizardPage() {
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+
+        {/* ── HTTP Push success screen — stays until user navigates away ── */}
+        {activatedDevice?.ingestToken && (
+          <div className="space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">Device activated!</h1>
+                <p className="text-sm text-muted-foreground">{state.deviceName} is ready. Copy your ingest URL and configure it on the device.</p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-5 space-y-4">
+              <p className="text-sm font-semibold text-green-700 dark:text-green-400 flex items-center gap-2">
+                <ArrowDownToLine className="h-4 w-4" /> Your Ingest URL
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs bg-muted rounded-lg px-3 py-2.5 break-all leading-relaxed">
+                  {`${window.location.origin}/api/ingest/${activatedDevice.ingestToken}`}
+                </code>
+                <button
+                  onClick={() => {
+                    void navigator.clipboard.writeText(`${window.location.origin}/api/ingest/${activatedDevice.ingestToken}`);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 3000);
+                  }}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-background hover:bg-muted transition-colors text-xs font-medium"
+                >
+                  {copied ? <><Check className="h-3.5 w-3.5 text-green-500" /> Copied!</> : <><Copy className="h-3.5 w-3.5" /> Copy</>}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">This URL is also permanently shown on the device settings page.</p>
+            </div>
+
+            <div className="rounded-lg border border-border bg-muted/5 p-4 space-y-2.5">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Configure on TRB246</p>
+              {[
+                { label: "Menu path",    value: "Services → Data to Server → Add" },
+                { label: "Server URL",   value: `${window.location.origin}/api/ingest/${activatedDevice.ingestToken}` },
+                { label: "HTTP method",  value: "POST" },
+                { label: "Data format",  value: "JSON" },
+                { label: "Period",       value: "30 s" },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex gap-3 text-xs">
+                  <span className="w-24 flex-shrink-0 text-muted-foreground">{label}</span>
+                  <code className="font-mono text-foreground break-all">{value}</code>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => navigate("/devices")}>
+                Go to Devices
+              </Button>
+              <Button className="flex-1" onClick={() => navigate(`/devices/${activatedDevice.id}`)}>
+                View Device
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Normal wizard UI ── */}
+        {!activatedDevice && <>
         {/* Header */}
         <div className="flex items-center gap-3">
           <Button
@@ -1136,6 +1199,7 @@ export default function DataConnectorWizardPage() {
         <p className="text-xs text-muted-foreground text-center">
           Step {step + 1} of {STEP_LABELS.length} — {STEP_LABELS[step]}
         </p>
+      </>}
       </div>
     </AppLayout>
   );

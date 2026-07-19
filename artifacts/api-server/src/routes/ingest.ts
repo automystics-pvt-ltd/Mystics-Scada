@@ -1,32 +1,43 @@
 /**
- * HTTP Push Ingest Endpoint
+ * Zero-config push ingest endpoints.
  *
- * Devices (e.g. Teltonika TRB246 "Data to Server") POST their JSON payload to:
- *   POST /api/ingest/:token
+ * POST /api/push  — device POSTs its JSON to one fixed URL, no token, no setup.
+ *   • Reads device name from body field "device" (default: "TRB246")
+ *   • Auto-creates the device under the first org/plant on first POST
+ *   • Flattens nested JSON, handles Teltonika {address, value} pairs
  *
- * No session auth — the token IS the device credential.
- * The token is generated at device registration and stored in devices.config->ingestToken.
+ * POST /api/ingest/:token  — token-authenticated variant (kept for backward compat)
  */
 
 import { Router } from "express";
-import { sql } from "drizzle-orm";
-import { db, devicesTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
+import { randomUUID } from "crypto";
+import { db, devicesTable, organizationsTable, plantsTable } from "@workspace/db";
 import { driverRegistry } from "../lib/drivers/registry.js";
+import { logger } from "../lib/logger.js";
 
 const router = Router();
 
-/** Recursively flatten nested JSON into a ParamMap, handling TRB246 {address,value} pattern. */
-function flattenPayload(obj: unknown, prefix = "", depth = 0): Record<string, number | string | boolean> {
+// ── Shared helpers ────────────────────────────────────────────────────────────
+
+/** Recursively flatten nested JSON. Teltonika {address, value} → keep .value under parent key. */
+function flattenPayload(
+  obj: unknown,
+  prefix = "",
+  depth = 0,
+): Record<string, number | string | boolean> {
   const result: Record<string, number | string | boolean> = {};
   if (depth > 8 || obj == null || typeof obj !== "object" || Array.isArray(obj)) return result;
 
   for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    // Skip metadata fields that carry no measurement value
+    if (["device", "timestamp", "ts", "time", "address"].includes(k)) continue;
     const key = prefix ? `${prefix}.${k}` : k;
     if (v == null) continue;
 
     if (typeof v === "object" && !Array.isArray(v)) {
       const nested = v as Record<string, unknown>;
-      // TRB246 pattern: {address: N, value: N} → use parent key, extract .value only
+      // Teltonika pattern: {address: N, value: N} → store as parent key = value
       if ("value" in nested && typeof nested.value === "number") {
         result[key] = nested.value;
       } else {
@@ -44,7 +55,88 @@ function flattenPayload(obj: unknown, prefix = "", depth = 0): Record<string, nu
   return result;
 }
 
-// POST /api/ingest/:token — no auth middleware, token authenticates the request
+/** Find or auto-create a device by name. Returns {id, orgId}. */
+async function resolveDevice(name: string): Promise<{ id: string; orgId: string }> {
+  // 1. Try to find existing device with this name
+  const [existing] = await db
+    .select({ id: devicesTable.id, orgId: devicesTable.orgId })
+    .from(devicesTable)
+    .where(sql`lower(${devicesTable.name}) = lower(${name})`)
+    .limit(1);
+
+  if (existing) return existing;
+
+  // 2. Auto-provision: grab the first org
+  const [org] = await db
+    .select({ id: organizationsTable.id })
+    .from(organizationsTable)
+    .limit(1);
+
+  if (!org) throw new Error("No organisation found — seed the database first");
+
+  // 3. Grab the first plant (optional — device can exist without one)
+  const [plant] = await db
+    .select({ id: plantsTable.id })
+    .from(plantsTable)
+    .where(eq(plantsTable.orgId, org.id))
+    .limit(1);
+
+  // 4. Create the device
+  const now  = new Date();
+  const id   = randomUUID();
+  await db.insert(devicesTable).values({
+    id,
+    orgId:     org.id,
+    plantId:   plant?.id ?? null,
+    name,
+    type:      "data_logger",
+    protocol:  "http_push",
+    status:    "offline",
+    config:    {},
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  logger.info({ id, name, orgId: org.id }, "Auto-provisioned push device");
+  return { id, orgId: org.id };
+}
+
+// ── POST /api/push — zero-config, no token required ──────────────────────────
+router.post("/push", async (req, res) => {
+  const body = req.body as Record<string, unknown> | null;
+  if (!body || typeof body !== "object") {
+    res.status(400).json({ error: "body_required", message: "POST body must be JSON" });
+    return;
+  }
+
+  // Device name from body, query param, or fallback
+  const deviceName = String(
+    (req.query["device"] as string | undefined) ??
+    body["device"] ??
+    body["name"] ??
+    body["deviceName"] ??
+    "TRB246"
+  );
+
+  try {
+    const device = await resolveDevice(deviceName);
+    const params = flattenPayload(body);
+    const paramCount = Object.keys(params).length;
+
+    if (paramCount === 0) {
+      res.status(400).json({ error: "no_data", message: "No numeric values found in payload" });
+      return;
+    }
+
+    await driverRegistry.injectReading(device.id, device.orgId, params);
+    res.json({ ok: true, device: deviceName, paramCount, ts: new Date().toISOString() });
+  } catch (err) {
+    logger.error({ err }, "Push ingest error");
+    res.status(500).json({ error: "ingest_failed", message: String(err) });
+  }
+});
+
+// ── POST /api/ingest/:token — token-authenticated variant (backward compat) ──
 router.post("/ingest/:token", async (req, res) => {
   const { token } = req.params;
   if (!token || token.length < 16) {
@@ -52,9 +144,8 @@ router.post("/ingest/:token", async (req, res) => {
     return;
   }
 
-  // Look up device by ingest token stored in config JSONB
   const [device] = await db
-    .select({ id: devicesTable.id, orgId: devicesTable.orgId, config: devicesTable.config })
+    .select({ id: devicesTable.id, orgId: devicesTable.orgId })
     .from(devicesTable)
     .where(sql`${devicesTable.config}->>'ingestToken' = ${token}`)
     .limit(1);
@@ -70,8 +161,7 @@ router.post("/ingest/:token", async (req, res) => {
     return;
   }
 
-  // Flatten the payload (handles nested TRB246 readings.*.value structure)
-  const params = flattenPayload(body);
+  const params = flattenPayload(body as Record<string, unknown>);
   const paramCount = Object.keys(params).length;
 
   if (paramCount === 0) {
@@ -79,9 +169,7 @@ router.post("/ingest/:token", async (req, res) => {
     return;
   }
 
-  // Inject into the registry — same pipeline as a live driver reading
   await driverRegistry.injectReading(device.id, device.orgId, params);
-
   res.json({ ok: true, deviceId: device.id, paramCount, ts: new Date().toISOString() });
 });
 

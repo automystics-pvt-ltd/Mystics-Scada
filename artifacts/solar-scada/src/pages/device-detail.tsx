@@ -871,6 +871,23 @@ export default function DeviceDetailPage() {
                           <code className="text-sm">{String(value)}</code>
                         </div>
                       ))}
+                    {/* HTTP Push — ingest URL always visible so user can always find the token */}
+                    {device.protocol === "http_push" && (device.config as Record<string, unknown>)?.ingestToken && (() => {
+                      const token = String((device.config as Record<string, unknown>).ingestToken);
+                      const url = `${window.location.origin}/api/ingest/${token}`;
+                      return (
+                        <div className="border-t border-border px-4 py-3 bg-green-500/5 space-y-1.5">
+                          <span className="text-xs text-muted-foreground block">Ingest URL — POST here from your device</span>
+                          <div className="flex items-center gap-2">
+                            <code className="text-xs flex-1 break-all leading-relaxed">{url}</code>
+                            <button
+                              onClick={() => void navigator.clipboard.writeText(url)}
+                              className="flex-shrink-0 text-xs px-2 py-1 rounded border border-border hover:bg-muted transition-colors"
+                            >Copy</button>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ) : (
                   <div className="rounded-lg border border-border p-4 space-y-4">
