@@ -1,0 +1,642 @@
+Here's a refined, structured, and comprehensive prompt that you can use with an AI coding assistant (ChatGPT, Claude, Cursor, Gemini, etc.) to generate a complete enterprise-grade SCADA Monitoring platform.
+
+---
+
+# Enterprise Prompt: Develop a Comprehensive Multi-Tenant SCADA Monitoring Web Application
+
+## Role
+
+Act as a **Senior Enterprise Solution Architect, SCADA Expert, UI/UX Designer, Full Stack Architect, Database Architect, Cybersecurity Expert, and DevOps Engineer**.
+
+Design a **production-ready, enterprise-grade, highly scalable SCADA Monitoring Platform** that follows modern industrial software standards and best practices.
+
+The solution should include:
+
+* Complete system architecture
+* Database design
+* UI/UX
+* API architecture
+* RBAC
+* Security
+* Configuration management
+* Device management
+* Alarm management
+* Reporting
+* Analytics
+* Audit logging
+* Platform Administration
+* Multi-tenant architecture
+* External integrations
+* Deployment architecture
+
+The output should be extremely detailed.
+
+---
+
+# Project Overview
+
+Develop a **Comprehensive SCADA Monitoring Web Application** capable of monitoring industrial devices, solar plants, inverters, energy meters, PLCs, RTUs, RS485 devices, Modbus devices, and multiple third-party systems.
+
+The application should support monitoring thousands of devices simultaneously while maintaining high availability and scalability.
+
+The application must provide:
+
+* Real-time monitoring
+* Historical data
+* Alarm management
+* Fault analytics
+* Solar analytics
+* Reports
+* Device configuration
+* User management
+* Platform administration
+* Audit trails
+* Diagnostics
+* Configuration management
+
+---
+
+# Multi-Tenant Architecture
+
+The application should support multiple organizations (tenants).
+
+Hierarchy:
+
+Platform Admin
+↓
+Customer / Tenant
+↓
+Plant
+↓
+Site
+↓
+Zone
+↓
+Device Group
+↓
+Device
+↓
+Parameters
+
+Each tenant should only access their own data.
+
+Platform Admin has complete visibility across all tenants.
+
+---
+
+# Authentication & Authorization
+
+Only **whitelisted users** can access the application.
+
+Required features:
+
+* Email/Password login
+* Optional LDAP/Active Directory
+* Optional Azure AD / SSO
+* Multi-Factor Authentication (MFA)
+* Password policy
+* Session timeout
+* IP whitelisting
+* Device whitelisting
+* Login history
+* Failed login tracking
+* Account lockout
+* CAPTCHA
+* JWT or OAuth2 authentication
+
+---
+
+# Role-Based Access Control (RBAC)
+
+### Platform Admin (Super Admin)
+
+Has unrestricted access to the entire platform.
+
+Capabilities include:
+
+* Create/Edit/Delete Tenants
+* Create/Edit/Delete Users
+* Assign Roles
+* Configure Permissions
+* View all customer data
+* Manage Plants
+* Manage Devices
+* Manage Inverters
+* Configure RS485 Devices
+* Configure PLCs
+* Configure Modbus Devices
+* Manage Gateways
+* Configure External APIs
+* Configure MQTT
+* Configure OPC-UA
+* Configure REST APIs
+* Configure Database Connections
+* Manage Storage
+* Manage Data Retention
+* Execute SQL Queries (restricted to authorized administrators)
+* Backup Database
+* Restore Database
+* Archive Data
+* Truncate Historical Data
+* Delete Historical Data
+* Database Maintenance
+* System Maintenance
+* Configure Notification Services
+* Configure Email
+* Configure SMS
+* Configure WhatsApp
+* Configure Webhooks
+* Configure Alarm Rules
+* Configure Report Templates
+* Configure Dashboards
+* Configure Themes
+* View Full Audit Logs
+* View User Activity
+* View Device Activity
+* View Login History
+* View API Logs
+* View System Logs
+* Export Logs
+* Download Database Backups
+* Manage Licenses
+* Manage System Health
+* Monitor Background Jobs
+* Restart Services
+* Configure Cache
+* Manage Scheduled Jobs
+
+---
+
+### Tenant Admin
+
+Can manage only their organization.
+
+Capabilities include:
+
+* Users
+* Plants
+* Sites
+* Dashboards
+* Reports
+* Alarm Rules
+* Notifications
+* Device Mapping
+* Device Groups
+
+Cannot access another tenant.
+
+---
+
+### Operator
+
+Read-only monitoring.
+
+Can:
+
+* Monitor Devices
+* View Dashboards
+* View Reports
+* Acknowledge Alarms
+* Download Reports
+
+Cannot modify configurations.
+
+---
+
+### Engineer
+
+Can:
+
+* Configure Devices
+* View Diagnostics
+* Commission Devices
+* Test Communication
+* Restart Devices (if permitted)
+
+---
+
+# SCADA Monitoring Dashboard
+
+Design a modern industrial dashboard showing:
+
+* Plant Status
+* Online Devices
+* Offline Devices
+* Active Alarms
+* Critical Alarms
+* Warning Alarms
+* Daily Generation
+* Monthly Generation
+* Lifetime Generation
+* Power Flow
+* Solar Yield
+* Grid Import
+* Grid Export
+* Energy Consumption
+* Device Health
+* Communication Health
+* Weather Information
+* Irradiance
+* Temperature
+* Wind Speed
+* Battery Status
+* UPS Status
+* Gateway Status
+
+Include:
+
+* Live KPIs
+* Interactive Charts
+* Maps
+* Heatmaps
+* Trend Graphs
+* Gauges
+* Widgets
+* Drill-down Navigation
+
+---
+
+# Device Management
+
+Support:
+
+* Inverters
+* Energy Meters
+* PLCs
+* RTUs
+* Dataloggers
+* Gateways
+* RS485 Devices
+* Modbus RTU
+* Modbus TCP
+* OPC-UA
+* MQTT Devices
+* BACnet
+* CAN Bus
+* Serial Devices
+* Ethernet Devices
+* Custom Protocols
+
+Each device should include:
+
+* Health Status
+* Last Communication
+* Firmware Version
+* Serial Number
+* Location
+* Installation Date
+* Manufacturer
+* Model
+* Parameters
+* Alarm Status
+* Live Values
+* Historical Data
+
+---
+
+# Communication Layer
+
+Support:
+
+* RS485
+* Modbus RTU
+* Modbus TCP
+* MQTT
+* OPC-UA
+* REST APIs
+* SOAP APIs
+* FTP
+* SFTP
+* TCP/IP
+* UDP
+* WebSocket
+* SNMP
+* IEC 61850 (if applicable)
+* DNP3 (optional)
+
+Include:
+
+* Retry logic
+* Communication diagnostics
+* Polling configuration
+* Failover
+* Heartbeat monitoring
+* Queue management
+* Buffer management
+
+---
+
+# Real-Time Monitoring
+
+Display live values for:
+
+* Voltage
+* Current
+* Power
+* Frequency
+* Power Factor
+* Energy
+* DC Voltage
+* DC Current
+* AC Voltage
+* AC Current
+* Temperature
+* Battery
+* Solar Irradiance
+* Wind Speed
+* Humidity
+* Device State
+* Grid Status
+* Breaker Status
+* Inverter State
+* Communication Status
+
+Include:
+
+* Auto-refresh
+* Live graphs
+* Trend analysis
+* Historical comparison
+
+---
+
+# Alarm Management
+
+Support:
+
+* Critical
+* Major
+* Minor
+* Warning
+* Information
+
+Features:
+
+* Alarm Rules
+* Alarm Escalation
+* Alarm Acknowledgement
+* Alarm History
+* Alarm Timeline
+* Alarm Analytics
+* Alarm Filtering
+* Alarm Correlation
+* Root Cause Analysis
+* Notification Routing
+
+Notifications:
+
+* Email
+* SMS
+* WhatsApp
+* Push Notifications
+* Webhooks
+
+---
+
+# Reports
+
+Support extensive reporting:
+
+Operational Reports
+
+Energy Reports
+
+Generation Reports
+
+Consumption Reports
+
+Fault Reports
+
+Downtime Reports
+
+Communication Reports
+
+Alarm Reports
+
+Efficiency Reports
+
+Maintenance Reports
+
+Availability Reports
+
+Daily Reports
+
+Weekly Reports
+
+Monthly Reports
+
+Yearly Reports
+
+Custom Reports
+
+Scheduled Reports
+
+Export:
+
+* PDF
+* Excel
+* CSV
+
+---
+
+# Analytics
+
+Provide:
+
+* Historical Trends
+* AI-ready Analytics
+* Predictive Maintenance
+* Device Health Score
+* Fault Prediction
+* Performance Ratio
+* Capacity Utilization
+* Solar Analytics
+* Energy Analytics
+* Loss Analysis
+* Peak Load Analysis
+
+---
+
+# Platform Administration
+
+Create a complete administration portal with dedicated configuration pages for:
+
+* User Management
+* Role Management
+* Tenant Management
+* Plant Management
+* Site Management
+* Device Management
+* Device Templates
+* Parameter Mapping
+* Alarm Configuration
+* Notification Configuration
+* Communication Settings
+* Protocol Settings
+* Gateway Configuration
+* API Management
+* Database Settings
+* Backup & Restore
+* Scheduler Management
+* License Management
+* Branding
+* Localization
+* Themes
+* System Health
+* Cache Management
+* Queue Monitoring
+* Service Monitoring
+* Storage Management
+* Audit Logs
+* Activity Logs
+* Login Logs
+* API Logs
+* Error Logs
+* Security Settings
+* Password Policies
+* Session Policies
+* IP Whitelisting
+* Device Whitelisting
+
+---
+
+# Audit Logging
+
+Every action must be recorded, including:
+
+* Login
+* Logout
+* CRUD Operations
+* Device Configuration Changes
+* Alarm Acknowledgements
+* Report Downloads
+* SQL Execution
+* Data Export
+* Configuration Updates
+* User Management
+* Role Changes
+* Permission Changes
+
+Each audit record should capture:
+
+* User
+* Role
+* IP Address
+* Browser
+* Device
+* Timestamp
+* Action
+* Previous Value
+* New Value
+* Success/Failure
+* Session ID
+
+---
+
+# Database Administration (Restricted)
+
+Platform Admins with appropriate privileges should have controlled database administration capabilities, including:
+
+* Read-only SQL query console
+* Safe execution of approved maintenance queries
+* Database health monitoring
+* Table statistics
+* Index monitoring
+* Backup management
+* Restore management
+* Archiving
+* Historical data cleanup based on retention policies
+* Maintenance scheduling
+
+Destructive operations (such as DELETE or TRUNCATE) should require:
+
+* Explicit privilege assignment
+* Multi-step confirmation
+* Audit logging
+* Optional approval workflow
+* Transaction safeguards where applicable
+
+---
+
+# Security
+
+Implement enterprise-grade security:
+
+* RBAC
+* MFA
+* Encryption at Rest
+* TLS/HTTPS
+* Audit Logging
+* CSRF Protection
+* XSS Protection
+* SQL Injection Protection
+* API Rate Limiting
+* Secrets Management
+* Secure Session Handling
+* Password Hashing
+* Database Encryption
+* WAF Compatibility
+
+---
+
+# UI/UX Requirements
+
+Design a modern SCADA interface with:
+
+* Responsive Design
+* Light Theme
+* Dark Theme
+* Industrial Theme
+* Drag-and-Drop Dashboards
+* Configurable Widgets
+* Interactive Charts
+* Geographic Maps
+* Alarm Panels
+* KPI Cards
+* Live Gauges
+* Animated Status Indicators
+* Tree Navigation
+* Breadcrumb Navigation
+* Global Search
+* Advanced Filters
+* Keyboard Shortcuts
+* Accessibility (WCAG)
+
+---
+
+# Expected Deliverables
+
+Produce a complete solution that includes:
+
+1. High-level System Architecture
+2. Frontend Architecture
+3. Backend Architecture
+4. Database Schema (ER Diagram)
+5. API Design
+6. Authentication Flow
+7. Authorization Model
+8. Complete Screen Inventory
+9. Navigation Structure
+10. UI Wireframes (conceptual)
+11. Detailed Module Breakdown
+12. Configuration Pages
+13. Device Communication Flow
+14. Alarm Processing Flow
+15. Data Acquisition Pipeline
+16. Historical Data Storage Design
+17. Reporting Architecture
+18. Analytics Architecture
+19. Audit Logging Design
+20. Security Architecture
+21. Deployment Architecture (Cloud/On-Premises)
+22. Microservices and Component Diagram (if applicable)
+23. Technology Stack Recommendations
+24. Scalability Considerations
+25. High Availability and Disaster Recovery Strategy
+26. Testing Strategy (Unit, Integration, Performance, Security)
+27. CI/CD Pipeline
+28. Monitoring and Observability
+29. Maintenance and Operational Guidelines
+30. A complete list of every page, modal, wizard, configuration screen, dashboard, report, and administrative function required for a world-class enterprise SCADA monitoring platform.
+
+**Design the solution as if it were competing with leading industrial SCADA platforms such as Siemens WinCC, Schneider EcoStruxure, ABB Ability, Ignition SCADA, AVEVA System Platform, or GE Digital iFIX, while leveraging modern web technologies, cloud-native architecture, and enterprise security best practices.**
