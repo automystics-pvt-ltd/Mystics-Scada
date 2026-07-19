@@ -172,6 +172,10 @@ else
   warn "  └──────────────────────────────────────────────────────────────────────"
 fi
 
+# AUTH_BYPASS — always enable so the app opens without login
+set_env AUTH_BYPASS "true"
+log "  AUTH_BYPASS=true set ✓"
+
 # SESSION_SECRET — auto-generate if missing
 SESSION_SET=\$(grep -c "^SESSION_SECRET=" "\$ENV_FILE" 2>/dev/null || echo 0)
 if [ "\$SESSION_SET" -lt 1 ]; then
