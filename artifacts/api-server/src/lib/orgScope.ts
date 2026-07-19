@@ -3,8 +3,12 @@
  * apply to a request.
  *
  * Normal users  → always their own orgId (cannot be overridden).
- * Super admins  → the `?orgId=` query param when provided, otherwise `null`
- *                 which means "no filter" (see all orgs).
+ * Super admins  → orgOverride (impersonation) → ?orgId= query param
+ *                 → their own orgId → null (no filter, all orgs).
+ *
+ * Falling back to the super admin's own orgId means they can use org-scoped
+ * features (Connect Source, Devices, etc.) directly within their own tenant
+ * without having to explicitly impersonate it first.
  */
 
 import type { Request } from "express";
@@ -13,13 +17,18 @@ import { eq } from "drizzle-orm";
 
 /**
  * Returns the org-id to use as a WHERE filter, or `null` for a super-admin
- * request with no specific org override (meaning the query should return all
+ * request with no specific org scope (meaning the query should return all
  * organisations).
  */
 export function resolveOrgId(req: Request): string | null {
   if (req.user!.isSuperAdmin) {
-    // orgOverride (set via impersonation) takes precedence over the ?orgId= query param
-    return req.user!.orgOverride ?? (req.query["orgId"] as string | undefined) ?? null;
+    // Priority: explicit impersonation → ?orgId= param → own orgId → null
+    return (
+      req.user!.orgOverride ??
+      (req.query["orgId"] as string | undefined) ??
+      req.user!.orgId ??
+      null
+    );
   }
   return req.user!.orgId;
 }
