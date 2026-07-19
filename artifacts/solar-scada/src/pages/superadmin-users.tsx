@@ -2,13 +2,16 @@
  * Fleet-wide Users — /superadmin/users
  */
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SuperAdminLayout } from "@/components/super-admin-layout";
 import { SuperAdminGuard } from "@/components/super-admin-guard";
-import { Users, Search, Building2, UserCheck, UserX, Mail, Clock, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Search, Building2, UserCheck, UserX, Mail, RefreshCw, ChevronLeft, ChevronRight, KeyRound, Eye, EyeOff, ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 const BASE = import.meta.env.BASE_URL as string;
 
@@ -17,6 +20,98 @@ interface UserRow {
   roleId: string | null; roleName: string | null;
   orgId: string; orgName: string | null;
   lastLoginAt: string | null; createdAt: string;
+  hasPassword: boolean;
+}
+
+function SetPasswordModal({ user, onClose, onDone }: {
+  user: UserRow; onClose: () => void; onDone: () => void;
+}) {
+  const { toast } = useToast();
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm]   = useState("");
+  const [showPw, setShowPw]     = useState(false);
+  const [saving, setSaving]     = useState(false);
+
+  async function save() {
+    if (password.length < 8) { toast({ title: "Password too short", description: "Minimum 8 characters", variant: "destructive" }); return; }
+    if (password !== confirm) { toast({ title: "Passwords don't match", variant: "destructive" }); return; }
+    setSaving(true);
+    try {
+      const r = await fetch(`${BASE}api/superadmin/users/${user.id}/password`, {
+        method: "PUT", credentials: "include",
+        headers: { "Content-Type": "application/json", "X-SCADA-Request": "1" },
+        body: JSON.stringify({ password }),
+      });
+      const j = await r.json() as { ok?: boolean; message?: string; error?: string };
+      if (r.ok) { toast({ title: "Password set", description: j.message }); onDone(); }
+      else       { toast({ title: "Failed", description: j.message ?? j.error, variant: "destructive" }); }
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <Dialog open onOpenChange={open => !open && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <KeyRound className="h-4 w-4 text-primary" />
+            Set Password
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-1 py-1">
+          <p className="text-sm text-muted-foreground">
+            Setting a password for <span className="font-medium text-foreground">{user.name}</span>
+            <span className="block text-xs font-mono">{user.email}</span>
+          </p>
+        </div>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>New Password</Label>
+            <div className="relative">
+              <Input
+                type={showPw ? "text" : "password"}
+                placeholder="Min 8 characters"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="pr-9"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw(v => !v)}
+                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Confirm Password</Label>
+            <Input
+              type={showPw ? "text" : "password"}
+              placeholder="Re-enter password"
+              value={confirm}
+              onChange={e => setConfirm(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && void save()}
+            />
+            {confirm && password !== confirm && (
+              <p className="text-[11px] text-destructive">Passwords do not match</p>
+            )}
+          </div>
+          {user.hasPassword && (
+            <p className="text-[11px] text-amber-400 flex items-center gap-1.5">
+              <KeyRound className="h-3 w-3" /> This user already has a password — it will be replaced.
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => void save()} disabled={saving || !password || !confirm}>
+            {saving ? "Saving…" : "Set Password"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -28,11 +123,29 @@ const STATUS_COLOR: Record<string, string> = {
 const PAGE_SIZE = 50;
 
 export default function SuperAdminUsers() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [search, setSearch]   = useState("");
   const [orgId, setOrgId]     = useState("");
   const [status, setStatus]   = useState("");
   const [page, setPage]       = useState(0);
   const [q, setQ]             = useState({ search: "", orgId: "", status: "" });
+  const [setPasswordFor, setSetPasswordFor] = useState<UserRow | null>(null);
+  const [removingId, setRemovingId]         = useState<string | null>(null);
+
+  async function removePassword(user: UserRow) {
+    if (!confirm(`Remove password login for ${user.name}? They will only be able to use OTP.`)) return;
+    setRemovingId(user.id);
+    try {
+      const r = await fetch(`${BASE}api/superadmin/users/${user.id}/password`, {
+        method: "DELETE", credentials: "include",
+        headers: { "X-SCADA-Request": "1" },
+      });
+      const j = await r.json() as { ok?: boolean; message?: string };
+      if (r.ok) { toast({ title: "Password removed", description: j.message }); void queryClient.invalidateQueries({ queryKey: ["superadmin", "users"] }); }
+      else       { toast({ title: "Failed to remove password", variant: "destructive" }); }
+    } finally { setRemovingId(null); }
+  }
 
   const { data, isLoading, refetch } = useQuery<{ users: UserRow[]; total: number }>({
     queryKey: ["superadmin", "users", q, page],
@@ -96,6 +209,7 @@ export default function SuperAdminUsers() {
                     <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Status</th>
                     <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Last Login</th>
                     <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Joined</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">Password</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -108,7 +222,7 @@ export default function SuperAdminUsers() {
                       </tr>
                     ))
                   ) : users.length === 0 ? (
-                    <tr><td colSpan={6} className="text-center py-12 text-muted-foreground">No users found</td></tr>
+                    <tr><td colSpan={7} className="text-center py-12 text-muted-foreground">No users found</td></tr>
                   ) : users.map(user => (
                     <tr key={user.id} className="border-t border-border/50 hover:bg-muted/20">
                       <td className="px-4 py-3">
@@ -142,6 +256,29 @@ export default function SuperAdminUsers() {
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground font-mono">
                         {new Date(user.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="sm" variant="ghost"
+                            className="h-7 px-2 text-xs gap-1 text-primary hover:bg-primary/10"
+                            onClick={() => setSetPasswordFor(user)}
+                          >
+                            <KeyRound className="h-3 w-3" />
+                            {user.hasPassword ? "Change" : "Set"}
+                          </Button>
+                          {user.hasPassword && (
+                            <Button
+                              size="sm" variant="ghost"
+                              className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              disabled={removingId === user.id}
+                              onClick={() => void removePassword(user)}
+                            >
+                              <ShieldOff className="h-3 w-3" />
+                              {removingId === user.id ? "…" : "Remove"}
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -182,6 +319,17 @@ export default function SuperAdminUsers() {
           </div>
         </div>
       </SuperAdminLayout>
+
+      {setPasswordFor && (
+        <SetPasswordModal
+          user={setPasswordFor}
+          onClose={() => setSetPasswordFor(null)}
+          onDone={() => {
+            setSetPasswordFor(null);
+            void queryClient.invalidateQueries({ queryKey: ["superadmin", "users"] });
+          }}
+        />
+      )}
     </SuperAdminGuard>
   );
 }

@@ -14,7 +14,8 @@
  */
 
 import { Router, type IRouter } from "express";
-import { eq, count, desc, and, inArray, not } from "drizzle-orm";
+import { eq, count, desc, and, inArray, not, isNotNull } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 import {
   db,
   organizationsTable,
@@ -228,6 +229,7 @@ const CreateOrgBody = z.object({
   planTier: z.enum(["starter", "professional", "enterprise"]).default("starter"),
   adminName: z.string().min(2).max(100).optional(),
   adminEmail: z.string().email().optional(),
+  adminPassword: z.string().min(8).max(128).optional(),
 });
 
 router.post("/superadmin/orgs", async (req, res) => {
@@ -237,7 +239,7 @@ router.post("/superadmin/orgs", async (req, res) => {
     return;
   }
 
-  const { name, slug, planTier, adminName, adminEmail } = body.data;
+  const { name, slug, planTier, adminName, adminEmail, adminPassword } = body.data;
 
   // Check slug uniqueness
   const [existing] = await db
@@ -270,6 +272,7 @@ router.post("/superadmin/orgs", async (req, res) => {
   let initialUser = null;
   if (adminName && adminEmail) {
     const userId = `user-${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}`;
+    const passwordHash = adminPassword ? bcrypt.hashSync(adminPassword, 10) : null;
     await db.insert(usersTable).values({
       id: userId,
       orgId,
@@ -277,10 +280,11 @@ router.post("/superadmin/orgs", async (req, res) => {
       email: adminEmail.toLowerCase(),
       roleId: adminRoleId,
       plantIds: [],
-      status: "invited",
+      status: passwordHash ? "active" : "invited",
+      passwordHash,
       createdAt: now,
     });
-    initialUser = { id: userId, email: adminEmail, name: adminName };
+    initialUser = { id: userId, email: adminEmail, name: adminName, hasPassword: !!passwordHash };
   }
 
   req.log.info({ orgId, slug }, "Super admin created org");
@@ -542,6 +546,53 @@ router.get("/superadmin/system-health", async (_req, res) => {
   });
 });
 
+// ── PUT /superadmin/users/:id/password ───────────────────────────────────────
+
+const SetPasswordBody = z.object({
+  password: z.string().min(8, "Password must be at least 8 characters").max(128),
+});
+
+router.put("/superadmin/users/:id/password", async (req, res) => {
+  const body = SetPasswordBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "invalid_request", message: body.error.issues[0]?.message ?? "Invalid password" });
+    return;
+  }
+
+  const userId = req.params["id"];
+  const { usersTable: ut } = await import("@workspace/db");
+
+  const [user] = await db.select({ id: ut.id, email: ut.email, name: ut.name })
+    .from(ut).where(eq(ut.id, userId)).limit(1);
+  if (!user) { res.status(404).json({ error: "not_found" }); return; }
+
+  const passwordHash = bcrypt.hashSync(body.data.password, 10);
+  await db.update(ut)
+    .set({ passwordHash, status: "active", updatedAt: new Date() })
+    .where(eq(ut.id, userId));
+
+  req.log.info({ userId, adminId: (req as { userId?: string }).userId }, "Super admin set password for user");
+  res.json({ ok: true, message: `Password set for ${user.email}` });
+});
+
+// ── DELETE /superadmin/users/:id/password ────────────────────────────────────
+
+router.delete("/superadmin/users/:id/password", async (req, res) => {
+  const userId = req.params["id"];
+  const { usersTable: ut } = await import("@workspace/db");
+
+  const [user] = await db.select({ id: ut.id, email: ut.email })
+    .from(ut).where(eq(ut.id, userId)).limit(1);
+  if (!user) { res.status(404).json({ error: "not_found" }); return; }
+
+  await db.update(ut)
+    .set({ passwordHash: null, updatedAt: new Date() })
+    .where(eq(ut.id, userId));
+
+  req.log.info({ userId }, "Super admin removed password for user");
+  res.json({ ok: true, message: `Password removed for ${user.email}` });
+});
+
 // ── GET /superadmin/users ─────────────────────────────────────────────────────
 
 import { ilike, or } from "drizzle-orm";
@@ -565,6 +616,7 @@ router.get("/superadmin/users", async (req, res) => {
       orgName:     ot.name,
       lastLoginAt: ut.lastLoginAt,
       createdAt:   ut.createdAt,
+      hasPassword: isNotNull(ut.passwordHash),
     })
     .from(ut)
     .leftJoin(rt, eq(ut.roleId, rt.id))

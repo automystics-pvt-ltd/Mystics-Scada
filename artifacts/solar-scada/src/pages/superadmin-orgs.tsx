@@ -16,6 +16,8 @@ import {
   Pause,
   Play,
   ChevronLeft,
+  KeyRound,
+  EyeOff,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -104,7 +106,9 @@ export default function SuperAdminOrgs() {
     planTier: "starter",
     adminName: "",
     adminEmail: "",
+    adminPassword: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const { data: orgs = [], isLoading } = useQuery<OrgRow[]>({
     queryKey: ["superadmin", "orgs"],
@@ -163,6 +167,7 @@ export default function SuperAdminOrgs() {
           planTier: form.planTier,
           adminName: form.adminName || undefined,
           adminEmail: form.adminEmail || undefined,
+          adminPassword: form.adminPassword || undefined,
         }),
       });
       const data = (await res.json()) as { error?: string; message?: string; id?: string };
@@ -172,7 +177,8 @@ export default function SuperAdminOrgs() {
         await queryClient.invalidateQueries({ queryKey: ["superadmin"] });
         toast({ title: "Organisation created", description: form.name });
         setShowCreate(false);
-        setForm({ name: "", slug: "", planTier: "starter", adminName: "", adminEmail: "" });
+        setForm({ name: "", slug: "", planTier: "starter", adminName: "", adminEmail: "", adminPassword: "" });
+        setShowPassword(false);
         if (data.id) navigate(`/superadmin/orgs/${data.id}`);
       }
     } finally {
@@ -393,6 +399,39 @@ export default function SuperAdminOrgs() {
                       value={form.adminEmail}
                       onChange={(e) => setForm((f) => ({ ...f, adminEmail: e.target.value }))}
                     />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1.5">
+                      <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
+                      Admin Password
+                      <span className="text-[10px] text-muted-foreground font-normal">(optional — enables immediate login)</span>
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Min 8 characters"
+                        value={form.adminPassword}
+                        onChange={(e) => setForm((f) => ({ ...f, adminPassword: e.target.value }))}
+                        className="pr-9"
+                        disabled={!form.adminEmail}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(v => !v)}
+                        className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {form.adminPassword && form.adminPassword.length < 8 && (
+                      <p className="text-[11px] text-destructive">Minimum 8 characters</p>
+                    )}
+                    {form.adminPassword && form.adminPassword.length >= 8 && (
+                      <p className="text-[11px] text-status-normal">✓ User will be created as Active and can login immediately</p>
+                    )}
+                    {!form.adminPassword && form.adminEmail && (
+                      <p className="text-[11px] text-muted-foreground">Leave blank to create as Invited (OTP login only)</p>
+                    )}
                   </div>
                 </div>
               </div>
