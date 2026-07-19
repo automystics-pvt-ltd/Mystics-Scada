@@ -311,7 +311,12 @@ export default function SuperAdminDbAdmin() {
 
   const { data: tables = [], refetch: refetchTables } = useQuery<TableInfo[]>({
     queryKey: ["superadmin", "db", "tables"],
-    queryFn: () => fetch(`${BASE}api/superadmin/db/tables`, { credentials: "include" }).then(r => r.json()) as Promise<TableInfo[]>,
+    queryFn: async () => {
+      const res = await fetch(`${BASE}api/superadmin/db/tables`, { credentials: "include" });
+      const json = await res.json();
+      // API may return { tables: [...] } or a bare array
+      return (Array.isArray(json) ? json : (json?.tables ?? [])) as TableInfo[];
+    },
   });
 
   const filteredTables = tables.filter(t => t.name.toLowerCase().includes(tableFilter.toLowerCase()));
