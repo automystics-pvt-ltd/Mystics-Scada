@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { runMigrations } from "./lib/runMigrations";
 import { ensureSeedData } from "./lib/seed";
 import { seedPasswordUser } from "./lib/seedPasswordUser";
 import { initFaultStore } from "./lib/initFaultStore";
@@ -25,6 +26,9 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 async function startServer(): Promise<void> {
+  // Apply DB schema migrations first — idempotent, runs before any table access
+  await runMigrations();
+
   // Seed data first (non-fatal — log and continue)
   await ensureSeedData().catch((err: unknown) => {
     logger.error({ err }, "Failed to seed initial data");

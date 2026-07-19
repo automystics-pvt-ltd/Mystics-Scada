@@ -183,9 +183,9 @@ fi
 
 # ── 4. DB migrations ──────────────────────────────────────────────────────────
 section "4/7  Database migrations"
-pnpm --filter @workspace/db run db:push \\
+pnpm --filter @workspace/db run push \\
   && log "  Migrations applied ✓" \\
-  || warn "  db:push returned non-zero — schema may already be current"
+  || warn "  push returned non-zero — check DB_URL or schema drift"
 
 # ── 5. Restart services ───────────────────────────────────────────────────────
 section "5/7  Restart services"
