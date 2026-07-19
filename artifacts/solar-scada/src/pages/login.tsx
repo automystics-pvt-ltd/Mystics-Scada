@@ -162,7 +162,13 @@ function PasswordStep({ onBack, defaultEmail = "", smtpOffRedirect = false }: {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password }),
       });
-      const b = await r.json() as { ok?: boolean; message?: string };
+      if (r.status === 404) {
+        setError("Password login is not available — the server needs to be updated.");
+        setLoading(false);
+        return;
+      }
+      let b: { ok?: boolean; message?: string } = {};
+      try { b = await r.json(); } catch { /* non-JSON body */ }
       if (!r.ok) {
         setError(b.message ?? "Incorrect email or password.");
         setLoading(false);
