@@ -51,6 +51,27 @@ export async function authenticate(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
+  // AUTH_BYPASS=true — skip login entirely, auto-attach first super-admin user.
+  if (process.env.AUTH_BYPASS === "true") {
+    const [admin] = await db
+      .select({
+        id: usersTable.id,
+        orgId: usersTable.orgId,
+        roleId: usersTable.roleId,
+        name: usersTable.name,
+        email: usersTable.email,
+        isSuperAdmin: usersTable.isSuperAdmin,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.isSuperAdmin, true))
+      .limit(1);
+    if (admin) {
+      req.user = { ...admin, orgOverride: undefined };
+      next();
+      return;
+    }
+  }
+
   const raw = req.signedCookies?.[SESSION_COOKIE];
   const session = parseSession(raw);
 

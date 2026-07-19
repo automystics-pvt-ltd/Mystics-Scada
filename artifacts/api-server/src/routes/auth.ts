@@ -130,22 +130,32 @@ router.post("/auth/logout", (req, res) => {
 // ── GET /auth/me ─────────────────────────────────────────────────────────────
 
 router.get("/auth/me", async (req, res) => {
+  // AUTH_BYPASS=true — return the first super-admin without requiring a session.
+  let bypassUser: typeof usersTable.$inferSelect | undefined;
+  if (process.env.AUTH_BYPASS === "true") {
+    const [admin] = await db.select().from(usersTable)
+      .where(eq(usersTable.isSuperAdmin, true)).limit(1);
+    bypassUser = admin;
+  }
+
   const raw = req.signedCookies?.[SESSION_COOKIE];
   const session = parseSession(raw);
 
-  if (!session) {
+  if (!bypassUser && !session) {
     // Return 200 so the browser console stays clean — frontend checks `authenticated`
     res.json({ authenticated: false });
     return;
   }
 
-  const [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, session.userId))
-    .limit(1);
+  const [user] = bypassUser
+    ? [bypassUser]
+    : await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.id, session!.userId))
+        .limit(1);
 
-  if (!user || user.orgId !== session.orgId) {
+  if (!user || (!bypassUser && user.orgId !== session!.orgId)) {
     res.clearCookie(SESSION_COOKIE, { path: "/" });
     res.json({ authenticated: false });
     return;
@@ -168,7 +178,7 @@ router.get("/auth/me", async (req, res) => {
   // frontend can show the "Acting as [OrgName]" banner.
   let orgOverride: string | undefined;
   let orgOverrideName: string | undefined;
-  if (user.isSuperAdmin && session.orgOverride) {
+  if (user.isSuperAdmin && session?.orgOverride) {
     const [overrideOrg] = await db
       .select({ id: organizationsTable.id, name: organizationsTable.name })
       .from(organizationsTable)
