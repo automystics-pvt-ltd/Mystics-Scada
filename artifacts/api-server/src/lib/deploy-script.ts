@@ -126,28 +126,55 @@ rm -rf artifacts/solar-scada/dist/public/*
 tar -xzf /tmp/fe.tar.gz -C artifacts/solar-scada/dist/public || fail "Failed to extract frontend"
 log "  Extracted to artifacts/solar-scada/dist/public ✓"
 
-# ── 3. SMTP env check ─────────────────────────────────────────────────────────
+# ── 3. Environment / SMTP setup ───────────────────────────────────────────────
 section "3/7  Environment"
 ENV_FILE="artifacts/api-server/.env"
 mkdir -p "\$(dirname "\$ENV_FILE")"
 touch "\$ENV_FILE"
-if grep -q "SMTP_HOST" "\$ENV_FILE" 2>/dev/null; then
-  log "  SMTP configured ✓"
+
+# Helper: set/replace a key=value in .env (does not duplicate)
+set_env() {
+  local key="\$1" val="\$2"
+  if grep -q "^\${key}=" "\$ENV_FILE" 2>/dev/null; then
+    sed -i "s|^\${key}=.*|\${key}=\${val}|" "\$ENV_FILE"
+  else
+    echo "\${key}=\${val}" >> "\$ENV_FILE"
+  fi
+}
+
+# If caller passes SMTP vars as environment variables, write them to .env now.
+# Usage:  SMTP_HOST=smtp.gmail.com SMTP_USER=x@gmail.com SMTP_PASS="xxxx xxxx xxxx xxxx" ./deploy.sh
+[ -n "\${SMTP_HOST:-}" ]   && set_env SMTP_HOST   "\$SMTP_HOST"   && log "  SMTP_HOST written to .env"
+[ -n "\${SMTP_PORT:-}" ]   && set_env SMTP_PORT   "\$SMTP_PORT"   && log "  SMTP_PORT written to .env"
+[ -n "\${SMTP_SECURE:-}" ] && set_env SMTP_SECURE "\$SMTP_SECURE" && log "  SMTP_SECURE written to .env"
+[ -n "\${SMTP_USER:-}" ]   && set_env SMTP_USER   "\$SMTP_USER"   && log "  SMTP_USER written to .env"
+[ -n "\${SMTP_PASS:-}" ]   && set_env SMTP_PASS   "\$SMTP_PASS"   && log "  SMTP_PASS written to .env"
+[ -n "\${SMTP_FROM:-}" ]   && set_env SMTP_FROM   "\$SMTP_FROM"   && log "  SMTP_FROM written to .env"
+
+if grep -q "^SMTP_HOST=" "\$ENV_FILE" 2>/dev/null; then
+  SMTP_HOST_VAL=\$(grep "^SMTP_HOST=" "\$ENV_FILE" | cut -d= -f2)
+  SMTP_USER_VAL=\$(grep "^SMTP_USER=" "\$ENV_FILE" | cut -d= -f2 || echo "(not set)")
+  log "  SMTP configured: \$SMTP_HOST_VAL as \$SMTP_USER_VAL ✓"
 else
-  warn "  SMTP_HOST not found in \$ENV_FILE"
-  warn "  Add lines like:"
-  warn "    SMTP_HOST=smtp.gmail.com"
-  warn "    SMTP_PORT=587"
-  warn "    SMTP_SECURE=false"
-  warn "    SMTP_USER=you@gmail.com"
-  warn "    SMTP_PASS=xxxx xxxx xxxx xxxx"
-  warn "    SMTP_FROM=Platform <you@gmail.com>"
+  warn "  ┌─ SMTP NOT configured — OTP emails will not be sent ─────────────────"
+  warn "  │  Users will be redirected to password login automatically."
+  warn "  │"
+  warn "  │  To enable email OTP, re-run deploy with SMTP vars:"
+  warn "  │"
+  warn "  │  SMTP_HOST=smtp.gmail.com \\"
+  warn "  │  SMTP_PORT=587 \\"
+  warn "  │  SMTP_SECURE=false \\"
+  warn "  │  SMTP_USER=you@gmail.com \\"
+  warn "  │  SMTP_PASS='xxxx xxxx xxxx xxxx' \\"
+  warn "  │  SMTP_FROM='Solar SCADA <you@gmail.com>' \\"
+  warn "  │  ./deploy.sh"
+  warn "  └──────────────────────────────────────────────────────────────────────"
 fi
 
-SESSION_SET=\$(grep -c "SESSION_SECRET" "\$ENV_FILE" 2>/dev/null || echo 0)
+# SESSION_SECRET — auto-generate if missing
+SESSION_SET=\$(grep -c "^SESSION_SECRET=" "\$ENV_FILE" 2>/dev/null || echo 0)
 if [ "\$SESSION_SET" -lt 1 ]; then
-  warn "  SESSION_SECRET not set — generating a random one..."
-  echo "SESSION_SECRET=\$(openssl rand -hex 32)" >> "\$ENV_FILE"
+  set_env SESSION_SECRET "\$(openssl rand -hex 32)"
   log "  SESSION_SECRET generated and saved ✓"
 else
   log "  SESSION_SECRET present ✓"

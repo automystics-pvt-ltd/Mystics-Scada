@@ -138,11 +138,15 @@ function EmailStep({
 }
 
 // ── Password login step ───────────────────────────────────────────────────────
-function PasswordStep({ onBack }: { onBack: () => void }) {
+function PasswordStep({ onBack, defaultEmail = "", smtpOffRedirect = false }: {
+  onBack: () => void;
+  defaultEmail?: string;
+  smtpOffRedirect?: boolean;
+}) {
   const [, setLocation] = useLocation();
   const qc = useQueryClient();
 
-  const [email, setEmail]         = useState("");
+  const [email, setEmail]         = useState(defaultEmail);
   const [password, setPassword]   = useState("");
   const [showPwd, setShowPwd]     = useState(false);
   const [error, setError]         = useState<string | null>(null);
@@ -180,7 +184,16 @@ function PasswordStep({ onBack }: { onBack: () => void }) {
         </div>
         <h2 className="text-2xl font-bold text-gray-900">Sign in</h2>
       </div>
-      <p className="text-sm text-gray-500 mb-6">Enter your email and password.</p>
+      {smtpOffRedirect ? (
+        <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
+          <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+          <p className="text-sm text-amber-800">
+            Email delivery is not configured on this server — sign in with your password instead.
+          </p>
+        </div>
+      ) : (
+        <p className="text-sm text-gray-500 mb-6">Enter your email and password.</p>
+      )}
 
       <form onSubmit={submit} className="space-y-4">
         <div>
@@ -503,15 +516,22 @@ function OtpStep({
 type Step = "email" | "password" | "sending" | "otp";
 
 export default function Login() {
-  const [step, setStep]         = useState<Step>("email");
-  const [email, setEmail]       = useState("");
-  const [masked, setMasked]     = useState("");
-  const [ttl, setTtl]           = useState(300_000);
-  const [cooldown, setCooldown] = useState(50_000);
-  const [smtpOn, setSmtpOn]     = useState(false);
+  const [step, setStep]               = useState<Step>("email");
+  const [email, setEmail]             = useState("");
+  const [masked, setMasked]           = useState("");
+  const [ttl, setTtl]                 = useState(300_000);
+  const [cooldown, setCooldown]       = useState(50_000);
+  const [smtpOn, setSmtpOn]           = useState(false);
+  const [smtpOffRedirect, setSmtpOffRedirect] = useState(false);
 
   const handleSent = (e: string, m: string, t: number, cd: number, smtp: boolean) => {
     setEmail(e); setMasked(m); setTtl(t); setCooldown(cd); setSmtpOn(smtp);
+    if (!smtp) {
+      // SMTP is disabled — skip the OTP flow entirely and go straight to password login
+      setSmtpOffRedirect(true);
+      setStep("password");
+      return;
+    }
     setStep("sending");
   };
 
@@ -540,7 +560,11 @@ export default function Login() {
       )}
 
       {step === "password" && (
-        <PasswordStep onBack={() => setStep("email")} />
+        <PasswordStep
+          onBack={() => { setSmtpOffRedirect(false); setStep("email"); }}
+          defaultEmail={email}
+          smtpOffRedirect={smtpOffRedirect}
+        />
       )}
 
       {step === "sending" && (
