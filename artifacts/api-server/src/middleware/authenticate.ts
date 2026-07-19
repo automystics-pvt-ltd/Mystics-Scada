@@ -51,8 +51,8 @@ export async function authenticate(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  // AUTH_BYPASS=true — skip login entirely, auto-attach first super-admin user.
-  if (process.env.AUTH_BYPASS === "true") {
+  // BYPASS — auto-attach first super-admin, no login required.
+  {
     const [admin] = await db
       .select({
         id: usersTable.id,

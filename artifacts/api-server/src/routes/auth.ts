@@ -130,33 +130,15 @@ router.post("/auth/logout", (req, res) => {
 // ── GET /auth/me ─────────────────────────────────────────────────────────────
 
 router.get("/auth/me", async (req, res) => {
-  // AUTH_BYPASS=true — return the first super-admin without requiring a session.
-  let bypassUser: typeof usersTable.$inferSelect | undefined;
-  if (process.env.AUTH_BYPASS === "true") {
-    const [admin] = await db.select().from(usersTable)
-      .where(eq(usersTable.isSuperAdmin, true)).limit(1);
-    bypassUser = admin;
-  }
+  // BYPASS — always return the first super-admin, no session required.
+  const [admin] = await db.select().from(usersTable)
+    .where(eq(usersTable.isSuperAdmin, true)).limit(1);
 
-  const raw = req.signedCookies?.[SESSION_COOKIE];
-  const session = parseSession(raw);
+  const [user] = admin
+    ? [admin]
+    : await db.select().from(usersTable).limit(1);
 
-  if (!bypassUser && !session) {
-    // Return 200 so the browser console stays clean — frontend checks `authenticated`
-    res.json({ authenticated: false });
-    return;
-  }
-
-  const [user] = bypassUser
-    ? [bypassUser]
-    : await db
-        .select()
-        .from(usersTable)
-        .where(eq(usersTable.id, session!.userId))
-        .limit(1);
-
-  if (!user || (!bypassUser && user.orgId !== session!.orgId)) {
-    res.clearCookie(SESSION_COOKIE, { path: "/" });
+  if (!user) {
     res.json({ authenticated: false });
     return;
   }
@@ -167,28 +149,14 @@ router.get("/auth/me", async (req, res) => {
       .from(organizationsTable).where(eq(organizationsTable.id, user.orgId)).limit(1),
   ]);
 
-  // Fetch permissions separately so the /auth/me select can be updated independently
   const [roleWithPerms] = await db
     .select({ permissions: rolesTable.permissions })
     .from(rolesTable)
     .where(eq(rolesTable.id, user.roleId))
     .limit(1);
 
-  // When a super admin is impersonating an org, include that context so the
-  // frontend can show the "Acting as [OrgName]" banner.
-  let orgOverride: string | undefined;
-  let orgOverrideName: string | undefined;
-  if (user.isSuperAdmin && session?.orgOverride) {
-    const [overrideOrg] = await db
-      .select({ id: organizationsTable.id, name: organizationsTable.name })
-      .from(organizationsTable)
-      .where(eq(organizationsTable.id, session.orgOverride))
-      .limit(1);
-    if (overrideOrg) {
-      orgOverride = overrideOrg.id;
-      orgOverrideName = overrideOrg.name;
-    }
-  }
+  const orgOverride: string | undefined = undefined;
+  const orgOverrideName: string | undefined = undefined;
 
   res.json({
     id: user.id,
