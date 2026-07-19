@@ -15,22 +15,36 @@ fail() { echo -e "\${RED}[ERROR]\${NC} \$1"; exit 1; }
 
 DIR="/home/automystics-scada/htdocs/scada.automystics.tech"
 REPLIT="\${REPLIT_URL:-https://b374b4f9-0594-4265-a46a-a2422069eeba-00-2eey4le8q0k3m.sisko.replit.dev}"
+CB="\$(date +%s)"  # cache-buster — forces CDN to skip cached response
 
 cd "\$DIR" || fail "Deploy directory not found: \$DIR"
 log "Working in \$(pwd)"
-log "Pulling from: \$REPLIT"
+log "Pulling from: \$REPLIT (cache-buster: \$CB)"
 
 # ── 1. Pull API binary ─────────────────────────────────────────────────────────
 log "[1/6] Downloading API binary..."
-curl -fsSL "\$REPLIT/api/dist/api.mjs" -o artifacts/api-server/dist/index.mjs \\
-  && log "  API binary: \$(du -h artifacts/api-server/dist/index.mjs | cut -f1)" \\
+curl -fsSL \\
+  -H "Cache-Control: no-cache" -H "Pragma: no-cache" \\
+  "\$REPLIT/api/dist/api.mjs?v=\$CB" \\
+  -o artifacts/api-server/dist/index.mjs \\
   || fail "Failed to download API binary from \$REPLIT"
+log "  API binary: \$(du -h artifacts/api-server/dist/index.mjs | cut -f1)"
+
+# Verify binary contains the password-login route
+PW_HITS=\$(grep -c "password-login" artifacts/api-server/dist/index.mjs 2>/dev/null || echo 0)
+if [ "\$PW_HITS" -lt 1 ]; then
+  fail "STALE BINARY: password-login route not found (\$PW_HITS hits). The Replit server may still be building — wait 30s and retry."
+fi
+log "  Binary verified: \$PW_HITS password-login reference(s) found ✓"
 
 # ── 2. Pull frontend tarball ───────────────────────────────────────────────────
 log "[2/6] Downloading frontend..."
-curl -fsSL "\$REPLIT/api/dist/frontend.tar.gz" -o /tmp/fe.tar.gz \\
-  && log "  Frontend tarball: \$(du -h /tmp/fe.tar.gz | cut -f1)" \\
+curl -fsSL \\
+  -H "Cache-Control: no-cache" -H "Pragma: no-cache" \\
+  "\$REPLIT/api/dist/frontend.tar.gz?v=\$CB" \\
+  -o /tmp/fe.tar.gz \\
   || fail "Failed to download frontend from \$REPLIT"
+log "  Frontend tarball: \$(du -h /tmp/fe.tar.gz | cut -f1)"
 
 mkdir -p artifacts/solar-scada/dist/public
 rm -rf artifacts/solar-scada/dist/public/*

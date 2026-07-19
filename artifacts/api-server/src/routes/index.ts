@@ -76,20 +76,29 @@ router.get("/dist/schema.sql", (_req, res) => {
   res.sendFile(p);
 });
 
-// Pre-built dist — VPS downloads and replaces, no build step needed
+// Pre-built dist — VPS downloads and replaces, no build step needed.
+// Uses createReadStream instead of res.sendFile so Express never sets ETag /
+// Last-Modified, preventing Replit's CDN from caching stale binaries.
+import { createReadStream } from "node:fs";
 router.get("/dist/api.mjs", (_req, res) => {
   const p = resolve(process.cwd(), "dist/index.mjs");
   if (!existsSync(p)) { res.status(404).end("dist not built"); return; }
   res.setHeader("Content-Type", "application/javascript");
-  res.setHeader("Cache-Control", "no-store");
-  res.sendFile(p);
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.setHeader("Surrogate-Control", "no-store");
+  createReadStream(p).pipe(res);
 });
 router.get("/dist/frontend.tar.gz", (_req, res) => {
   const p = repoFile("artifacts/solar-scada/dist/frontend.tar.gz");
   if (!existsSync(p)) { res.status(404).end("frontend tarball not found"); return; }
   res.setHeader("Content-Type", "application/gzip");
-  res.setHeader("Cache-Control", "no-store");
-  res.sendFile(p);
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.setHeader("Surrogate-Control", "no-store");
+  createReadStream(p).pipe(res);
 });
 
 // Edge Gateway Agent ingest routes — authenticate via bearer gateway token,
