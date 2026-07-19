@@ -504,29 +504,113 @@ function Step3({
 
 // ── Step 4: Field Mapping ─────────────────────────────────────────────────────
 
+interface DetectedField { path: string; label: string; unit: string; }
+
+/** camelCase / snake_case / mixed → "Title Case Words" */
+function keyToLabel(key: string): string {
+  return key
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .replace(/([a-zA-Z])(\d)/g, "$1 $2")
+    .replace(/(\d)([a-zA-Z])/g, "$1 $2")
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Guess physical unit from a key name */
+function guessUnit(key: string): string {
+  const k = key.toLowerCase();
+  if (/current/i.test(k))    return "mA";
+  if (/voltage|volt/i.test(k)) return "V";
+  if (/power|watt/i.test(k)) return "W";
+  if (/energy|yield/i.test(k)) return "kWh";
+  if (/temp/i.test(k))       return "°C";
+  if (/freq/i.test(k))       return "Hz";
+  if (/irrad/i.test(k))      return "W/m²";
+  if (/soc|battery/i.test(k)) return "%";
+  return "";
+}
+
+/** Derive a clean snake_case param key from a dotted path */
+function pathToParamKey(path: string): string {
+  const parts = path.split(".");
+  // Drop generic container segments and the "value" leaf
+  const skip = new Set(["readings", "data", "params", "measurements", "channels", "value", "address"]);
+  const meaningful = parts.filter((p) => !skip.has(p));
+  const base = meaningful.length > 0 ? meaningful[meaningful.length - 1] : parts[parts.length - 1];
+  return base
+    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
+    .replace(/([a-zA-Z])(\d)/g, "$1_$2")
+    .replace(/(\d)([a-zA-Z])/g, "$1_$2")
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+/** Recursively walk a parsed JSON object and return dot-paths to numeric leaves.
+ *  Handles nested structures and the TRB246 {address, value} pattern. */
+function extractFields(
+  obj: unknown,
+  prefix = "",
+  out: DetectedField[] = [],
+  depth = 0,
+): DetectedField[] {
+  if (depth > 6 || obj === null || typeof obj !== "object" || Array.isArray(obj)) return out;
+
+  const SKIP_KEYS = new Set(["timestamp", "device", "firmware", "id", "name", "server",
+    "collection", "address", "type", "unit", "status", "version"]);
+
+  for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
+    const fullPath = prefix ? `${prefix}.${key}` : key;
+
+    if (typeof val === "number") {
+      if (SKIP_KEYS.has(key)) continue;
+      out.push({ path: fullPath, label: keyToLabel(key), unit: guessUnit(key) });
+
+    } else if (typeof val === "object" && val !== null && !Array.isArray(val)) {
+      const nested = val as Record<string, unknown>;
+
+      // TRB246 pattern: {address: N, value: N} — map straight to .value
+      if ("value" in nested && typeof nested.value === "number") {
+        out.push({ path: `${fullPath}.value`, label: keyToLabel(key), unit: guessUnit(key) });
+      } else {
+        extractFields(val, fullPath, out, depth + 1);
+      }
+    }
+  }
+  return out;
+}
+
 function Step4({ state, update }: { state: WizardState; update: (p: Partial<WizardState>) => void }) {
   const isCSV = state.sourceType === "csv_upload";
 
-  const detectedFields: string[] = (() => {
+  const detectedFields: DetectedField[] = (() => {
     if (!state.sampleJson.trim()) return [];
     try {
       if (isCSV) {
         const lines = state.sampleJson.trim().split("\n");
-        return lines[0]?.split(",").map((h) => h.trim()).filter(Boolean) ?? [];
+        return (lines[0]?.split(",").map((h) => h.trim()).filter(Boolean) ?? [])
+          .map((h) => ({ path: h, label: keyToLabel(h), unit: guessUnit(h) }));
       }
-      const obj = JSON.parse(state.sampleJson) as Record<string, unknown>;
-      return Object.keys(obj);
+      const obj = JSON.parse(state.sampleJson) as unknown;
+      return extractFields(obj);
     } catch { return []; }
   })();
 
-  function addMapping(sourceField = "") {
+  function addMapping(field: DetectedField | string = "") {
+    const f: DetectedField = typeof field === "string"
+      ? { path: field, label: keyToLabel(field), unit: guessUnit(field) }
+      : field;
     update({
       mappings: [...state.mappings, {
-        sourceField,
-        paramKey:   sourceField.toLowerCase().replace(/[^a-z0-9_]/g, "_"),
-        paramLabel: sourceField.replace(/_/g, " "),
-        unit:       "",
-        multiplier: "1",
+        sourceField: f.path,
+        paramKey:    pathToParamKey(f.path),
+        paramLabel:  f.label,
+        unit:        f.unit,
+        multiplier:  "1",
       }],
     });
   }
@@ -539,7 +623,7 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
     update({ mappings: state.mappings.filter((_, i) => i !== idx) });
   }
 
-  const unmapped = detectedFields.filter((f) => !state.mappings.some((m) => m.sourceField === f));
+  const unmapped = detectedFields.filter((f) => !state.mappings.some((m) => m.sourceField === f.path));
 
   return (
     <div className="space-y-5">
@@ -551,7 +635,7 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
       </div>
 
       <InfoBox>
-        <strong>How mapping works:</strong> "Source Field" is the key in your JSON/CSV. "Param Key" is the internal SCADA identifier (snake_case). "Display Label" is what shows in dashboards. "Unit" is the physical unit (W, kWh, V, A, °C). "Scale ×" multiplies the raw value — useful if the source sends watts but you want kilowatts (use 0.001).
+        <strong>How mapping works:</strong> "Source Field" is the dot-path in your JSON (e.g. <code className="bg-blue-500/10 rounded px-1">readings.string1Current.value</code>). "Param Key" is the internal SCADA identifier. "Display Label" shows in dashboards. "Unit" is the physical unit. "Scale ×" multiplies the raw value.
       </InfoBox>
 
       {/* Auto-detect quick-add */}
@@ -563,11 +647,12 @@ function Step4({ state, update }: { state: WizardState; update: (p: Partial<Wiza
           <div className="flex flex-wrap gap-1.5">
             {unmapped.map((f) => (
               <button
-                key={f}
+                key={f.path}
                 onClick={() => addMapping(f)}
-                className="text-[10px] px-2 py-1 rounded border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors flex items-center gap-1 font-mono"
+                className="text-[10px] px-2 py-1 rounded border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors flex items-center gap-1"
+                title={f.path}
               >
-                <Plus className="h-2.5 w-2.5" /> {f}
+                <Plus className="h-2.5 w-2.5" /> {f.label}{f.unit ? ` (${f.unit})` : ""}
               </button>
             ))}
             {unmapped.length > 1 && (
