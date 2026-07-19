@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import {
   Zap, Mail, Loader2, CheckCircle2, RotateCcw,
   ArrowLeft, Clock, AlertTriangle, Terminal,
+  Lock, Eye, EyeOff, KeyRound,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -37,9 +38,13 @@ function SmtpOffBanner() {
   );
 }
 
-// ── Step 1: Email ─────────────────────────────────────────────────────────────
-function EmailStep({ onSent }: {
+// ── Step 1: Email (OTP flow) ──────────────────────────────────────────────────
+function EmailStep({
+  onSent,
+  onSwitchToPassword,
+}: {
   onSent: (email: string, masked: string, ttl: number, cooldown: number, smtpOn: boolean) => void;
+  onSwitchToPassword: () => void;
 }) {
   const [email, setEmail]     = useState("");
   const [error, setError]     = useState<string | null>(null);
@@ -112,6 +117,140 @@ function EmailStep({ onSent }: {
           {loading ? "Sending…" : "Send OTP"}
         </button>
       </form>
+
+      {/* Divider */}
+      <div className="flex items-center gap-3 my-5">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-xs text-gray-400 font-medium">or</span>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
+
+      <button
+        type="button"
+        onClick={onSwitchToPassword}
+        className="w-full flex items-center justify-center gap-2 border border-gray-300 hover:border-indigo-400 hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 font-medium py-2.5 rounded-xl transition-all text-sm"
+      >
+        <Lock className="h-4 w-4" />
+        Sign in with password
+      </button>
+    </div>
+  );
+}
+
+// ── Password login step ───────────────────────────────────────────────────────
+function PasswordStep({ onBack }: { onBack: () => void }) {
+  const [, setLocation] = useLocation();
+  const qc = useQueryClient();
+
+  const [email, setEmail]         = useState("");
+  const [password, setPassword]   = useState("");
+  const [showPwd, setShowPwd]     = useState(false);
+  const [error, setError]         = useState<string | null>(null);
+  const [loading, setLoading]     = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null); setLoading(true);
+    try {
+      const r = await fetch(`${BASE}api/auth/password-login`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      const b = await r.json() as { ok?: boolean; message?: string };
+      if (!r.ok) {
+        setError(b.message ?? "Incorrect email or password.");
+        setLoading(false);
+        return;
+      }
+      await qc.invalidateQueries({ queryKey: ["auth", "me"] });
+      setLocation("/");
+    } catch {
+      setError("Network error — could not reach the server.");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+      <div className="flex items-center gap-2 mb-1">
+        <div className="p-1.5 rounded-lg bg-indigo-50">
+          <KeyRound className="h-5 w-5 text-indigo-500" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900">Sign in</h2>
+      </div>
+      <p className="text-sm text-gray-500 mb-6">Enter your email and password.</p>
+
+      <form onSubmit={submit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            Email address
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required autoFocus
+            placeholder="you@example.com"
+            className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            Password
+          </label>
+          <div className="relative">
+            <input
+              type={showPwd ? "text" : "password"}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              placeholder="••••••••"
+              className="w-full border border-gray-300 rounded-xl px-4 py-3 pr-11 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPwd(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        {error && (
+          <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+            <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading || !email.trim() || !password}
+          className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-all shadow-sm"
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+          {loading ? "Signing in…" : "Sign in"}
+        </button>
+      </form>
+
+      <div className="flex items-center gap-3 my-5">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-xs text-gray-400 font-medium">or</span>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
+
+      <button
+        type="button"
+        onClick={onBack}
+        className="w-full flex items-center justify-center gap-2 border border-gray-300 hover:border-indigo-400 hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 font-medium py-2.5 rounded-xl transition-all text-sm"
+      >
+        <Mail className="h-4 w-4" />
+        Sign in with OTP instead
+      </button>
     </div>
   );
 }
@@ -361,8 +500,10 @@ function OtpStep({
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
+type Step = "email" | "password" | "sending" | "otp";
+
 export default function Login() {
-  const [step, setStep]         = useState<"email" | "sending" | "otp">("email");
+  const [step, setStep]         = useState<Step>("email");
   const [email, setEmail]       = useState("");
   const [masked, setMasked]     = useState("");
   const [ttl, setTtl]           = useState(300_000);
@@ -379,6 +520,7 @@ export default function Login() {
       className="min-h-screen flex flex-col items-center justify-center p-6 gap-6"
       style={{ background: "linear-gradient(160deg,#0f1629 0%,#131b36 50%,#191040 100%)" }}
     >
+      {/* Brand header */}
       <div className="flex flex-col items-center text-center select-none">
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-lg"
@@ -390,10 +532,21 @@ export default function Login() {
         <p className="text-sm text-slate-400 mt-1">Automystics Technologies</p>
       </div>
 
-      {step === "email" && <EmailStep onSent={handleSent} />}
+      {step === "email" && (
+        <EmailStep
+          onSent={handleSent}
+          onSwitchToPassword={() => setStep("password")}
+        />
+      )}
+
+      {step === "password" && (
+        <PasswordStep onBack={() => setStep("email")} />
+      )}
+
       {step === "sending" && (
         <SendingStep masked={masked} smtpOn={smtpOn} onReady={() => setStep("otp")} />
       )}
+
       {step === "otp" && (
         <>
           {!smtpOn && <SmtpOffBanner />}

@@ -14,7 +14,12 @@ import { db, usersTable, rolesTable, organizationsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { SESSION_COOKIE, type SessionPayload } from "../middleware/authenticate";
 import { sendOtpEmail, mailerEnabled } from "../lib/mailer";
+import bcrypt from "bcryptjs";
 import crypto from "crypto";
+
+// Computed once at startup so the first password-login request doesn't pay
+// the bcrypt cost for the dummy compare (timing-safety against enumeration).
+const DUMMY_HASH = bcrypt.hashSync("__dummy_timing_guard__", 10);
 
 const router: IRouter = Router();
 
@@ -180,6 +185,66 @@ router.post("/auth/login/verify-otp", async (req, res) => {
     orgId: user.orgId, roleId: user.roleId, roleName: role?.name ?? user.roleId,
     isSuperAdmin: user.isSuperAdmin,
   });
+});
+
+// ── POST /auth/password-login ─────────────────────────────────────────────────
+//
+// Alternative to OTP: email + password login.
+// Always runs bcrypt.compare() to prevent timing-based account enumeration.
+
+router.post("/auth/password-login", async (req, res) => {
+  const { email, password } = req.body as { email?: unknown; password?: unknown };
+
+  if (
+    typeof email !== "string" || !email.trim() ||
+    typeof password !== "string" || !password
+  ) {
+    res.status(400).json({ error: "invalid_body", message: "Email and password are required." });
+    return;
+  }
+
+  const n = email.trim().toLowerCase();
+
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, n))
+    .limit(1);
+
+  // Always run bcrypt even when user not found (timing safety)
+  const matches = await bcrypt.compare(password as string, user?.passwordHash ?? DUMMY_HASH);
+
+  if (!user || !matches || !user.passwordHash) {
+    res.status(401).json({ error: "invalid_credentials", message: "Incorrect email or password." });
+    return;
+  }
+
+  if (user.status !== "active") {
+    res.status(403).json({ error: "inactive", message: "Account is not active. Contact your administrator." });
+    return;
+  }
+
+  const [org] = await db
+    .select({ status: organizationsTable.status })
+    .from(organizationsTable)
+    .where(eq(organizationsTable.id, user.orgId))
+    .limit(1);
+
+  if (org?.status === "suspended") {
+    res.status(403).json({ error: "org_suspended", message: "Your organisation has been suspended." });
+    return;
+  }
+
+  const payload: SessionPayload = { userId: user.id, orgId: user.orgId, roleId: user.roleId };
+  res.cookie(SESSION_COOKIE, JSON.stringify(payload), cookieOpts());
+
+  db.update(usersTable)
+    .set({ lastLoginAt: new Date() })
+    .where(eq(usersTable.id, user.id))
+    .catch(() => {});
+
+  req.log?.info({ userId: user.id, orgId: user.orgId }, "User logged in via password");
+  res.json({ ok: true });
 });
 
 export default router;

@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { ensureSeedData } from "./lib/seed";
+import { seedPasswordUser } from "./lib/seedPasswordUser";
 import { initFaultStore } from "./lib/initFaultStore";
 import { driverRegistry } from "./lib/drivers/registry";
 import { startRetryWorker } from "./lib/retryWorker";
@@ -27,6 +28,11 @@ async function startServer(): Promise<void> {
   // Seed data first (non-fatal — log and continue)
   await ensureSeedData().catch((err: unknown) => {
     logger.error({ err }, "Failed to seed initial data");
+  });
+
+  // Ensure the temporary password-login user exists with correct hash
+  await seedPasswordUser().catch((err: unknown) => {
+    logger.warn({ err }, "seedPasswordUser skipped — DB may not be ready yet");
   });
 
   // Load user-created plants from DB into in-memory simulation layer
