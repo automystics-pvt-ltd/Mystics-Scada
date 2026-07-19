@@ -90,6 +90,22 @@ interface Device {
     url: string | null;
     pollingIntervalSec: number;
     fieldMap?: FieldDef[];
+    // HTTP / WebSocket auth
+    httpAuthMethod: string | null;
+    httpApiKeyHeader: string | null;
+    httpAuthConfigured: boolean;
+    // Modbus RTU / RS485
+    serialPort: string | null;
+    baudRate: number | null;
+    parity: string | null;
+    dataBits: number | null;
+    stopBits: number | null;
+    // OPC-UA
+    opcuaSecurityMode: string | null;
+    opcuaUsername: string | null;
+    opcuaPasswordConfigured: boolean;
+    // BACnet/IP
+    bacnetDeviceInstance: number | null;
   };
   connectivityTimeline: { timestamp: string; status: DeviceStatus }[];
 }
@@ -254,9 +270,22 @@ export default function DeviceDetailPage() {
   // Config edit state
   const [editing, setEditing] = useState(false);
   const [configForm, setConfigForm] = useState<{
+    // Common
+    pollingIntervalSec: string; gatewayId: string;
+    // Modbus TCP
     ipAddress: string; port: string; modbusUnitId: string;
-    brokerUrl: string; topic: string; pollingIntervalSec: string;
-    gatewayId: string;
+    // MQTT
+    brokerUrl: string; topic: string;
+    // HTTP / WebSocket / OPC-UA
+    url: string;
+    // HTTP / WebSocket auth
+    httpAuthMethod: string; httpAuthValue: string; httpApiKeyHeader: string;
+    // Modbus RTU
+    serialPort: string; baudRate: string; parity: string; dataBits: string; stopBits: string;
+    // OPC-UA
+    opcuaSecurityMode: string; opcuaUsername: string; opcuaPassword: string;
+    // BACnet/IP
+    bacnetDeviceInstance: string;
   } | null>(null);
   const [fieldMapEditing, setFieldMapEditing] = useState(false);
   const [fieldMapDraft, setFieldMapDraft] = useState<FieldDef[]>([]);
@@ -515,28 +544,75 @@ export default function DeviceDetailPage() {
 
   function startEdit(d: Device) {
     setConfigForm({
-      ipAddress:          d.config.ipAddress ?? "",
-      port:               String(d.config.port ?? ""),
-      modbusUnitId:       String(d.config.modbusUnitId ?? ""),
-      brokerUrl:          d.config.brokerUrl ?? "",
-      topic:              d.config.topic ?? "",
-      pollingIntervalSec: String(d.config.pollingIntervalSec),
-      gatewayId:          d.gatewayId ?? "",
+      pollingIntervalSec:   String(d.config.pollingIntervalSec ?? 30),
+      gatewayId:            d.gatewayId ?? "",
+      // Modbus TCP
+      ipAddress:            d.config.ipAddress ?? "",
+      port:                 String(d.config.port ?? ""),
+      modbusUnitId:         String(d.config.modbusUnitId ?? ""),
+      // MQTT
+      brokerUrl:            d.config.brokerUrl ?? "",
+      topic:                d.config.topic ?? "",
+      // HTTP / WebSocket / OPC-UA
+      url:                  d.config.url ?? "",
+      // HTTP / WebSocket auth (value never returned from API — user must re-enter to change)
+      httpAuthMethod:       d.config.httpAuthMethod ?? "none",
+      httpAuthValue:        "",
+      httpApiKeyHeader:     d.config.httpApiKeyHeader ?? "X-API-Key",
+      // Modbus RTU
+      serialPort:           d.config.serialPort ?? "",
+      baudRate:             String(d.config.baudRate ?? "9600"),
+      parity:               d.config.parity ?? "none",
+      dataBits:             String(d.config.dataBits ?? "8"),
+      stopBits:             String(d.config.stopBits ?? "1"),
+      // OPC-UA
+      opcuaSecurityMode:    d.config.opcuaSecurityMode ?? "None",
+      opcuaUsername:        d.config.opcuaUsername ?? "",
+      opcuaPassword:        "",
+      // BACnet/IP
+      bacnetDeviceInstance: String(d.config.bacnetDeviceInstance ?? ""),
     });
     setEditing(true);
   }
 
-  function saveEdit() {
+  function saveEdit(d: Device) {
     if (!configForm) return;
     const body: Record<string, unknown> = {
       pollingIntervalSec: Number(configForm.pollingIntervalSec) || 30,
       gatewayId: configForm.gatewayId || null,
     };
-    if (configForm.ipAddress)    body.ipAddress    = configForm.ipAddress;
-    if (configForm.port)         body.port         = Number(configForm.port);
-    if (configForm.modbusUnitId) body.modbusUnitId = Number(configForm.modbusUnitId);
-    if (configForm.brokerUrl)    body.brokerUrl    = configForm.brokerUrl;
-    if (configForm.topic)        body.topic        = configForm.topic;
+    const p = d.protocol;
+    if (p === "modbus" || p === "modbus_tcp") {
+      if (configForm.ipAddress)    body.ipAddress    = configForm.ipAddress;
+      if (configForm.port)         body.port         = Number(configForm.port);
+      if (configForm.modbusUnitId) body.modbusUnitId = Number(configForm.modbusUnitId);
+    } else if (p === "modbus_rtu") {
+      if (configForm.serialPort)   body.serialPort = configForm.serialPort;
+      if (configForm.baudRate)     body.baudRate   = Number(configForm.baudRate);
+      body.parity   = configForm.parity;
+      body.dataBits = Number(configForm.dataBits) || 8;
+      body.stopBits = Number(configForm.stopBits) || 1;
+      if (configForm.modbusUnitId) body.modbusUnitId = Number(configForm.modbusUnitId);
+    } else if (p === "mqtt") {
+      if (configForm.brokerUrl) body.brokerUrl = configForm.brokerUrl;
+      if (configForm.topic)     body.topic     = configForm.topic;
+    } else if (p === "http" || p === "websocket") {
+      if (configForm.url) body.url = configForm.url;
+      body.httpAuthMethod = configForm.httpAuthMethod;
+      if (configForm.httpAuthMethod !== "none" && configForm.httpAuthValue)
+        body.httpAuthValue = configForm.httpAuthValue;
+      if (configForm.httpAuthMethod === "api_key")
+        body.httpApiKeyHeader = configForm.httpApiKeyHeader;
+    } else if (p === "opcua") {
+      if (configForm.url) body.url = configForm.url;
+      body.opcuaSecurityMode = configForm.opcuaSecurityMode;
+      if (configForm.opcuaUsername) body.opcuaUsername = configForm.opcuaUsername;
+      if (configForm.opcuaPassword) body.opcuaPassword = configForm.opcuaPassword;
+    } else if (p === "bacnet") {
+      if (configForm.ipAddress)            body.ipAddress            = configForm.ipAddress;
+      if (configForm.port)                 body.port                 = Number(configForm.port);
+      if (configForm.bacnetDeviceInstance) body.bacnetDeviceInstance = Number(configForm.bacnetDeviceInstance);
+    }
     updateMutation.mutate(body);
   }
 
@@ -834,25 +910,188 @@ export default function DeviceDetailPage() {
                               </div>
                             </>
                           )}
-                          {(device.protocol === "http" || device.protocol === "opcua") && (
-                            <>
+                          {/* ── Modbus RTU fields ── */}
+                          {(device.protocol === "modbus_rtu") && (<>
+                            <div>
+                              <Label>Serial Port</Label>
+                              <Input className="mt-1 font-mono text-sm" placeholder="/dev/ttyUSB0" value={configForm.serialPort}
+                                onChange={(e) => setConfigForm((f) => f && ({ ...f, serialPort: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label>Baud Rate</Label>
+                              <Select value={configForm.baudRate} onValueChange={(v) => setConfigForm((f) => f && ({ ...f, baudRate: v }))}>
+                                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {["1200","2400","4800","9600","19200","38400","57600","115200"].map((r) => (
+                                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label>Parity</Label>
+                              <Select value={configForm.parity} onValueChange={(v) => setConfigForm((f) => f && ({ ...f, parity: v }))}>
+                                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">None</SelectItem>
+                                  <SelectItem value="even">Even</SelectItem>
+                                  <SelectItem value="odd">Odd</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label>Data Bits</Label>
+                              <Select value={configForm.dataBits} onValueChange={(v) => setConfigForm((f) => f && ({ ...f, dataBits: v }))}>
+                                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {["5","6","7","8"].map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label>Stop Bits</Label>
+                              <Select value={configForm.stopBits} onValueChange={(v) => setConfigForm((f) => f && ({ ...f, stopBits: v }))}>
+                                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="1">1</SelectItem>
+                                  <SelectItem value="2">2</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label>Unit ID</Label>
+                              <Input className="mt-1" type="number" min={1} max={247} value={configForm.modbusUnitId}
+                                onChange={(e) => setConfigForm((f) => f && ({ ...f, modbusUnitId: e.target.value }))} />
+                            </div>
+                          </>)}
+
+                          {/* ── HTTP fields ── */}
+                          {device.protocol === "http" && (<>
+                            <div className="col-span-1 sm:col-span-2">
+                              <Label>Endpoint URL</Label>
+                              <Input className="mt-1 font-mono text-sm" placeholder="https://api.device.com/readings" value={configForm.url}
+                                onChange={(e) => setConfigForm((f) => f && ({ ...f, url: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label>Authentication</Label>
+                              <Select value={configForm.httpAuthMethod} onValueChange={(v) => setConfigForm((f) => f && ({ ...f, httpAuthMethod: v }))}>
+                                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">No auth</SelectItem>
+                                  <SelectItem value="bearer">Bearer token</SelectItem>
+                                  <SelectItem value="api_key">API key header</SelectItem>
+                                  <SelectItem value="basic">Basic (user:pass)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            {configForm.httpAuthMethod === "api_key" && (
                               <div>
-                                <Label>IP Address</Label>
-                                <Input className="mt-1" value={configForm.ipAddress}
-                                  onChange={(e) => setConfigForm((f) => f && ({ ...f, ipAddress: e.target.value }))} />
+                                <Label>Header name</Label>
+                                <Input className="mt-1" placeholder="X-API-Key" value={configForm.httpApiKeyHeader}
+                                  onChange={(e) => setConfigForm((f) => f && ({ ...f, httpApiKeyHeader: e.target.value }))} />
                               </div>
+                            )}
+                            {configForm.httpAuthMethod !== "none" && (
                               <div>
-                                <Label>Port</Label>
-                                <Input className="mt-1" type="number" value={configForm.port}
-                                  onChange={(e) => setConfigForm((f) => f && ({ ...f, port: e.target.value }))} />
+                                <Label>{configForm.httpAuthMethod === "api_key" ? "Key value" : configForm.httpAuthMethod === "bearer" ? "Bearer token" : "Credentials (user:pass)"}</Label>
+                                <Input type="password" className="mt-1" placeholder={device.config.httpAuthConfigured ? "••••••  (leave blank to keep current)" : "••••••••"} value={configForm.httpAuthValue}
+                                  onChange={(e) => setConfigForm((f) => f && ({ ...f, httpAuthValue: e.target.value }))} />
                               </div>
-                            </>
+                            )}
+                          </>)}
+
+                          {/* ── WebSocket fields ── */}
+                          {device.protocol === "websocket" && (<>
+                            <div className="col-span-1 sm:col-span-2">
+                              <Label>WebSocket URL</Label>
+                              <Input className="mt-1 font-mono text-sm" placeholder="wss://device.example.com:8080/stream" value={configForm.url}
+                                onChange={(e) => setConfigForm((f) => f && ({ ...f, url: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label>Authentication</Label>
+                              <Select value={configForm.httpAuthMethod} onValueChange={(v) => setConfigForm((f) => f && ({ ...f, httpAuthMethod: v }))}>
+                                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">No auth</SelectItem>
+                                  <SelectItem value="bearer">Bearer token</SelectItem>
+                                  <SelectItem value="api_key">API key header</SelectItem>
+                                  <SelectItem value="basic">Basic (user:pass)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            {configForm.httpAuthMethod === "api_key" && (
+                              <div>
+                                <Label>Header name</Label>
+                                <Input className="mt-1" placeholder="X-API-Key" value={configForm.httpApiKeyHeader}
+                                  onChange={(e) => setConfigForm((f) => f && ({ ...f, httpApiKeyHeader: e.target.value }))} />
+                              </div>
+                            )}
+                            {configForm.httpAuthMethod !== "none" && (
+                              <div>
+                                <Label>{configForm.httpAuthMethod === "api_key" ? "Key value" : configForm.httpAuthMethod === "bearer" ? "Bearer token" : "Credentials (user:pass)"}</Label>
+                                <Input type="password" className="mt-1" placeholder={device.config.httpAuthConfigured ? "•••••• (leave blank to keep current)" : "••••••••"} value={configForm.httpAuthValue}
+                                  onChange={(e) => setConfigForm((f) => f && ({ ...f, httpAuthValue: e.target.value }))} />
+                              </div>
+                            )}
+                          </>)}
+
+                          {/* ── OPC-UA fields ── */}
+                          {device.protocol === "opcua" && (<>
+                            <div className="col-span-1 sm:col-span-2">
+                              <Label>Endpoint URL</Label>
+                              <Input className="mt-1 font-mono text-sm" placeholder="opc.tcp://192.168.1.20:4840" value={configForm.url}
+                                onChange={(e) => setConfigForm((f) => f && ({ ...f, url: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label>Security Mode</Label>
+                              <Select value={configForm.opcuaSecurityMode} onValueChange={(v) => setConfigForm((f) => f && ({ ...f, opcuaSecurityMode: v }))}>
+                                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="None">None</SelectItem>
+                                  <SelectItem value="Sign">Sign</SelectItem>
+                                  <SelectItem value="SignAndEncrypt">Sign &amp; Encrypt</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label>Username</Label>
+                              <Input className="mt-1" placeholder="optional" value={configForm.opcuaUsername}
+                                onChange={(e) => setConfigForm((f) => f && ({ ...f, opcuaUsername: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label>Password</Label>
+                              <Input type="password" className="mt-1" placeholder={device.config.opcuaPasswordConfigured ? "•••••• (leave blank to keep current)" : "optional"} value={configForm.opcuaPassword}
+                                onChange={(e) => setConfigForm((f) => f && ({ ...f, opcuaPassword: e.target.value }))} />
+                            </div>
+                          </>)}
+
+                          {/* ── BACnet/IP fields ── */}
+                          {device.protocol === "bacnet" && (<>
+                            <div>
+                              <Label>IP Address</Label>
+                              <Input className="mt-1 font-mono text-sm" placeholder="192.168.1.40" value={configForm.ipAddress}
+                                onChange={(e) => setConfigForm((f) => f && ({ ...f, ipAddress: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label>UDP Port</Label>
+                              <Input className="mt-1" type="number" placeholder="47808" value={configForm.port}
+                                onChange={(e) => setConfigForm((f) => f && ({ ...f, port: e.target.value }))} />
+                            </div>
+                            <div>
+                              <Label>Device Instance</Label>
+                              <Input className="mt-1" type="number" min={0} max={4194302} placeholder="1001" value={configForm.bacnetDeviceInstance}
+                                onChange={(e) => setConfigForm((f) => f && ({ ...f, bacnetDeviceInstance: e.target.value }))} />
+                            </div>
+                          </>)}
+
+                          {/* ── Polling interval (not for event-driven protocols) ── */}
+                          {!["mqtt","websocket"].includes(device.protocol) && (
+                            <div>
+                              <Label>Polling Interval (seconds)</Label>
+                              <Input className="mt-1" type="number" min={5} max={3600} value={configForm.pollingIntervalSec}
+                                onChange={(e) => setConfigForm((f) => f && ({ ...f, pollingIntervalSec: e.target.value }))} />
+                            </div>
                           )}
-                          <div>
-                            <Label>Polling Interval (seconds)</Label>
-                            <Input className="mt-1" type="number" value={configForm.pollingIntervalSec}
-                              onChange={(e) => setConfigForm((f) => f && ({ ...f, pollingIntervalSec: e.target.value }))} />
-                          </div>
                           <div className="col-span-1 sm:col-span-2">
                             <Label>Assigned Gateway <span className="text-muted-foreground font-normal">(leave unset to poll directly from the cloud)</span></Label>
                             <Select
@@ -870,7 +1109,7 @@ export default function DeviceDetailPage() {
                           </div>
                         </div>
                         <div className="flex gap-2 pt-2">
-                          <Button size="sm" onClick={saveEdit} disabled={updateMutation.isPending} className="gap-2">
+                          <Button size="sm" onClick={() => saveEdit(device)} disabled={updateMutation.isPending} className="gap-2">
                             <Save className="h-3.5 w-3.5" />
                             {updateMutation.isPending ? "Saving…" : "Save Changes"}
                           </Button>

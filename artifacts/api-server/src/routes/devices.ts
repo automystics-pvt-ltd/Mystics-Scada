@@ -209,6 +209,15 @@ const UpdateDeviceBody = z.object({
   opcuaPassword:     z.string().max(2048).optional(),
   // BACnet/IP
   bacnetDeviceInstance: z.number().int().min(0).max(4194302).optional(),
+  // Per-device field map (overrides template fields)
+  fieldMap: z.array(z.object({
+    key:        z.string(),
+    label:      z.string(),
+    unit:       z.string().default(""),
+    jsonPath:   z.string().optional(),
+    multiplier: z.number().optional(),
+    offset:     z.number().optional(),
+  })).optional(),
 }).superRefine(validateHttpAuth);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -300,6 +309,8 @@ function toDeviceResponse(row: DeviceRow, now: Date) {
       opcuaPasswordConfigured: !!cfg.opcuaPassword,
       // BACnet/IP
       bacnetDeviceInstance: cfg.bacnetDeviceInstance ?? null,
+      // Per-device field map (returned so the UI can display/edit it)
+      fieldMap: Array.isArray(cfg.fieldMap) ? cfg.fieldMap : undefined,
     },
     pendingDeploy: cfg.pendingDeploy ?? false,
     createdAt: row.createdAt,
