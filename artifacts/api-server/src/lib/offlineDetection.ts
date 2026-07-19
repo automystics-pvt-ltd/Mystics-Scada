@@ -21,6 +21,25 @@ const SWEEP_INTERVAL_MS = 60_000;
 const OFFLINE_ALERT_TYPE = "device_offline";
 const CLOSED_STATUSES = ["resolved", "closed"] as const;
 
+// ── State tracking ────────────────────────────────────────────────────────────
+
+interface OfflineDetectionState {
+  running: boolean;
+  startedAt: string | null;
+  lastSweepAt: string | null;
+  sweepsCompleted: number;
+  totalOfflineTransitions: number;
+  lastError: string | null;
+  sweepIntervalMs: number;
+}
+const _odState: OfflineDetectionState = {
+  running: false, startedAt: null, lastSweepAt: null,
+  sweepsCompleted: 0, totalOfflineTransitions: 0, lastError: null,
+  sweepIntervalMs: SWEEP_INTERVAL_MS,
+};
+export function getOfflineDetectionState(): OfflineDetectionState { return { ..._odState }; }
+export function triggerOfflineDetection(): void { void sweepOnce().catch(() => undefined); }
+
 interface DeviceConfigShape {
   pollingIntervalSec?: number;
 }
@@ -47,7 +66,10 @@ let timer: ReturnType<typeof setInterval> | null = null;
 /** Starts the periodic offline-detection sweep. Idempotent. */
 export function startOfflineDetectionJob(): void {
   if (timer) return;
+  _odState.running = true;
+  _odState.startedAt = new Date().toISOString();
   timer = setInterval(() => void sweepOnce().catch((err: unknown) => {
+    _odState.lastError = err instanceof Error ? err.message : String(err);
     logger.error({ err }, "Offline detection sweep failed");
   }), SWEEP_INTERVAL_MS);
   // Run an initial sweep shortly after boot too.
@@ -60,6 +82,8 @@ export function stopOfflineDetectionJob(): void {
 
 async function sweepOnce(): Promise<void> {
   const now = new Date();
+  _odState.lastSweepAt = now.toISOString();
+  _odState.sweepsCompleted++;
   const devices = await db
     .select()
     .from(devicesTable)
@@ -77,6 +101,7 @@ async function sweepOnce(): Promise<void> {
     const staleMs = now.getTime() - referenceTime.getTime();
     if (staleMs <= staleAfterMs) continue;
 
+    _odState.totalOfflineTransitions++;
     await transitionOffline(device.id, device.orgId, device.plantId, device.name, device.type, now);
   }
 }

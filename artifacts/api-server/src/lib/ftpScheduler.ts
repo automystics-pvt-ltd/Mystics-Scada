@@ -209,8 +209,29 @@ async function pollSource(row: typeof ftpSourcesTable.$inferSelect): Promise<voi
 const TICK_MS = 60_000; // check every minute
 let _timer: NodeJS.Timeout | null = null;
 
+// ── State tracking ────────────────────────────────────────────────────────────
+
+interface FtpSchedulerState {
+  running: boolean;
+  startedAt: string | null;
+  lastTickAt: string | null;
+  ticksCompleted: number;
+  sourcesProcessed: number;
+  lastError: string | null;
+  tickIntervalMs: number;
+}
+const _ftpState: FtpSchedulerState = {
+  running: false, startedAt: null, lastTickAt: null,
+  ticksCompleted: 0, sourcesProcessed: 0, lastError: null,
+  tickIntervalMs: TICK_MS,
+};
+export function getFtpSchedulerState(): FtpSchedulerState { return { ..._ftpState }; }
+export function triggerFtpScheduler(): void { void tick().catch(() => undefined); }
+
 async function tick(): Promise<void> {
   const now = new Date();
+  _ftpState.lastTickAt = now.toISOString();
+  _ftpState.ticksCompleted++;
   const due = await db
     .select()
     .from(ftpSourcesTable)
@@ -227,9 +248,11 @@ async function tick(): Promise<void> {
       ),
     );
 
+  _ftpState.sourcesProcessed += due.length;
   for (const source of due) {
     pollSource(source).catch((err: unknown) => {
       const msg = err instanceof Error ? err.message : String(err);
+      _ftpState.lastError = msg;
       logger.warn({ sourceId: source.id, err: msg }, "FTP source poll error");
       db.update(ftpSourcesTable)
         .set({ lastError: msg, updatedAt: new Date() })
@@ -241,6 +264,8 @@ async function tick(): Promise<void> {
 
 export function startFtpScheduler(): void {
   if (_timer) return;
+  _ftpState.running = true;
+  _ftpState.startedAt = new Date().toISOString();
   logger.info("FtpScheduler: starting");
   _timer = setInterval(() => { tick().catch(() => undefined); }, TICK_MS);
   tick().catch(() => undefined);

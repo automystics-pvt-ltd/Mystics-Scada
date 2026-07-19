@@ -25,6 +25,25 @@ import { logger } from "./logger";
 const POLL_INTERVAL_MS = 30_000;
 const MAX_BATCH        = 50;
 
+// ── State tracking ────────────────────────────────────────────────────────────
+
+interface RetryWorkerState {
+  running: boolean;
+  startedAt: string | null;
+  lastRunAt: string | null;
+  runsCompleted: number;
+  lastBatchSize: number;
+  lastError: string | null;
+  pollIntervalMs: number;
+}
+const _state: RetryWorkerState = {
+  running: false, startedAt: null, lastRunAt: null,
+  runsCompleted: 0, lastBatchSize: 0, lastError: null,
+  pollIntervalMs: POLL_INTERVAL_MS,
+};
+export function getRetryWorkerState(): RetryWorkerState { return { ..._state }; }
+export function triggerRetryWorker(): void { void processBatch().catch(() => undefined); }
+
 type ReadingPayload = { ts: string; params: Record<string, unknown> };
 type QueueRow = typeof ingestionRetryQueueTable.$inferSelect;
 
@@ -59,8 +78,10 @@ async function claimBatch(now: Date): Promise<QueueRow[]> {
 
 async function processBatch(): Promise<void> {
   const now = new Date();
+  _state.lastRunAt = now.toISOString();
   const rows = await claimBatch(now);
-  if (rows.length === 0) return;
+  _state.lastBatchSize = rows.length;
+  if (rows.length === 0) { _state.runsCompleted++; return; }
 
   for (const row of rows) {
     const payload = row.payload as ReadingPayload;
@@ -104,15 +125,19 @@ async function processBatch(): Promise<void> {
         })
         .where(eq(ingestionRetryQueueTable.id, row.id));
 
+      _state.lastError = err instanceof Error ? err.message : String(err);
       logger.warn({ jobId: row.id, deviceId: row.deviceId, attempts, isFinal }, "Retry job failed");
     }
   }
+  _state.runsCompleted++;
 }
 
 let _timer: NodeJS.Timeout | null = null;
 
 export function startRetryWorker(): void {
   if (_timer) return;
+  _state.running = true;
+  _state.startedAt = new Date().toISOString();
   logger.info("IngestionRetryWorker: starting");
   _timer = setInterval(() => {
     processBatch().catch((err) => {

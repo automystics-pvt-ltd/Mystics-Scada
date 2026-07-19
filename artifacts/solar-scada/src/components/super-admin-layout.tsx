@@ -6,8 +6,8 @@ import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Building2, Users, CreditCard, Flag,
   ClipboardList, Activity, Database, Shield, Settings2,
-  Headphones, MessageSquare, Wrench, ArrowLeft, ShieldAlert,
-  X, ChevronRight, LogOut,
+  Headphones, Bell, Wrench, ArrowLeft, ShieldAlert,
+  X, ChevronRight, Timer, Settings, LogIn,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -34,19 +34,21 @@ const NAV_SECTIONS = [
   {
     label: "MONITORING",
     items: [
-      { label: "Audit Logs",   href: "/superadmin/audit-logs",    icon: ClipboardList },
-      { label: "System Health",href: "/superadmin/system-health", icon: Activity },
-      { label: "DB Monitor",   href: "/superadmin/db",            icon: Database },
+      { label: "Audit Logs",    href: "/superadmin/audit-logs",    icon: ClipboardList },
+      { label: "Login History", href: "/superadmin/login-history", icon: LogIn },
+      { label: "System Health", href: "/superadmin/system-health", icon: Activity },
+      { label: "DB Monitor",    href: "/superadmin/db",            icon: Database },
     ],
   },
   {
     label: "ADMINISTRATION",
     items: [
-      { label: "Security",      href: "/superadmin/security",       icon: Shield },
-      { label: "Operations",    href: "/superadmin/operations",     icon: Settings2 },
-      { label: "Support",       href: "/superadmin/support",        icon: Headphones },
-      { label: "Communications",href: "/superadmin/communications", icon: MessageSquare },
-      { label: "Maintenance",   href: "/superadmin/maintenance",    icon: Wrench },
+      { label: "Security",         href: "/superadmin/security",       icon: Shield },
+      { label: "Jobs Monitor",     href: "/superadmin/jobs",           icon: Timer },
+      { label: "Notifications",    href: "/superadmin/notifications",  icon: Bell },
+      { label: "System Config",    href: "/superadmin/config",         icon: Settings },
+      { label: "Support",          href: "/superadmin/support",        icon: Headphones },
+      { label: "Maintenance",      href: "/superadmin/maintenance",    icon: Wrench },
     ],
   },
 ];

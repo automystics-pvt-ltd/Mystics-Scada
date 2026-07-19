@@ -28,6 +28,10 @@ import { PERMISSIONS, DEFAULT_ROLE_PERMISSIONS } from "@workspace/permissions";
 import { z } from "zod";
 import { SESSION_COOKIE, parseSession, type SessionPayload } from "../middleware/authenticate";
 import { getOrgPlants, PLANT_ORG_MAP, plantLivePowerKw, plantHealth } from "../lib/simulation";
+import { getRetryWorkerState, triggerRetryWorker } from "../lib/retryWorker";
+import { getFtpSchedulerState, triggerFtpScheduler } from "../lib/ftpScheduler";
+import { getOfflineDetectionState, triggerOfflineDetection } from "../lib/offlineDetection";
+import { mailerEnabled, sendTestEmail } from "../lib/mailer";
 
 const router: IRouter = Router();
 
@@ -651,6 +655,163 @@ router.get("/superadmin/billing", async (_req, res) => {
   }
 
   res.json({ summary: { ...byTier, totalMrr }, orgs: enriched });
+});
+
+// ── GET /superadmin/jobs ──────────────────────────────────────────────────────
+
+router.get("/superadmin/jobs", (_req, res) => {
+  res.json([
+    {
+      id: "retry-worker",
+      name: "Ingestion Retry Worker",
+      description: "Retries failed telemetry writes with exponential back-off (max 2 h).",
+      ...getRetryWorkerState(),
+    },
+    {
+      id: "ftp-scheduler",
+      name: "FTP / SFTP Scheduler",
+      description: "Polls configured FTP and SFTP sources every minute for new data files.",
+      ...getFtpSchedulerState(),
+    },
+    {
+      id: "offline-detection",
+      name: "Offline Detection Sweep",
+      description: "Marks devices offline when silent beyond 3× their polling interval (60 s sweep).",
+      ...getOfflineDetectionState(),
+    },
+  ]);
+});
+
+// ── POST /superadmin/jobs/:jobId/trigger ──────────────────────────────────────
+
+router.post("/superadmin/jobs/:jobId/trigger", (req, res) => {
+  const jobId = (req.params["jobId"] as string) ?? "";
+  switch (jobId) {
+    case "retry-worker":      triggerRetryWorker();      break;
+    case "ftp-scheduler":     triggerFtpScheduler();     break;
+    case "offline-detection": triggerOfflineDetection(); break;
+    default:
+      res.status(404).json({ error: "not_found", message: `Unknown job: ${jobId}` });
+      return;
+  }
+  req.log.info({ jobId }, "Super admin triggered job manually");
+  res.json({ ok: true, jobId, triggeredAt: new Date().toISOString() });
+});
+
+// ── GET/PATCH /superadmin/system-config ───────────────────────────────────────
+
+interface SystemConfig {
+  security: {
+    sessionTimeoutDays: number;
+    maxFailedLogins: number;
+    accountLockoutMinutes: number;
+    mfaRequired: boolean;
+    captchaEnabled: boolean;
+  };
+  rateLimits: {
+    maxRequestsPerMinute: number;
+    maxLoginAttemptsPerHour: number;
+  };
+  ipWhitelist: string[];
+}
+
+const _systemConfig: SystemConfig = {
+  security: {
+    sessionTimeoutDays: 7,
+    maxFailedLogins: 5,
+    accountLockoutMinutes: 30,
+    mfaRequired: false,
+    captchaEnabled: false,
+  },
+  rateLimits: {
+    maxRequestsPerMinute: 200,
+    maxLoginAttemptsPerHour: 10,
+  },
+  ipWhitelist: [],
+};
+
+router.get("/superadmin/system-config", (_req, res) => {
+  res.json({
+    ..._systemConfig,
+    smtp: {
+      host:    process.env["SMTP_HOST"]?.trim() ?? null,
+      port:    process.env["SMTP_PORT"]?.trim() ?? null,
+      from:    process.env["SMTP_FROM"]?.trim() ?? null,
+      user:    process.env["SMTP_USER"] ? `${process.env["SMTP_USER"].slice(0, 3)}•••` : null,
+      enabled: mailerEnabled,
+    },
+  });
+});
+
+router.patch("/superadmin/system-config", (req, res) => {
+  const body = req.body as Partial<SystemConfig>;
+  if (body.security)    Object.assign(_systemConfig.security,    body.security);
+  if (body.rateLimits)  Object.assign(_systemConfig.rateLimits,  body.rateLimits);
+  if (Array.isArray(body.ipWhitelist)) _systemConfig.ipWhitelist = body.ipWhitelist;
+  req.log.info({ updates: body }, "Super admin updated system config");
+  res.json(_systemConfig);
+});
+
+// ── POST /superadmin/notifications/test-email ─────────────────────────────────
+
+router.post("/superadmin/notifications/test-email", async (req, res) => {
+  const { to } = req.body as { to?: unknown };
+  if (typeof to !== "string" || !to.trim()) {
+    res.status(400).json({ error: "invalid_body", message: "Email address required." });
+    return;
+  }
+  if (!mailerEnabled) {
+    res.status(503).json({ error: "smtp_unavailable", message: "SMTP is not configured. Set SMTP_HOST in server .env." });
+    return;
+  }
+  try {
+    await sendTestEmail(to.trim());
+    req.log.info({ to }, "Super admin sent test email");
+    res.json({ ok: true, sentTo: to.trim() });
+  } catch (err) {
+    res.status(500).json({ error: "send_failed", message: err instanceof Error ? err.message : "Failed to send" });
+  }
+});
+
+// ── GET /superadmin/login-history ─────────────────────────────────────────────
+
+const LOGIN_ACTIONS = ["login", "login_failed", "logout", "otp_sent", "otp_verified", "superadmin_login", "impersonation_started"];
+
+router.get("/superadmin/login-history", async (req, res) => {
+  const { orgId, action: actionFilter } = req.query as Record<string, string>;
+  const limit  = Math.min(500, parseInt(req.query["limit"]  as string) || 100);
+  const offset = Math.max(0,   parseInt(req.query["offset"] as string) || 0);
+
+  const conditions: ReturnType<typeof eq>[] = [
+    inArray(auditLogsTable.action, LOGIN_ACTIONS) as unknown as ReturnType<typeof eq>,
+  ];
+  if (orgId)         conditions.push(eq(auditLogsTable.orgId,   orgId));
+  if (actionFilter)  conditions.push(eq(auditLogsTable.action,  actionFilter));
+
+  const rows = await db
+    .select({
+      id:          auditLogsTable.id,
+      orgId:       auditLogsTable.orgId,
+      userId:      auditLogsTable.userId,
+      actorName:   usersTable.name,
+      actorEmail:  usersTable.email,
+      action:      auditLogsTable.action,
+      metadata:    auditLogsTable.metadata,
+      createdAt:   auditLogsTable.createdAt,
+    })
+    .from(auditLogsTable)
+    .leftJoin(usersTable, eq(auditLogsTable.userId, usersTable.id))
+    .where(and(...conditions))
+    .orderBy(desc(auditLogsTable.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(auditLogsTable)
+    .where(inArray(auditLogsTable.action, LOGIN_ACTIONS)) as [{ total: number }];
+
+  res.json({ logs: rows, total });
 });
 
 // ── GET /superadmin/security ──────────────────────────────────────────────────

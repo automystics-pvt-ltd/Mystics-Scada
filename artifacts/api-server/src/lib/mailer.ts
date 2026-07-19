@@ -44,6 +44,22 @@ if (transport) {
   console.warn("[SMTP] Disabled — SMTP_HOST not set in .env");
 }
 
+export async function sendTestEmail(to: string): Promise<void> {
+  if (!transport) throw new Error("SMTP not configured");
+  const from = process.env.SMTP_FROM?.trim() ?? `"Mystics Platform" <${SMTP_USER}>`;
+  await transport.sendMail({
+    from, to,
+    subject: "Mystics Platform — SMTP Test",
+    html: `<div style="font-family:sans-serif;max-width:480px;margin:auto;padding:24px">
+      <h2 style="color:#7c3aed">✅ SMTP Test Successful</h2>
+      <p>This test email confirms your SMTP configuration is working correctly.</p>
+      <p style="color:#6b7280;font-size:13px">Sent from: ${from}<br>Sent at: ${new Date().toISOString()}</p>
+    </div>`,
+    text: `Mystics Platform SMTP Test — Your email configuration is working. Sent at ${new Date().toISOString()}`,
+  });
+  console.log(`[SMTP] ✅ Test email sent to ${to}`);
+}
+
 export async function sendOtpEmail(to: string, otp: string): Promise<void> {
   // Always log — visible in: journalctl -u solar-scada-api -n 30 | grep OTP
   console.log(`[OTP] to=${to}  code=${otp}  smtp=${mailerEnabled ? "on" : "OFF"}`);

@@ -41,6 +41,10 @@ import SuperAdminOperations from '@/pages/superadmin-operations';
 import SuperAdminSupport from '@/pages/superadmin-support';
 import SuperAdminCommunications from '@/pages/superadmin-communications';
 import SuperAdminMaintenance from '@/pages/superadmin-maintenance';
+import SuperAdminJobs from '@/pages/superadmin-jobs';
+import SuperAdminConfig from '@/pages/superadmin-config';
+import SuperAdminNotifications from '@/pages/superadmin-notifications';
+import SuperAdminLoginHistory from '@/pages/superadmin-login-history';
 import DevicesPage from '@/pages/devices';
 import DeviceDetailPage from '@/pages/device-detail';
 import DeviceFirmwareReportPage from '@/pages/device-firmware-report';
@@ -117,6 +121,10 @@ function ProtectedRoutes() {
           <Route path="/superadmin/support" component={SuperAdminSupport} />
           <Route path="/superadmin/communications" component={SuperAdminCommunications} />
           <Route path="/superadmin/maintenance" component={SuperAdminMaintenance} />
+          <Route path="/superadmin/jobs" component={SuperAdminJobs} />
+          <Route path="/superadmin/config" component={SuperAdminConfig} />
+          <Route path="/superadmin/notifications" component={SuperAdminNotifications} />
+          <Route path="/superadmin/login-history" component={SuperAdminLoginHistory} />
           <Route component={NotFound} />
         </Switch>
       </TelemetryStreamProvider>
