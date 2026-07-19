@@ -1,0 +1,60 @@
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# cd /home/automystics-scada/htdocs/scada.automystics.tech
+DB_URL=$(grep "^DATABASE_URL=" artifacts/api-server/.env | cut -d= -f2-)
+echo "Using: $DB_URL"
+psql "$DB_URL" -c "
+CREATE TABLE IF NOT EXISTS plants (
+  id text PRIMARY KEY NOT NULL,
+  org_id text NOT NULL REFERENCES organizations(id),
+  name text NOT NULL,
+  location text NOT NULL DEFAULT '',
+  capacity_mw real NOT NULL DEFAULT 10,
+  timezone_offset_hours real NOT NULL DEFAULT 5.5,
+  tracker_type text NOT NULL DEFAULT 'fixed_tilt',
+  commissioned_year integer NOT NULL DEFAULT 2024,
+  inverter_count integer NOT NULL DEFAULT 4,
+  inverter_rating_kw integer NOT NULL DEFAULT 1500,
+  strings_per_inverter integer NOT NULL DEFAULT 12,
+  weather_station_count integer NOT NULL DEFAULT 1,
+  cloudiness_seed real NOT NULL DEFAULT 0.2,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS plants_org_id_idx ON plants(org_id);
+"
+Using: 
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "root" does not exist
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# # Get DATABASE_URL from the running node process
+DB_URL=$(cat /proc/$(pgrep -f "node.*index.mjs" | head -1)/environ 2>/dev/null | tr '\0' '\n' | grep "^DATABASE_URL=" | cut -d= -f2-)
+echo "Found: ${DB_URL:0:40}..."
+
+# If found, create the plants table
+if [ -n "$DB_URL" ]; then
+  psql "$DB_URL" -c "
+CREATE TABLE IF NOT EXISTS plants (
+  id text PRIMARY KEY NOT NULL,
+  org_id text NOT NULL REFERENCES organizations(id),
+  name text NOT NULL,
+  location text NOT NULL DEFAULT '',
+  capacity_mw real NOT NULL DEFAULT 10,
+  timezone_offset_hours real NOT NULL DEFAULT 5.5,
+  tracker_type text NOT NULL DEFAULT 'fixed_tilt',
+  commissioned_year integer NOT NULL DEFAULT 2024,
+  inverter_count integer NOT NULL DEFAULT 4,
+  inverter_rating_kw integer NOT NULL DEFAULT 1500,
+  strings_per_inverter integer NOT NULL DEFAULT 12,
+  weather_station_count integer NOT NULL DEFAULT 1,
+  cloudiness_seed real NOT NULL DEFAULT 0.2,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS plants_org_id_idx ON plants(org_id);
+SELECT 'plants table ready' as status;
+"
+else
+  echo "Not found in process — checking systemd unit..."
+  systemctl cat solar-scada-api | grep -i "database\|environ\|env"
+fi
+Found: postgres://solarnexus:automystics@127.0....
+ERROR:  foreign key constraint "plants_org_id_fkey" cannot be implemented
+DETAIL:  Key columns "org_id" and "id" are of incompatible types: text and integer.
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# 
