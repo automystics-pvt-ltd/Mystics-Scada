@@ -52,6 +52,8 @@ export interface DriverConfig {
   // MQTT
   brokerUrl?: string;
   topic?: string;
+  mqttUsername?: string;
+  mqttPassword?: string;
   // HTTP / WebSocket / OPC-UA
   url?: string;
   // HTTP auth

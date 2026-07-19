@@ -156,6 +156,9 @@ const RegisterDeviceBody = z.object({
   opcuaPassword:     z.string().max(2048).optional(),
   // BACnet/IP
   bacnetDeviceInstance: z.number().int().min(0).max(4194302).optional(),
+  // MQTT auth
+  mqttUsername:      z.string().max(255).optional(),
+  mqttPassword:      z.string().max(2048).optional(),
 }).superRefine(validateHttpAuth);
 
 // Body accepted by the pre-flight test (no device ID needed; value used once, never persisted)
@@ -179,6 +182,8 @@ const PreflightBody = z.object({
   opcuaUsername:     z.string().max(255).optional(),
   opcuaPassword:     z.string().max(2048).optional(),
   bacnetDeviceInstance: z.number().int().min(0).max(4194302).optional(),
+  mqttUsername:      z.string().max(255).optional(),
+  mqttPassword:      z.string().max(2048).optional(),
 }).superRefine(validateHttpAuth);
 
 const UpdateDeviceBody = z.object({
@@ -372,6 +377,8 @@ router.post("/devices/connection-preflight", requirePermission("device.manage"),
     modbusUnitId:    b.modbusUnitId,
     brokerUrl:       b.brokerUrl,
     topic:           b.topic,
+    mqttUsername:    b.mqttUsername,
+    mqttPassword:    b.mqttPassword,
     url:             b.url,
     httpAuthMethod:  b.httpAuthMethod,
     httpAuthValue:   b.httpAuthValue,
@@ -513,6 +520,9 @@ router.post("/devices", requirePermission("device.manage"), async (req, res) => 
     modbusUnitId:       body.modbusUnitId,
     brokerUrl:          body.brokerUrl,
     topic:              body.topic,
+    mqttUsername:       body.mqttUsername,
+    // Encrypt MQTT password at rest
+    mqttPassword:       body.mqttPassword ? encryptCredential(body.mqttPassword) : undefined,
     url:                body.url,
     pollingIntervalSec: body.pollingIntervalSec,
     httpAuthMethod:     body.httpAuthMethod,

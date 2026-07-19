@@ -44,6 +44,8 @@ type DeviceConfig = {
   modbusUnitId?: number;
   brokerUrl?: string;
   topic?: string;
+  mqttUsername?: string;
+  mqttPassword?: string;
   url?: string;
   pollingIntervalSec?: number;
   httpAuthMethod?: "none" | "bearer" | "api_key" | "basic";
@@ -238,6 +240,9 @@ class DriverRegistry {
       modbusUnitId:     rawCfg.modbusUnitId,
       brokerUrl:        rawCfg.brokerUrl,
       topic:            rawCfg.topic,
+      mqttUsername:     rawCfg.mqttUsername,
+      // Decrypt at point-of-use — the driver never sees the ciphertext
+      mqttPassword:     rawCfg.mqttPassword ? decryptCredential(rawCfg.mqttPassword) : undefined,
       url:              rawCfg.url,
       httpAuthMethod:   rawCfg.httpAuthMethod,
       // Decrypt at point-of-use — the driver never sees the ciphertext

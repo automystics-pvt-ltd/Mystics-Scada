@@ -95,6 +95,8 @@ export class MqttDriver extends EventEmitter implements IDriver {
       const client = mqtt.connect(brokerUrl, {
         connectTimeout: timeoutMs,
         reconnectPeriod: 0,
+        ...(this._cfg.mqttUsername ? { username: this._cfg.mqttUsername } : {}),
+        ...(this._cfg.mqttPassword ? { password: this._cfg.mqttPassword } : {}),
       });
 
       client.on("connect", () => {
@@ -125,6 +127,8 @@ export class MqttDriver extends EventEmitter implements IDriver {
       clientId: `solar-scada-${this.deviceId.slice(0, 8)}`,
       reconnectPeriod: 15_000,
       connectTimeout: 10_000,
+      ...(this._cfg.mqttUsername ? { username: this._cfg.mqttUsername } : {}),
+      ...(this._cfg.mqttPassword ? { password: this._cfg.mqttPassword } : {}),
     });
 
     this._client = client;

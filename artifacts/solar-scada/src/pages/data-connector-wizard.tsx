@@ -44,6 +44,8 @@ interface WizardState {
   pollIntervalSec: number;
   brokerUrl:       string;
   topic:           string;
+  mqttUsername:    string;
+  mqttPassword:    string;
   plantId:         string;
   deviceName:      string;
   deviceType:      string;
@@ -261,10 +263,28 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
               onChange={(e) => update({ pollIntervalSec: Number(e.target.value) || 30 })}
             />
           </div>
+          <div>
+            <Label className="flex items-center gap-1.5"><Key className="h-3.5 w-3.5" /> Broker credentials <span className="text-xs font-normal text-muted-foreground ml-1">(optional — leave blank for anonymous brokers)</span></Label>
+            <div className="grid grid-cols-2 gap-3 mt-1">
+              <div>
+                <Input
+                  placeholder="Username"
+                  value={state.mqttUsername}
+                  onChange={(e) => update({ mqttUsername: e.target.value })}
+                />
+              </div>
+              <div>
+                <Input
+                  type="password"
+                  placeholder="Password"
+                  value={state.mqttPassword}
+                  onChange={(e) => update({ mqttPassword: e.target.value })}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Required if your broker shows <code className="bg-muted rounded px-1">Connection refused: Not authorized</code>. Credentials are encrypted at rest.</p>
+          </div>
         </div>
-        <TipBox>
-          If your broker requires a username and password, set them in the authentication section. Anonymous brokers (most local brokers) don't need credentials.
-        </TipBox>
       </div>
     );
   }
@@ -742,7 +762,7 @@ function defaultState(): WizardState {
     sourceType: "rest_api",
     url: "", authMethod: "none", authValue: "", apiKeyHeader: "X-API-Key",
     pollIntervalSec: 30,
-    brokerUrl: "", topic: "",
+    brokerUrl: "", topic: "", mqttUsername: "", mqttPassword: "",
     plantId: "", deviceName: "", deviceType: "inverter",
     sampleJson: "", mappings: [],
   };
@@ -775,6 +795,8 @@ export default function DataConnectorWizardPage() {
     if (state.sourceType === "mqtt") {
       body.brokerUrl = state.brokerUrl;
       body.topic     = state.topic;
+      if (state.mqttUsername) body.mqttUsername = state.mqttUsername;
+      if (state.mqttPassword) body.mqttPassword = state.mqttPassword;
     } else {
       body.url = state.url;
       if (state.authMethod !== "none") {
@@ -846,6 +868,8 @@ export default function DataConnectorWizardPage() {
         deviceBody.protocol  = "mqtt";
         deviceBody.brokerUrl = state.brokerUrl;
         deviceBody.topic     = state.topic;
+        if (state.mqttUsername) deviceBody.mqttUsername = state.mqttUsername;
+        if (state.mqttPassword) deviceBody.mqttPassword = state.mqttPassword;
       } else if (state.sourceType === "websocket") {
         deviceBody.protocol = "websocket";
         deviceBody.url      = state.url;
