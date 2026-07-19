@@ -45,43 +45,46 @@ echo -e "\${BOLD}\${CYAN}╚═════════════════�
 echo ""
 
 # ── 0. Self-install / self-update ─────────────────────────────────────────────
+# IMPORTANT: guard check MUST come before the update block to avoid re-exec loop.
+SKIP_SELF_UPDATE=false
+if [ "\${1:-}" = "--skip-self-update" ]; then
+  SKIP_SELF_UPDATE=true
+  shift
+fi
+
 section "0/7  Self-update"
 CB="\$(date +%s)"
 
-# Always fetch the latest deploy script from Replit
-info "Fetching latest deploy script from Replit..."
-LATEST=\$(curl -fsSL \\
-  -H "Cache-Control: no-cache" -H "Pragma: no-cache" \\
-  "\$REPLIT/api/deploy.sh?v=\$CB" 2>/dev/null) || {
-  warn "Could not reach Replit to self-update — continuing with current version"
-  LATEST=""
-}
+if [ "\$SKIP_SELF_UPDATE" = "false" ]; then
+  info "Fetching latest deploy script from Replit..."
+  LATEST=\$(curl -fsSL \\
+    -H "Cache-Control: no-cache" -H "Pragma: no-cache" \\
+    "\$REPLIT/api/deploy.sh?v=\$CB" 2>/dev/null) || {
+    warn "Could not reach Replit to self-update — continuing with current version"
+    LATEST=""
+  }
 
-if [ -n "\$LATEST" ]; then
-  # Write the fetched script to disk (installs on first run, updates on subsequent)
-  echo "\$LATEST" > "\$SELF.tmp"
-  chmod +x "\$SELF.tmp"
+  if [ -n "\$LATEST" ]; then
+    echo "\$LATEST" > "\$SELF.tmp"
+    chmod +x "\$SELF.tmp"
 
-  # If we are already running from $SELF, swap the file and exec the new copy
-  # to ensure the rest of the deploy uses the latest logic.
-  if [ "\$0" = "\$SELF" ] || [ "\$(realpath "\$0" 2>/dev/null)" = "\$(realpath "\$SELF" 2>/dev/null)" ]; then
-    mv "\$SELF.tmp" "\$SELF"
-    info "Script updated — re-executing latest version..."
-    echo ""
-    exec "\$SELF" --skip-self-update "\$@"
+    if [ "\$0" = "\$SELF" ] || [ "\$(realpath "\$0" 2>/dev/null)" = "\$(realpath "\$SELF" 2>/dev/null)" ]; then
+      # Running as the installed file — swap and re-exec once with the skip flag
+      mv "\$SELF.tmp" "\$SELF"
+      info "Script updated — re-executing latest version..."
+      echo ""
+      exec "\$SELF" --skip-self-update
+    else
+      # First run piped from curl — install for future use, continue this copy
+      mv "\$SELF.tmp" "\$SELF"
+      log "Installed deploy script → \$SELF"
+      info "Future deploys: cd \$DIR && ./deploy.sh"
+    fi
   else
-    # First run (piped from curl): just install and continue this copy
-    mv "\$SELF.tmp" "\$SELF"
-    log "Installed deploy script → \$SELF"
-    info "Future deploys: cd \$DIR && ./deploy.sh"
+    log "Using current version (Replit unreachable)"
   fi
 else
-  log "Using current version (offline / Replit unreachable)"
-fi
-
-# Guard so the re-exec above doesn't loop
-if [ "\${1:-}" = "--skip-self-update" ]; then
-  shift
+  log "Self-update skipped (already on latest)"
 fi
 
 # ── go to deploy directory ────────────────────────────────────────────────────
