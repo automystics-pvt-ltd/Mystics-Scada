@@ -147,6 +147,32 @@ class DriverRegistry {
   /** deviceId -> last known firmware version, cached to avoid a DB round-trip on every reading */
   private _firmwareVersions = new Map<string, string | null>();
 
+  /**
+   * Inject a reading from an external push source (e.g. HTTP Push / Webhook).
+   * Runs the same pipeline as a live driver reading: SSE publish, persist, health score.
+   */
+  async injectReading(deviceId: string, orgId: string, params: Record<string, unknown>): Promise<void> {
+    const fieldMap = this._fieldMaps.get(deviceId);
+    const processed: Record<string, unknown> = fieldMap?.some((f) => f.formula)
+      ? applyFormulas(params as Record<string, number | string | boolean | null>, fieldMap)
+      : params;
+
+    publish(DEVICE_READING_CHANNEL, orgId, {
+      deviceId,
+      ts: new Date().toISOString(),
+      params: processed,
+    });
+
+    const stat = this._stats.get(deviceId);
+    if (stat) {
+      stat.lastReadingAt = new Date();
+      stat.readingCount += 1;
+    }
+
+    await this._persistReading(deviceId, orgId, processed);
+    void this._checkFirmwareVersion(deviceId, processed);
+  }
+
   async init(): Promise<void> {
     logger.info("DriverRegistry: initializing drivers for all configured devices");
     try {

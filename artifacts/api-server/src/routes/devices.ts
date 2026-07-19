@@ -95,7 +95,7 @@ const DEVICE_TYPES = [
   "weather_station", "tracker_controller", "sensor", "gateway",
 ] as const;
 
-const PROTOCOLS = ["modbus", "modbus_rtu", "mqtt", "http", "opcua", "websocket", "bacnet"] as const;
+const PROTOCOLS = ["modbus", "modbus_rtu", "mqtt", "http", "http_push", "opcua", "websocket", "bacnet"] as const;
 
 /**
  * Protocols the Edge Gateway Agent (lib/edge-agent) actually implements pollers for.
@@ -314,6 +314,11 @@ function toDeviceResponse(row: DeviceRow, now: Date) {
       opcuaPasswordConfigured: !!cfg.opcuaPassword,
       // BACnet/IP
       bacnetDeviceInstance: cfg.bacnetDeviceInstance ?? null,
+      // MQTT auth
+      mqttUsername:        cfg.mqttUsername ?? null,
+      mqttPasswordConfigured: !!cfg.mqttPassword,
+      // HTTP Push — ingest token is the device credential (safe to expose to device owner)
+      ingestToken:         cfg.ingestToken ?? null,
       // Per-device field map (returned so the UI can display/edit it)
       fieldMap: Array.isArray(cfg.fieldMap) ? cfg.fieldMap : undefined,
     },
@@ -514,6 +519,12 @@ router.post("/devices", requirePermission("device.manage"), async (req, res) => 
     }
   }
 
+  // HTTP Push devices authenticate via an ingest token embedded in the URL.
+  // Generate one now so the response immediately contains the ready-to-use URL.
+  const ingestToken = body.protocol === "http_push"
+    ? randomUUID().replace(/-/g, "")
+    : undefined;
+
   const config: DeviceConfig = {
     ipAddress:          body.ipAddress,
     port:               body.port,
@@ -523,6 +534,7 @@ router.post("/devices", requirePermission("device.manage"), async (req, res) => 
     mqttUsername:       body.mqttUsername,
     // Encrypt MQTT password at rest
     mqttPassword:       body.mqttPassword ? encryptCredential(body.mqttPassword) : undefined,
+    ingestToken,
     url:                body.url,
     pollingIntervalSec: body.pollingIntervalSec,
     httpAuthMethod:     body.httpAuthMethod,

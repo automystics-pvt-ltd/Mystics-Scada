@@ -9,7 +9,7 @@ import {
   Globe, Radio, Wifi, Upload, ArrowRight, ArrowLeft,
   CheckCircle2, AlertCircle, Plus, Trash2, Loader2,
   Zap, Database, Info, HelpCircle, AlertTriangle,
-  Key, Clock, RefreshCw, Tag, Ruler,
+  Key, Clock, RefreshCw, Tag, Ruler, ArrowDownToLine, Copy, Check,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ const BASE = import.meta.env.BASE_URL;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type SourceType  = "rest_api" | "mqtt" | "websocket" | "csv_upload";
+type SourceType  = "rest_api" | "mqtt" | "websocket" | "csv_upload" | "http_push";
 type AuthMethod  = "none" | "bearer" | "api_key" | "basic";
 
 interface FieldMapping {
@@ -79,6 +79,13 @@ const SOURCE_TYPES: {
     desc:  "Connect to a WebSocket for push-based real-time data",
     icon:  Wifi,
     needs: ["WebSocket URL (ws:// or wss://)", "Authentication token (if required)", "Sample message payload structure"],
+  },
+  {
+    value: "http_push",
+    label: "HTTP Push / Webhook",
+    desc:  "Device POSTs data to this SCADA server — no polling, no firewall issues",
+    icon:  ArrowDownToLine,
+    needs: ["Activate to get your unique ingest URL", "Configure device to POST JSON to that URL", "No credentials needed — URL token authenticates the device"],
   },
   {
     value: "csv_upload",
@@ -196,6 +203,40 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
 // ── Step 2: Connection Details ────────────────────────────────────────────────
 
 function Step2({ state, update }: { state: WizardState; update: (p: Partial<WizardState>) => void }) {
+
+  if (state.sourceType === "http_push") {
+    return (
+      <div className="space-y-5">
+        <div>
+          <h2 className="text-base font-semibold">Step 2 — HTTP Push (Webhook)</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Your device will POST its JSON payload directly to this SCADA server. No polling, no open ports on the device side.
+          </p>
+        </div>
+        <InfoBox>
+          After you activate in Step 5, you'll receive a unique <strong>Ingest URL</strong> to configure in your device's "Data to Server" settings. The URL token acts as the device credential — no username or password needed.
+        </InfoBox>
+        <div className="rounded-lg border border-border bg-muted/5 p-4 space-y-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Teltonika TRB246 setup (after activation)</p>
+          {[
+            { label: "Services menu", value: "Services → Data to Server → Add" },
+            { label: "Server URL", value: "https://scada.automystics.tech/api/ingest/<your-token>" },
+            { label: "HTTP method", value: "POST" },
+            { label: "Data format", value: "JSON" },
+            { label: "Period", value: "30 s (or your preferred interval)" },
+          ].map(({ label, value }) => (
+            <div key={label} className="flex gap-3 text-xs">
+              <span className="w-28 flex-shrink-0 text-muted-foreground">{label}</span>
+              <span className="font-mono text-foreground">{value}</span>
+            </div>
+          ))}
+        </div>
+        <TipBox>
+          The ingest endpoint accepts any nested JSON — including the TRB246's <code className="bg-amber-500/10 rounded px-1">readings.*.value</code> structure. Fields are auto-flattened and stored without any device-side changes needed.
+        </TipBox>
+      </div>
+    );
+  }
 
   if (state.sourceType === "csv_upload") {
     return (
@@ -960,6 +1001,9 @@ export default function DataConnectorWizardPage() {
         deviceBody.topic     = state.topic;
         if (state.mqttUsername) deviceBody.mqttUsername = state.mqttUsername;
         if (state.mqttPassword) deviceBody.mqttPassword = state.mqttPassword;
+      } else if (state.sourceType === "http_push") {
+        // Push devices have no outbound connection — token is generated server-side
+        deviceBody.protocol = "http_push";
       } else if (state.sourceType === "websocket") {
         deviceBody.protocol = "websocket";
         deviceBody.url      = state.url;
@@ -991,15 +1035,25 @@ export default function DataConnectorWizardPage() {
         const e = await r.json().catch(() => ({})) as { message?: string };
         throw new Error(e.message ?? "Failed to create data source — check your configuration");
       }
-      return r.json() as Promise<{ id: string }>;
+      return r.json() as Promise<{ id: string; config?: { ingestToken?: string } }>;
     },
     onSuccess: (device) => {
       void queryClient.invalidateQueries({ queryKey: ["devices"] });
       void queryClient.invalidateQueries({ queryKey: ["device-templates"] });
-      toast({
-        title: "Data source activated!",
-        description: `${state.deviceName} is now connected. The driver will start collecting data shortly.`,
-      });
+      const ingestToken = device.config?.ingestToken;
+      if (state.sourceType === "http_push" && ingestToken) {
+        const ingestUrl = `${window.location.origin}/api/ingest/${ingestToken}`;
+        toast({
+          title: "Device activated — copy your ingest URL",
+          description: ingestUrl,
+          duration: 20000,
+        });
+      } else {
+        toast({
+          title: "Data source activated!",
+          description: `${state.deviceName} is now connected. The driver will start collecting data shortly.`,
+        });
+      }
       navigate(`/devices/${device.id}`);
     },
     onError: (e: Error) => {
@@ -1013,6 +1067,7 @@ export default function DataConnectorWizardPage() {
       case 1:
         if (state.sourceType === "mqtt")       return !!state.brokerUrl.trim() && !!state.topic.trim();
         if (state.sourceType === "csv_upload") return true;
+        if (state.sourceType === "http_push")  return true;
         return !!state.url.trim();
       case 2: return true; // test is optional
       case 3: return true; // mappings are optional

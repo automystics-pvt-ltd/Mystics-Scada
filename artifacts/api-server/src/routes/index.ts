@@ -23,6 +23,7 @@ import superadminRouter from "./superadmin";
 import superadminDbRouter from "./superadmin-db";
 import ftpSourcesRouter from "./ftpSources";
 import { gatewayAdminRouter, gatewayAgentRouter } from "./gateway";
+import ingestRouter from "./ingest";
 import { authenticate } from "../middleware/authenticate";
 import { requireSuperAdmin } from "../middleware/requireSuperAdmin";
 import { resolveOrgId } from "../lib/orgScope";
@@ -104,6 +105,10 @@ router.get("/dist/frontend.tar.gz", (_req, res) => {
 // Edge Gateway Agent ingest routes — authenticate via bearer gateway token,
 // not a browser session cookie, so they must sit outside `authenticate`.
 router.use(gatewayAgentRouter);
+
+// HTTP Push device ingest — authenticated via per-device ingest token in URL path.
+// Must be outside `authenticate` so devices can POST without a session cookie.
+router.use(ingestRouter);
 
 // All routes below this line require a valid session cookie.
 router.use(authenticate);
