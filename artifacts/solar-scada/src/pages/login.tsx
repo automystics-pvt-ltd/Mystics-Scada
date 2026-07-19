@@ -6,6 +6,7 @@ import {
   Lock, Eye, EyeOff, KeyRound,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -526,6 +527,14 @@ function OtpStep({
 type Step = "email" | "password" | "sending" | "otp";
 
 export default function Login() {
+  const { user, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  // If already authenticated (e.g. AUTH_BYPASS active on server), skip login entirely
+  useEffect(() => {
+    if (!isLoading && user) setLocation("/");
+  }, [isLoading, user, setLocation]);
+
   const [step, setStep]               = useState<Step>("email");
   const [email, setEmail]             = useState("");
   const [masked, setMasked]           = useState("");
@@ -533,6 +542,17 @@ export default function Login() {
   const [cooldown, setCooldown]       = useState(50_000);
   const [smtpOn, setSmtpOn]           = useState(false);
   const [smtpOffRedirect, setSmtpOffRedirect] = useState(false);
+
+  // Show a plain spinner while auth resolves — never flash the login form
+  if (isLoading || user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center gap-3 text-muted-foreground"
+        style={{ background: "linear-gradient(160deg,#0f1629 0%,#131b36 50%,#191040 100%)" }}>
+        <Zap className="h-5 w-5 text-indigo-400 animate-pulse" />
+        <span className="text-sm text-slate-400">Loading…</span>
+      </div>
+    );
+  }
 
   const handleSent = (e: string, m: string, t: number, cd: number, smtp: boolean) => {
     setEmail(e); setMasked(m); setTtl(t); setCooldown(cd); setSmtpOn(smtp);
