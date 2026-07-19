@@ -1,0 +1,582 @@
+You are an elite team of Enterprise Software Architects, Industrial Automation Engineers, SCADA Specialists, IIoT Architects, Cloud Architects, Cybersecurity Experts, Database Architects, UI/UX Designers, DevOps Engineers, AI Engineers, and Senior Full-Stack Developers.
+
+Your task is to design and develop a world-class Enterprise SCADA Monitoring Platform that is modular, secure, scalable, multi-tenant, and production-ready.
+
+This application should be comparable in capabilities, architecture, user experience, security, extensibility, and performance to enterprise SCADA platforms such as Siemens WinCC, Ignition SCADA, AVEVA System Platform, Schneider EcoStruxure, GE iFIX, Rockwell FactoryTalk, and ABB Ability.
+
+This is NOT a simple monitoring dashboard.
+
+This is a complete Enterprise Industrial Monitoring Platform capable of supporting thousands of industrial sites, millions of telemetry records per day, thousands of connected devices, multiple customers (tenants), and enterprise-scale administration.
+
+================================================================================
+PROJECT GOAL
+================================================================================
+
+Build a complete SCADA Monitoring Web Platform capable of:
+
+• Industrial Device Monitoring
+• Solar Plant Monitoring
+• Energy Management
+• Power Monitoring
+• Industrial IoT Monitoring
+• Alarm Management
+• Fault Management
+• Predictive Analytics
+• Historical Data Analysis
+• Enterprise Reporting
+• Remote Device Management
+• Device Configuration
+• Multi-Tenant Administration
+• Platform Administration
+• AI-based Insights
+• Database Administration
+• API Management
+• Audit & Compliance
+• High Availability
+• Disaster Recovery
+
+================================================================================
+PRIMARY OBJECTIVES
+================================================================================
+
+Design a centralized monitoring platform where Platform Administrators have complete control over the ecosystem while Tenant Administrators can independently manage their organizations.
+
+The system must support:
+
+• Multiple customers
+• Multiple organizations
+• Multiple plants
+• Multiple sites
+• Multiple gateways
+• Multiple devices
+• Multiple protocols
+• Unlimited users
+• Unlimited dashboards
+• Unlimited reports
+
+The platform should be modular so that future industrial protocols, devices, analytics engines, and integrations can be added without redesigning the application.
+
+================================================================================
+INDUSTRIAL DEVICE SUPPORT
+================================================================================
+
+Support communication with:
+
+RS485
+RS232
+Ethernet
+Wi-Fi
+Cellular
+Modbus RTU
+Modbus TCP
+MQTT
+OPC UA
+OPC DA
+BACnet
+CAN Bus
+IEC 61850
+IEC 60870-5-104
+DNP3
+SNMP
+REST APIs
+GraphQL
+FTP
+SFTP
+CSV
+Excel
+Edge Gateways
+PLC
+RTU
+Smart Meters
+Energy Meters
+Weather Stations
+Battery Systems
+Solar Inverters
+Data Loggers
+Environmental Sensors
+Custom Device Drivers
+
+Every protocol must have configurable communication parameters, polling intervals, retry policies, diagnostics, health monitoring, and detailed communication logs.
+
+================================================================================
+SECURITY & ACCESS CONTROL
+================================================================================
+
+Security must follow enterprise best practices with a Zero Trust approach.
+
+Support:
+
+• Multi-Factor Authentication (MFA)
+• Role-Based Access Control (RBAC)
+• Attribute-Based Access Control (ABAC)
+• IP Whitelisting
+• Device Whitelisting
+• User Whitelisting
+• Customer Isolation
+• Tenant Isolation
+• OAuth2
+• OpenID Connect
+• Microsoft Entra ID
+• Azure Active Directory
+• LDAP
+• SAML
+• JWT
+• Secure Session Management
+• Password Complexity Policies
+• Password Expiration
+• Account Lockout Policies
+• Concurrent Session Restrictions
+• Audit Trails
+• API Security
+• Encryption at Rest
+• Encryption in Transit
+• Secure Secret Management
+
+Only Platform Administrators can approve, activate, suspend, or revoke user access.
+
+================================================================================
+PLATFORM ADMIN CAPABILITIES
+================================================================================
+
+Platform Admin is the highest authority and has unrestricted control.
+
+Platform Admin should be able to:
+
+Manage Tenants
+Manage Organizations
+Manage Plants
+Manage Users
+Manage Roles
+Manage Permissions
+Manage Authentication Providers
+Manage Licenses
+Manage Subscriptions
+Manage Branding
+Manage Device Drivers
+Manage Protocol Drivers
+Manage Device Templates
+Manage Communication Profiles
+Manage Polling Engines
+Manage Scheduler Services
+Manage Background Workers
+Manage Cache
+Manage Message Queues
+Manage APIs
+Manage Integrations
+Manage Database
+Manage Data Retention Policies
+Manage Historical Archives
+Manage Notifications
+Manage Alarm Rules
+Manage Reports
+Manage Dashboards
+Manage Widgets
+Manage Themes
+Manage System Configurations
+
+Platform Admin Database Console should include:
+
+Database Explorer
+
+Table Browser
+
+Schema Browser
+
+Stored Procedure Browser
+
+View Browser
+
+Function Browser
+
+Relationship Viewer
+
+Data Dictionary
+
+SQL Query Console
+
+Visual Query Builder
+
+Safe SQL Execution
+
+Read-only Mode
+
+Administrative Mode
+
+Query History
+
+Query Performance Analysis
+
+Index Management
+
+Database Statistics
+
+Storage Monitoring
+
+Table Partitioning
+
+Backup
+
+Restore
+
+Archive
+
+Export
+
+Import
+
+Record Search
+
+Bulk Update
+
+Bulk Delete
+
+Soft Delete
+
+Hard Delete
+
+Data Validation
+
+Truncate Tables (permission-controlled)
+
+Database Health Monitoring
+
+Deadlock Monitoring
+
+Slow Query Monitoring
+
+Database Maintenance Scheduler
+
+All destructive actions must require confirmation, permission validation, audit logging, and optional approval workflows.
+
+================================================================================
+MULTI-TENANT MANAGEMENT
+================================================================================
+
+Support unlimited tenants.
+
+Each tenant should have isolated:
+
+Users
+Roles
+Permissions
+Organizations
+Plants
+Devices
+Dashboards
+Reports
+Historical Data
+Notifications
+Branding
+Configuration
+Audit Logs
+
+================================================================================
+LIVE SCADA DASHBOARD
+================================================================================
+
+Create a command-center style dashboard with:
+
+Real-time telemetry
+Device status
+Communication health
+Power generation
+Energy consumption
+Weather conditions
+Grid status
+Solar irradiance
+Battery state
+Temperature
+Humidity
+Wind speed
+Performance ratio
+Efficiency
+Availability
+Revenue
+Carbon savings
+Power quality
+Frequency
+Voltage
+Current
+Reactive power
+Power factor
+Import/Export energy
+String monitoring
+Inverter monitoring
+Alarm summary
+Fault summary
+Communication summary
+Device availability
+Site map
+Interactive GIS map
+Trend charts
+Heat maps
+Gauge widgets
+Animated process diagrams
+Custom dashboards
+Drill-down navigation
+
+Support second-level refresh using WebSockets or SignalR.
+
+================================================================================
+ALARMS & EVENTS
+================================================================================
+
+Provide enterprise alarm lifecycle management.
+
+Support:
+
+Critical
+Major
+Minor
+Warning
+Information
+
+Alarm acknowledgment
+Alarm shelving
+Alarm suppression
+Escalation rules
+Email alerts
+SMS alerts
+WhatsApp alerts
+Microsoft Teams
+Slack
+Push notifications
+Webhook integrations
+
+Provide complete alarm analytics, timelines, root cause correlation, alarm frequency analysis, MTTR, MTBF, and historical event playback.
+
+================================================================================
+REPORTING ENGINE
+================================================================================
+
+Develop an advanced reporting framework supporting:
+
+Daily Reports
+Weekly Reports
+Monthly Reports
+Quarterly Reports
+Annual Reports
+Shift Reports
+Energy Reports
+Solar Reports
+Power Quality Reports
+Inverter Reports
+Weather Reports
+Communication Reports
+Alarm Reports
+Fault Reports
+Asset Health Reports
+Maintenance Reports
+Audit Reports
+Security Reports
+Login Reports
+User Activity Reports
+API Reports
+Database Reports
+Custom Reports
+
+Features:
+
+Interactive Report Designer
+Drag-and-Drop Report Builder
+Scheduling
+Email Delivery
+Role-Based Visibility
+PDF Export
+Excel Export
+CSV Export
+Word Export
+PowerPoint Export
+Report Versioning
+Digital Signatures
+
+================================================================================
+AUDIT & COMPLIANCE
+================================================================================
+
+Capture every action in the platform.
+
+Track:
+
+Login
+Logout
+Failed Login
+Password Reset
+Record View
+Record Create
+Record Update
+Record Delete
+Export
+Import
+Download
+Print
+Configuration Changes
+Role Changes
+Permission Changes
+Database Queries
+System Settings
+API Calls
+Device Configuration
+Alarm Acknowledgment
+User Impersonation
+
+Log:
+
+Timestamp
+User
+Role
+Tenant
+Organization
+IP Address
+Browser
+Operating System
+Location
+Device
+Before Value
+After Value
+Reason
+Approval Details
+
+Provide searchable audit history with immutable storage.
+
+================================================================================
+UI/UX REQUIREMENTS
+================================================================================
+
+Create a premium enterprise user experience.
+
+Requirements:
+
+Modern responsive layout
+Professional industrial design
+Dark mode
+Light mode
+Configurable themes
+Collapsible navigation
+Widget-based dashboards
+Drag-and-drop widgets
+Resizable panels
+Advanced filters
+Saved views
+Global search
+Keyboard shortcuts
+Accessibility compliance
+High-performance rendering
+Interactive charts
+Animated gauges
+Map visualizations
+Professional typography
+Large KPI cards
+Command center aesthetics
+
+================================================================================
+AI CAPABILITIES
+================================================================================
+
+Integrate AI-powered features:
+
+Predictive maintenance
+Anomaly detection
+Equipment health scoring
+Failure prediction
+Energy forecasting
+Solar generation prediction
+Natural language queries
+AI-generated reports
+Root cause analysis
+Maintenance recommendations
+Chat-based operational assistant
+Smart alarm prioritization
+
+================================================================================
+TECHNICAL REQUIREMENTS
+================================================================================
+
+Architecture:
+
+Microservices
+REST APIs
+GraphQL
+Event-driven messaging
+WebSockets
+SignalR
+Message queues
+Redis cache
+Background services
+
+Frontend:
+
+React / Next.js
+TypeScript
+Tailwind CSS
+Material UI
+AG Grid
+ECharts
+Leaflet
+
+Backend:
+
+.NET 9
+Node.js services
+SignalR
+Background Workers
+
+Database:
+
+PostgreSQL
+SQL Server
+TimescaleDB
+Redis
+
+Infrastructure:
+
+Docker
+Kubernetes
+Azure
+AWS
+
+================================================================================
+EXPECTED DELIVERABLES
+================================================================================
+
+Generate:
+
+• Complete Software Requirements Specification (SRS)
+• Functional Requirements Document (FRD)
+• Non-Functional Requirements
+• System Architecture Document
+• Database ER Diagram
+• Database Schema
+• API Specifications
+• Screen Flow Diagrams
+• User Journey Maps
+• Wireframes
+• High-Fidelity UI Mockups
+• Component Library
+• Role-Permission Matrix
+• Database Design
+• Folder Structure
+• Backend Architecture
+• Frontend Architecture
+• Deployment Architecture
+• Security Architecture
+• Device Communication Architecture
+• Sequence Diagrams
+• Class Diagrams
+• Data Flow Diagrams
+• State Diagrams
+• Infrastructure Diagram
+• CI/CD Pipeline
+• Test Cases
+• Acceptance Criteria
+• Performance Benchmarks
+• Disaster Recovery Plan
+• Backup Strategy
+• Scalability Strategy
+• Operations Manual
+• Administrator Manual
+• Developer Guide
+• API Reference
+• User Documentation
+
+The final solution must be enterprise-grade, production-ready, highly secure, modular, scalable, maintainable, cloud-native, and capable of supporting millions of telemetry records, thousands of industrial assets, and large-scale deployments with high availability and disaster recovery.
