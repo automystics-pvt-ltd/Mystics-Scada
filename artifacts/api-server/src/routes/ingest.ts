@@ -74,12 +74,13 @@ async function resolveDevice(name: string): Promise<{ id: string; orgId: string 
 
   if (!org) throw new Error("No organisation found — seed the database first");
 
-  // 3. Grab the first plant (optional — device can exist without one)
+  // 3. Grab the first plant (optional — device can exist without one, table may not exist yet)
   const [plant] = await db
     .select({ id: plantsTable.id })
     .from(plantsTable)
     .where(eq(plantsTable.orgId, org.id))
-    .limit(1);
+    .limit(1)
+    .catch(() => [undefined] as const);
 
   // 4. Create the device
   const now  = new Date();
