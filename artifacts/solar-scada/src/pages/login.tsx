@@ -44,7 +44,7 @@ function EmailStep({
   onSwitchToPassword,
 }: {
   onSent: (email: string, masked: string, ttl: number, cooldown: number, smtpOn: boolean) => void;
-  onSwitchToPassword: () => void;
+  onSwitchToPassword: (email: string) => void;
 }) {
   const [email, setEmail]     = useState("");
   const [error, setError]     = useState<string | null>(null);
@@ -127,7 +127,7 @@ function EmailStep({
 
       <button
         type="button"
-        onClick={onSwitchToPassword}
+        onClick={() => onSwitchToPassword(email)}
         className="w-full flex items-center justify-center gap-2 border border-gray-300 hover:border-indigo-400 hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 font-medium py-2.5 rounded-xl transition-all text-sm"
       >
         <Lock className="h-4 w-4" />
@@ -555,7 +555,7 @@ export default function Login() {
       {step === "email" && (
         <EmailStep
           onSent={handleSent}
-          onSwitchToPassword={() => setStep("password")}
+          onSwitchToPassword={(e) => { setEmail(e); setStep("password"); }}
         />
       )}
 
