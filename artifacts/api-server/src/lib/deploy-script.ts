@@ -142,14 +142,15 @@ set_env() {
   fi
 }
 
-# If caller passes SMTP vars as environment variables, write them to .env now.
-# Usage:  SMTP_HOST=smtp.gmail.com SMTP_USER=x@gmail.com SMTP_PASS="xxxx xxxx xxxx xxxx" ./deploy.sh
-[ -n "\${SMTP_HOST:-}" ]   && set_env SMTP_HOST   "\$SMTP_HOST"   && log "  SMTP_HOST written to .env"
-[ -n "\${SMTP_PORT:-}" ]   && set_env SMTP_PORT   "\$SMTP_PORT"   && log "  SMTP_PORT written to .env"
-[ -n "\${SMTP_SECURE:-}" ] && set_env SMTP_SECURE "\$SMTP_SECURE" && log "  SMTP_SECURE written to .env"
-[ -n "\${SMTP_USER:-}" ]   && set_env SMTP_USER   "\$SMTP_USER"   && log "  SMTP_USER written to .env"
-[ -n "\${SMTP_PASS:-}" ]   && set_env SMTP_PASS   "\$SMTP_PASS"   && log "  SMTP_PASS written to .env"
-[ -n "\${SMTP_FROM:-}" ]   && set_env SMTP_FROM   "\$SMTP_FROM"   && log "  SMTP_FROM written to .env"
+# If caller passes vars as environment variables, write them to .env now.
+[ -n "\${SMTP_HOST:-}" ]              && set_env SMTP_HOST              "\$SMTP_HOST"              && log "  SMTP_HOST written to .env"
+[ -n "\${SMTP_PORT:-}" ]              && set_env SMTP_PORT              "\$SMTP_PORT"              && log "  SMTP_PORT written to .env"
+[ -n "\${SMTP_SECURE:-}" ]            && set_env SMTP_SECURE            "\$SMTP_SECURE"            && log "  SMTP_SECURE written to .env"
+[ -n "\${SMTP_USER:-}" ]              && set_env SMTP_USER              "\$SMTP_USER"              && log "  SMTP_USER written to .env"
+[ -n "\${SMTP_PASS:-}" ]              && set_env SMTP_PASS              "\$SMTP_PASS"              && log "  SMTP_PASS written to .env"
+[ -n "\${SMTP_FROM:-}" ]              && set_env SMTP_FROM              "\$SMTP_FROM"              && log "  SMTP_FROM written to .env"
+[ -n "\${PLATFORM_ADMIN_EMAILS:-}" ]  && set_env PLATFORM_ADMIN_EMAILS  "\$PLATFORM_ADMIN_EMAILS"  && log "  PLATFORM_ADMIN_EMAILS written to .env"
+[ -n "\${PLATFORM_ADMIN_PASSCODE:-}" ] && set_env PLATFORM_ADMIN_PASSCODE "\$PLATFORM_ADMIN_PASSCODE" && log "  PLATFORM_ADMIN_PASSCODE written to .env"
 
 if grep -q "^SMTP_HOST=" "\$ENV_FILE" 2>/dev/null; then
   SMTP_HOST_VAL=\$(grep "^SMTP_HOST=" "\$ENV_FILE" | cut -d= -f2)
