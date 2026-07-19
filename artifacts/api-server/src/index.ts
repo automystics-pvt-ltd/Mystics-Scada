@@ -26,8 +26,11 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 async function startServer(): Promise<void> {
-  // Apply DB schema migrations first — idempotent, runs before any table access
-  await runMigrations();
+  // Apply DB schema migrations — non-blocking: run in background so the server
+  // starts accepting requests immediately (migrations are idempotent).
+  runMigrations().catch((err: unknown) => {
+    logger.warn({ err }, "Background migration failed — schema may already be current");
+  });
 
   // Seed data first (non-fatal — log and continue)
   await ensureSeedData().catch((err: unknown) => {

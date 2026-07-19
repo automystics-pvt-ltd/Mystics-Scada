@@ -1,0 +1,58 @@
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# cd /home/automystics-scada/htdocs/scada.automystics.tech
+
+curl -fsSL "https://b374b4f9-0594-4265-a46a-a2422069eeba-00-2eey4le8q0k3m.sisko.replit.dev/api/dist/api.mjs" -o artifacts/api-server/dist/index.mjs && systemctl restart solar-scada-api
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# cd /home/automystics-scada/htdocs/scada.automystics.tech
+
+curl -fsSL "https://b374b4f9-0594-4265-a46a-a2422069eeba-00-2eey4le8q0k3m.sisko.replit.dev/api/dist/api.mjs" -o artifacts/api-server/dist/index.mjs && systemctl restart solar-scada-api
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# echo "=== Binary date ===" && ls -la /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/dist/index.mjs && echo "=== API response ===" && curl -s http://127.0.0.1:8080/api/auth/me && echo "" && echo "=== Service status ===" && systemctl is-active solar-scada-api
+=== Binary date ===
+-rw-rw-r-- 1 root root 3930067 Jul 19 06:12 /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/dist/index.mjs
+=== API response ===
+{"error":"Unauthorized"}
+=== Service status ===
+activating
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# cd /home/automystics-scada/htdocs/scada.automystics.tech \
+  && curl -fsSL "https://b374b4f9-0594-4265-a46a-a2422069eeba-00-2eey4le8q0k3m.sisko.replit.dev/api/dist/api.mjs" \
+     -o artifacts/api-server/dist/index.mjs \
+  && curl -fsSL "https://b374b4f9-0594-4265-a46a-a2422069eeba-00-2eey4le8q0k3m.sisko.replit.dev/api/dist/frontend.tar.gz" \
+  | tar -xz -C artifacts/solar-scada/dist/public/ \
+  && fuser -k 8080/tcp 2>/dev/null; sleep 2 \
+  && systemctl restart solar-scada-api \
+  && sleep 5 \
+  && curl -s http://127.0.0.1:8080/api/auth/me
+ 2679848{"id":"7c8cf42a-f2f1-4336-923e-6e38db4841a2","name":"Automystics Admin","email":"automystics.com@gmail.com","orgId":"9abad9ca-bc6e-4b81-8403-b1cbefcb31b9","roleId":"f7a695f9-5e12-4b99-96c6-16515873e352","roleName":"Admin","permissions":["dashboard.view","plants.view","plants.manage","devices.view","devices.manage","alerts.view","alerts.manage","reports.view","reports.manage","users.view","users.manage","maintenance.view","maintenance.manage","settings.view","settings.manage"],"orgName":"Automystics Technologies","orgLogoUrl":null,"plantIds":[],"isSuperAdmin":true}root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# cd /home/automystics-scada/htdocs/scada.aucd /home/automystics-scada/htdocs/scada.automystics.tech
+DB_URL=$(grep "^DATABASE_URL=" artifacts/api-server/.env | cut -d= -f2-)
+psql "$DB_URL" <<'SQL'
+CREATE TABLE IF NOT EXISTS "plants" (
+  "id" text PRIMARY KEY NOT NULL,
+  "org_id" text NOT NULL,
+  "name" text NOT NULL,
+  "location" text DEFAULT '' NOT NULL,
+  "capacity_mw" real DEFAULT 10 NOT NULL,
+  "timezone_offset_hours" real DEFAULT 5.5 NOT NULL,
+  "tracker_type" text DEFAULT 'fixed_tilt' NOT NULL,
+  "commissioned_year" integer DEFAULT 2024 NOT NULL,
+  "inverter_count" integer DEFAULT 4 NOT NULL,
+  "inverter_rating_kw" integer DEFAULT 1500 NOT NULL,
+  "strings_per_inverter" integer DEFAULT 12 NOT NULL,
+  "weather_station_count" integer DEFAULT 1 NOT NULL,
+  "cloudiness_seed" real DEFAULT 0.2 NOT NULL,
+  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  "updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+ALTER TABLE "plants" ADD CONSTRAINT IF NOT EXISTS "plants_org_id_fk"
+  FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+CREATE INDEX IF NOT EXISTS "plants_org_id_idx" ON "plants" USING btree ("org_id");
+SQL
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "root" does not exist
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# cd /home/automystics-scada/htdocs/scada.automystics.tech \
+  && curl -fsSL "https://b374b4f9-0594-4265-a46a-a2422069eeba-00-2eey4le8q0k3m.sisko.replit.dev/api/dist/api.mjs" \
+     -o artifacts/api-server/dist/index.mjs \
+  && curl -fsSL "https://b374b4f9-0594-4265-a46a-a2422069eeba-00-2eey4le8q0k3m.sisko.replit.dev/api/dist/frontend.tar.gz" \
+  | tar -xz -C artifacts/solar-scada/dist/public/ \
+  && fuser -k 8080/tcp 2>/dev/null; sleep 2 \
+  && systemctl restart solar-scada-api \
+  && sleep 5 \
+  && curl -s http://127.0.0.1:8080/api/auth/me | python3 -c "import sys,json; d=json.load(sys.stdin); print('Bypass active:', d.get('email','FAILED'))"
+ 2688876Bypass active: FAILED
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# 
