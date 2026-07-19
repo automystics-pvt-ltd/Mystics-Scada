@@ -26,8 +26,9 @@ function resolveJsonPath(obj: unknown, path: string): unknown {
 
 /**
  * Recursively flatten all scalar leaf values into a ParamMap.
- * For arrays, only the first element is inspected (we assume all items share
- * the same schema — e.g. paginated API responses like { data: { data: [...] } }).
+ * Handles the TRB246 / Teltonika pattern {address: N, value: N} — extracts only
+ * the .value with a clean key, discarding the .address noise.
+ * For arrays, only the first element is inspected.
  * Numeric strings are coerced to numbers.
  */
 function flattenScalars(obj: unknown, prefix = "", depth = 0): ParamMap {
@@ -39,18 +40,28 @@ function flattenScalars(obj: unknown, prefix = "", depth = 0): ParamMap {
   }
   for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
     const dotKey = prefix ? `${prefix}.${k}` : k;
-    const paramKey = dotKey.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
     if (v == null) continue;
+
+    if (typeof v === "object" && !Array.isArray(v)) {
+      const nested = v as Record<string, unknown>;
+      // TRB246 pattern: {address: N, value: N} — use the parent key, extract .value only
+      if ("value" in nested && typeof nested.value === "number") {
+        const paramKey = dotKey.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+        result[paramKey] = nested.value;
+      } else {
+        Object.assign(result, flattenScalars(v, dotKey, depth + 1));
+      }
+      continue;
+    }
+
+    const paramKey = dotKey.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
     if (typeof v === "number") {
       result[paramKey] = v;
     } else if (typeof v === "string") {
-      // Coerce numeric strings to numbers; keep other strings as-is
       const n = Number(v);
       result[paramKey] = (v.trim() !== "" && isFinite(n)) ? n : v;
     } else if (typeof v === "boolean") {
       result[paramKey] = v;
-    } else if (typeof v === "object") {
-      Object.assign(result, flattenScalars(v, dotKey, depth + 1));
     }
   }
   return result;
@@ -123,7 +134,7 @@ export class HttpDriver extends EventEmitter implements IDriver {
       if (!res.ok) return { ok: false, latencyMs: Date.now() - t0, error: `HTTP ${res.status}` };
       const body: unknown = await res.json();
       const params = decodeResponse(body, this._cfg.fieldMap ?? []);
-      return { ok: true, latencyMs: Date.now() - t0, sampleParams: params };
+      return { ok: true, latencyMs: Date.now() - t0, sampleParams: params, sampleRaw: body };
     } catch (err) {
       return { ok: false, latencyMs: Date.now() - t0, error: (err as Error).message };
     }

@@ -101,6 +101,8 @@ export interface ConnectionTestResult {
   latencyMs: number;
   error?: string;
   sampleParams?: ParamMap;
+  /** Raw response body from the endpoint (HTTP/WS only) — returned to the wizard so it can auto-populate the sample JSON textarea */
+  sampleRaw?: unknown;
 }
 
 // ─── Driver events ────────────────────────────────────────────────────────────

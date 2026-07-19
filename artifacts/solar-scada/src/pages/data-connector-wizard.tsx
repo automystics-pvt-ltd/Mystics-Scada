@@ -898,8 +898,13 @@ export default function DataConnectorWizardPage() {
       body: JSON.stringify(body),
     });
 
-    const data = await res.json() as { ok: boolean; error?: string; latencyMs?: number };
+    const data = await res.json() as { ok: boolean; error?: string; latencyMs?: number; sampleRaw?: unknown };
     if (!data.ok) throw new Error(data.error ?? "Connection failed — check URL and auth settings");
+
+    // Auto-populate sample JSON for REST API so Step 4 can detect fields immediately
+    if (state.sourceType === "rest_api" && data.sampleRaw != null && !state.sampleJson.trim()) {
+      update({ sampleJson: JSON.stringify(data.sampleRaw, null, 2) });
+    }
   }
 
   const activateMutation = useMutation({
