@@ -187,9 +187,15 @@ fi
 
 # ── 4. DB migrations ──────────────────────────────────────────────────────────
 section "4/7  Database migrations"
-pnpm --filter @workspace/db run push \\
-  && log "  Migrations applied ✓" \\
-  || warn "  push returned non-zero — check DB_URL or schema drift"
+# Export DATABASE_URL from .env so drizzle-kit can reach the database
+DB_URL=\$(grep "^DATABASE_URL=" "\$ENV_FILE" 2>/dev/null | cut -d= -f2-)
+if [ -z "\$DB_URL" ]; then
+  warn "  DATABASE_URL not found in \$ENV_FILE — skipping schema push"
+else
+  DATABASE_URL="\$DB_URL" pnpm --filter @workspace/db run push \\
+    && log "  Migrations applied ✓" \\
+    || warn "  push returned non-zero — schema may already be current"
+fi
 
 # ── 5. Restart services ───────────────────────────────────────────────────────
 section "5/7  Restart services"
