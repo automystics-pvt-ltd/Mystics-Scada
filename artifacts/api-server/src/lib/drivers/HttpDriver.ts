@@ -11,13 +11,55 @@ import type { IDriver, DriverConfig, DriverStatus, ParamMap, FieldDef, Connectio
 function resolveJsonPath(obj: unknown, path: string): unknown {
   const normalized = path.startsWith("$.") ? path.slice(2) : path.startsWith("$") ? path.slice(1) : path;
   if (!normalized) return obj;
-  return normalized.split(".").reduce<unknown>((cur, key) => {
-    if (cur == null || typeof cur !== "object") return undefined;
-    return (cur as Record<string, unknown>)[key];
+  // Support bracket notation: data[0].field → data.0.field
+  const cleaned = normalized.replace(/\[(\d+)\]/g, ".$1");
+  return cleaned.split(".").filter(Boolean).reduce<unknown>((cur, key) => {
+    if (cur == null) return undefined;
+    if (Array.isArray(cur)) {
+      const idx = parseInt(key, 10);
+      return !isNaN(idx) ? cur[idx] : undefined;
+    }
+    if (typeof cur === "object") return (cur as Record<string, unknown>)[key];
+    return undefined;
   }, obj);
 }
 
+/**
+ * Recursively flatten all scalar leaf values into a ParamMap.
+ * For arrays, only the first element is inspected (we assume all items share
+ * the same schema — e.g. paginated API responses like { data: { data: [...] } }).
+ * Numeric strings are coerced to numbers.
+ */
+function flattenScalars(obj: unknown, prefix = "", depth = 0): ParamMap {
+  const result: ParamMap = {};
+  if (depth > 8 || obj == null || typeof obj !== "object") return result;
+  if (Array.isArray(obj)) {
+    if (obj.length > 0) Object.assign(result, flattenScalars(obj[0], prefix, depth + 1));
+    return result;
+  }
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    const dotKey = prefix ? `${prefix}.${k}` : k;
+    const paramKey = dotKey.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    if (v == null) continue;
+    if (typeof v === "number") {
+      result[paramKey] = v;
+    } else if (typeof v === "string") {
+      // Coerce numeric strings to numbers; keep other strings as-is
+      const n = Number(v);
+      result[paramKey] = (v.trim() !== "" && isFinite(n)) ? n : v;
+    } else if (typeof v === "boolean") {
+      result[paramKey] = v;
+    } else if (typeof v === "object") {
+      Object.assign(result, flattenScalars(v, dotKey, depth + 1));
+    }
+  }
+  return result;
+}
+
 function decodeResponse(body: unknown, fields: FieldDef[]): ParamMap {
+  // Raw passthrough: auto-flatten all scalar leaf values when no field map is configured
+  if (fields.length === 0) return flattenScalars(body);
+
   const params: ParamMap = {};
   for (const field of fields) {
     const path = field.jsonPath ?? `$.${field.key}`;

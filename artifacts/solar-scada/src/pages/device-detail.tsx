@@ -20,6 +20,11 @@ import {
   Upload,
   FileText,
   Loader2,
+  Wand2,
+  Plus,
+  Trash2,
+  Hash,
+  Type,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -53,7 +58,7 @@ const BASE = import.meta.env.BASE_URL;
 type DeviceStatus = "online" | "offline" | "error";
 type LogLevel = "INFO" | "WARN" | "ERROR";
 
-interface FieldDef { key: string; label: string; unit: string; }
+interface FieldDef { key: string; label: string; unit: string; jsonPath?: string; multiplier?: number; offset?: number; }
 
 interface Template { id: string; manufacturer: string; model: string; fieldMap: FieldDef[]; }
 
@@ -84,6 +89,7 @@ interface Device {
     topic: string | null;
     url: string | null;
     pollingIntervalSec: number;
+    fieldMap?: FieldDef[];
   };
   connectivityTimeline: { timestamp: string; status: DeviceStatus }[];
 }
@@ -252,6 +258,10 @@ export default function DeviceDetailPage() {
     brokerUrl: string; topic: string; pollingIntervalSec: string;
     gatewayId: string;
   } | null>(null);
+  const [fieldMapEditing, setFieldMapEditing] = useState(false);
+  const [fieldMapDraft, setFieldMapDraft] = useState<FieldDef[]>([]);
+  const [sniffFields, setSniffFields] = useState<{ jsonPath: string; suggestedKey: string; type: string; sample: unknown }[] | null>(null);
+  const [sniffLoading, setSniffLoading] = useState(false);
 
   const { data: gateways = [] } = useQuery<{ id: string; name: string; revokedAt: string | null }[]>({
     queryKey: ["org-gateways-select"],
@@ -528,6 +538,36 @@ export default function DeviceDetailPage() {
     if (configForm.brokerUrl)    body.brokerUrl    = configForm.brokerUrl;
     if (configForm.topic)        body.topic        = configForm.topic;
     updateMutation.mutate(body);
+  }
+
+  async function discoverFields() {
+    if (!deviceId) return;
+    setSniffLoading(true);
+    try {
+      const r = await fetch(`${BASE}api/devices/${deviceId}/sniff-fields`, { credentials: "include" });
+      const j = await r.json() as { ok?: boolean; fields?: { jsonPath: string; suggestedKey: string; type: string; sample: unknown }[]; message?: string };
+      if (r.ok && j.fields) setSniffFields(j.fields);
+      else toast({ title: "Discovery failed", description: j.message ?? "Could not fetch fields", variant: "destructive" });
+    } catch { toast({ title: "Discovery failed", variant: "destructive" }); }
+    finally { setSniffLoading(false); }
+  }
+
+  function saveFieldMap() {
+    const valid = fieldMapDraft.filter(f => f.key.trim() && f.label.trim());
+    updateMutation.mutate({ fieldMap: valid } as Record<string, unknown>);
+    setFieldMapEditing(false);
+    setSniffFields(null);
+  }
+
+  function addDiscoveredField(f: { jsonPath: string; suggestedKey: string; type: string; sample: unknown }) {
+    const alreadyAdded = fieldMapDraft.some(d => d.jsonPath === f.jsonPath);
+    if (alreadyAdded) return;
+    setFieldMapDraft(prev => [...prev, {
+      key: f.suggestedKey,
+      label: f.suggestedKey.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase()).trim(),
+      unit: "",
+      jsonPath: f.jsonPath,
+    }]);
   }
 
   if (isLoading) {
@@ -841,6 +881,183 @@ export default function DeviceDetailPage() {
                           Saving will mark config as pending deploy until synced to the device
                         </p>
                       </>
+                    )}
+                  </div>
+                )}
+
+                {/* ── Field Mappings section ───────────────────────────── */}
+                {(device.protocol === "http" || device.protocol === "mqtt" || device.protocol === "websocket") && (
+                  <div className="space-y-3 pt-2 border-t border-border">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-semibold">Field Mappings</h3>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Map JSON response fields to named parameters.{" "}
+                          {!device.config.fieldMap?.length && !device.template?.fieldMap.length &&
+                            "Currently in raw passthrough mode — all scalar values are auto-extracted."}
+                        </p>
+                      </div>
+                      {canManage && !fieldMapEditing && (
+                        <Button size="sm" variant="outline" onClick={() => {
+                          setFieldMapDraft(device.config.fieldMap?.length
+                            ? device.config.fieldMap
+                            : (device.template?.fieldMap ?? []));
+                          setFieldMapEditing(true);
+                        }}>
+                          Edit Mappings
+                        </Button>
+                      )}
+                    </div>
+
+                    {!fieldMapEditing ? (
+                      /* ── View mode ── */
+                      (() => {
+                        const fm = device.config.fieldMap?.length ? device.config.fieldMap : device.template?.fieldMap ?? [];
+                        return fm.length > 0 ? (
+                          <div className="rounded-lg border border-border overflow-hidden">
+                            <table className="w-full text-xs">
+                              <thead className="bg-muted/30">
+                                <tr>
+                                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">Key</th>
+                                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">Label</th>
+                                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">Unit</th>
+                                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">JSON Path</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {fm.map((f, i) => (
+                                  <tr key={i} className="border-t border-border">
+                                    <td className="px-3 py-2 font-mono text-primary">{f.key}</td>
+                                    <td className="px-3 py-2">{f.label}</td>
+                                    <td className="px-3 py-2 text-muted-foreground">{f.unit || "—"}</td>
+                                    <td className="px-3 py-2 font-mono text-muted-foreground truncate max-w-[200px]">{f.jsonPath ?? `$.${f.key}`}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+                            No explicit mappings — all numeric/string values are auto-extracted from the response.
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      /* ── Edit mode ── */
+                      <div className="rounded-lg border border-border p-4 space-y-4">
+                        {/* Discover button */}
+                        {device.config.url && (
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => void discoverFields()} disabled={sniffLoading}>
+                              {sniffLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+                              {sniffLoading ? "Fetching…" : "Discover Available Fields"}
+                            </Button>
+                            <span className="text-[11px] text-muted-foreground">Fetches the endpoint and lists all extractable values</span>
+                          </div>
+                        )}
+
+                        {/* Discovered fields panel */}
+                        {sniffFields && (
+                          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+                            <p className="text-xs font-medium text-primary flex items-center gap-1.5">
+                              <Wand2 className="h-3.5 w-3.5" />
+                              {sniffFields.length} fields discovered — click to add
+                            </p>
+                            <div className="max-h-48 overflow-y-auto space-y-1">
+                              {sniffFields.map((f, i) => {
+                                const added = fieldMapDraft.some(d => d.jsonPath === f.jsonPath);
+                                return (
+                                  <button key={i} onClick={() => addDiscoveredField(f)} disabled={added}
+                                    className={`w-full flex items-center gap-2 text-left px-2 py-1.5 rounded text-xs transition-colors ${
+                                      added ? "opacity-40 cursor-not-allowed" : "hover:bg-primary/10 cursor-pointer"
+                                    }`}
+                                  >
+                                    {f.type === "number" ? <Hash className="h-3 w-3 text-blue-400 shrink-0" /> : <Type className="h-3 w-3 text-green-400 shrink-0" />}
+                                    <code className="text-muted-foreground font-mono flex-1 truncate">{f.jsonPath}</code>
+                                    <span className="text-muted-foreground shrink-0 tabular-nums">
+                                      {String(f.sample).slice(0, 18)}{String(f.sample).length > 18 ? "…" : ""}
+                                    </span>
+                                    {added && <CheckCircle2 className="h-3 w-3 text-status-normal shrink-0" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Field map table editor */}
+                        {fieldMapDraft.length > 0 && (
+                          <div className="rounded-lg border border-border overflow-hidden">
+                            <table className="w-full text-xs">
+                              <thead className="bg-muted/30">
+                                <tr>
+                                  <th className="px-2 py-2 text-left font-medium text-muted-foreground w-28">Key *</th>
+                                  <th className="px-2 py-2 text-left font-medium text-muted-foreground">Label *</th>
+                                  <th className="px-2 py-2 text-left font-medium text-muted-foreground w-20">Unit</th>
+                                  <th className="px-2 py-2 text-left font-medium text-muted-foreground">JSON Path (e.g. $.data.data[0].value)</th>
+                                  <th className="px-2 py-2 w-8" />
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {fieldMapDraft.map((f, i) => (
+                                  <tr key={i} className="border-t border-border">
+                                    <td className="px-2 py-1">
+                                      <input className="w-full bg-transparent border border-border rounded px-1.5 py-1 font-mono text-primary focus:outline-none focus:border-primary/60"
+                                        value={f.key} placeholder="acPowerKw"
+                                        onChange={e => setFieldMapDraft(d => d.map((x,j) => j===i ? {...x,key:e.target.value} : x))} />
+                                    </td>
+                                    <td className="px-2 py-1">
+                                      <input className="w-full bg-transparent border border-border rounded px-1.5 py-1 focus:outline-none focus:border-primary/60"
+                                        value={f.label} placeholder="AC Power"
+                                        onChange={e => setFieldMapDraft(d => d.map((x,j) => j===i ? {...x,label:e.target.value} : x))} />
+                                    </td>
+                                    <td className="px-2 py-1">
+                                      <input className="w-full bg-transparent border border-border rounded px-1.5 py-1 focus:outline-none focus:border-primary/60"
+                                        value={f.unit} placeholder="kW"
+                                        onChange={e => setFieldMapDraft(d => d.map((x,j) => j===i ? {...x,unit:e.target.value} : x))} />
+                                    </td>
+                                    <td className="px-2 py-1">
+                                      <input className="w-full bg-transparent border border-border rounded px-1.5 py-1 font-mono focus:outline-none focus:border-primary/60"
+                                        value={f.jsonPath ?? ""} placeholder="$.data.power"
+                                        onChange={e => setFieldMapDraft(d => d.map((x,j) => j===i ? {...x,jsonPath:e.target.value||undefined} : x))} />
+                                    </td>
+                                    <td className="px-2 py-1">
+                                      <button onClick={() => setFieldMapDraft(d => d.filter((_,j) => j!==i))}
+                                        className="text-muted-foreground hover:text-destructive transition-colors">
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Button size="sm" variant="outline" className="gap-1.5" onClick={() =>
+                            setFieldMapDraft(d => [...d, { key: "", label: "", unit: "", jsonPath: "" }])
+                          }>
+                            <Plus className="h-3.5 w-3.5" /> Add Row
+                          </Button>
+                          {fieldMapDraft.length > 0 && (
+                            <Button size="sm" variant="outline" className="gap-1.5 text-destructive hover:bg-destructive/10"
+                              onClick={() => setFieldMapDraft([])}>
+                              Clear All
+                            </Button>
+                          )}
+                          <div className="flex-1" />
+                          <Button size="sm" onClick={saveFieldMap} disabled={updateMutation.isPending}>
+                            <Save className="h-3.5 w-3.5 mr-1" />
+                            {updateMutation.isPending ? "Saving…" : "Save Mappings"}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => { setFieldMapEditing(false); setSniffFields(null); }}>Cancel</Button>
+                        </div>
+                        <p className="text-[11px] text-amber-400 flex items-center gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-400 inline-block" />
+                          Saving will restart the driver immediately to apply the new field map
+                        </p>
+                      </div>
                     )}
                   </div>
                 )}

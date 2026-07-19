@@ -238,6 +238,8 @@ type DeviceConfig = {
   opcuaPassword?: string;
   // BACnet/IP
   bacnetDeviceInstance?: number;
+  // Per-device field map (overrides template when present)
+  fieldMap?: FieldDef[];
   pendingDeploy?: boolean;
 };
 
@@ -741,6 +743,7 @@ router.patch("/devices/:id", requirePermission("device.manage"), async (req, res
       opcuaPassword: body.opcuaPassword ? encryptCredential(body.opcuaPassword) : undefined,
     }),
     ...(body.bacnetDeviceInstance !== undefined && { bacnetDeviceInstance: body.bacnetDeviceInstance }),
+    ...(body.fieldMap !== undefined            && { fieldMap:             body.fieldMap }),
     pendingDeploy: true,
   };
 
@@ -1152,6 +1155,64 @@ router.get("/devices/:id/readings", requirePermission("device.view"), async (req
   res.json(readings.map((r) => ({ ts: r.ts, params: r.params })));
 });
 
+// ── GET /devices/:id/sniff-fields ─────────────────────────────────────────────
+// Fetches the device URL once and returns a list of all discoverable scalar
+// fields with JSONPath expressions and sample values.
+
+router.get("/devices/:id/sniff-fields", requirePermission("device.manage"), async (req, res) => {
+  const orgId = resolveOrgId(req);
+  const deviceId = (req.params["id"] as string) ?? "";
+  const [row] = await db.select().from(devicesTable).where(eq(devicesTable.id, deviceId));
+  if (!row || (orgId !== null && row.orgId !== orgId)) {
+    res.status(404).json({ error: "not_found" }); return;
+  }
+  const cfg = parseConfig(row.config);
+  const url = cfg.url;
+  if (!url) { res.status(400).json({ error: "no_url", message: "Device has no URL configured" }); return; }
+
+  type SniffField = { jsonPath: string; suggestedKey: string; type: "number" | "string" | "boolean"; sample: unknown };
+
+  function crawl(obj: unknown, prefix: string, depth: number): SniffField[] {
+    const out: SniffField[] = [];
+    if (depth > 8 || obj == null || typeof obj !== "object") return out;
+    if (Array.isArray(obj)) {
+      if (obj.length > 0) out.push(...crawl(obj[0], `${prefix}[0]`, depth + 1));
+      return out;
+    }
+    for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+      const path = prefix ? `${prefix}.${k}` : `$.${k}`;
+      if (v == null) continue;
+      const t = typeof v;
+      if (t === "number" || t === "string" || t === "boolean") {
+        const key = path.replace(/^\$\./, "").replace(/\[\d+\]/g, "").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+        const camKey = key.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+        out.push({ jsonPath: path, suggestedKey: camKey, type: t as "number" | "string" | "boolean", sample: v });
+      } else if (t === "object") {
+        out.push(...crawl(v, path, depth + 1));
+      }
+    }
+    return out;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8_000);
+    const headers: Record<string, string> = { "Accept": "application/json" };
+    const { httpAuthMethod, httpAuthValue, httpApiKeyHeader } = cfg;
+    if (httpAuthMethod === "bearer" && httpAuthValue) headers["Authorization"] = `Bearer ${decryptCredential(httpAuthValue)}`;
+    if (httpAuthMethod === "api_key" && httpApiKeyHeader && httpAuthValue) headers[httpApiKeyHeader] = decryptCredential(httpAuthValue);
+    if (httpAuthMethod === "basic" && httpAuthValue) headers["Authorization"] = `Basic ${Buffer.from(decryptCredential(httpAuthValue)).toString("base64")}`;
+    const r = await fetch(url, { headers, signal: controller.signal });
+    clearTimeout(timer);
+    if (!r.ok) { res.status(400).json({ error: "fetch_failed", message: `HTTP ${r.status}` }); return; }
+    const body: unknown = await r.json();
+    const fields = crawl(body, "", 0);
+    res.json({ ok: true, fields });
+  } catch (err) {
+    res.status(400).json({ error: "fetch_failed", message: (err as Error).message });
+  }
+});
+
 // ── GET /devices/:id/connection-test ──────────────────────────────────────────
 
 router.get("/devices/:id/connection-test", requirePermission("device.manage"), async (req, res) => {
@@ -1170,9 +1231,11 @@ router.get("/devices/:id/connection-test", requirePermission("device.manage"), a
     return;
   }
 
-  // Resolve field map from template
+  // Resolve field map: device-level config takes priority over template
   let fieldMap: FieldDef[] = [];
-  if (row.templateId) {
+  if (cfg.fieldMap && (cfg.fieldMap as FieldDef[]).length > 0) {
+    fieldMap = cfg.fieldMap as FieldDef[];
+  } else if (row.templateId) {
     const [tmpl] = await db
       .select()
       .from(deviceTemplatesTable)
