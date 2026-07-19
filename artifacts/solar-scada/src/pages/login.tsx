@@ -61,10 +61,14 @@ function EmailStep({
       });
       const text = await r.text();
       let b: { ok?: boolean; maskedEmail?: string; expiresInMs?: number; resendCooldownMs?: number; message?: string; mailerEnabled?: boolean } = {};
+      // If OTP route doesn't exist, fall back to password login silently
+      if (r.status === 404) {
+        onSwitchToPassword(email.trim().toLowerCase());
+        setLoading(false);
+        return;
+      }
       try { b = JSON.parse(text); } catch {
-        setError(r.status === 404
-          ? "Login service not found — the server needs to be updated."
-          : `Server error (${r.status}). Please try again.`);
+        setError(`Server error (${r.status}). Please try again.`);
         setLoading(false);
         return;
       }
