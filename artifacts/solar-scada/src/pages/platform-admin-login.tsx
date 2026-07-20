@@ -372,6 +372,9 @@ function OtpStep({
   );
 }
 
+// ── SMTP status types ─────────────────────────────────────────────────────────
+type SmtpStatus = "checking" | "ok" | "misconfigured" | "not_configured";
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function PlatformAdminLogin() {
   const [step, setStep]         = useState<"email" | "sending" | "otp">("email");
@@ -380,6 +383,20 @@ export default function PlatformAdminLogin() {
   const [ttl, setTtl]           = useState(300_000);
   const [cooldown, setCooldown] = useState(50_000);
   const [smtpOn, setSmtpOn]     = useState(false);
+  const [smtpStatus, setSmtpStatus] = useState<SmtpStatus>("checking");
+
+  // Check real SMTP status on mount — replaces the always-wrong "status unknown" banner
+  useEffect(() => {
+    fetch(`${BASE}api/smtp-test`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then((d: { configured?: boolean; connected?: boolean } | null) => {
+        if (!d) { setSmtpStatus("not_configured"); return; }
+        if (d.connected === true)  { setSmtpStatus("ok"); return; }
+        if (d.configured === true) { setSmtpStatus("misconfigured"); return; }
+        setSmtpStatus("not_configured");
+      })
+      .catch(() => setSmtpStatus("not_configured"));
+  }, []);
 
   const handleSent = (e: string, m: string, t: number, cd: number, smtp: boolean) => {
     setEmail(e); setMasked(m); setTtl(t); setCooldown(cd); setSmtpOn(smtp);
@@ -403,13 +420,17 @@ export default function PlatformAdminLogin() {
         <p className="text-sm text-slate-400 mt-1">Admin Console</p>
       </div>
 
-      {/* SMTP off top-level warning (only on email step so user knows before sending) */}
-      {step === "email" && (
+      {/* SMTP status banner — shown only on email step, based on real API check */}
+      {step === "email" && smtpStatus !== "checking" && smtpStatus !== "ok" && (
         <div className="w-full max-w-md bg-amber-950/40 border border-amber-700/50 rounded-2xl px-5 py-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
             <p className="text-xs text-amber-300">
-              <span className="font-semibold">SMTP status unknown</span> — if email doesn't arrive, get the OTP from server logs.
+              {smtpStatus === "not_configured" ? (
+                <><span className="font-semibold">SMTP not configured</span> — OTP won&apos;t be emailed. Get the code from server logs: <code className="font-mono">journalctl -u solar-scada-api -n 20 | grep OTP</code></>
+              ) : (
+                <><span className="font-semibold">SMTP connection failed</span> — credentials may be wrong. OTP will appear in server logs instead.</>
+              )}
             </p>
           </div>
         </div>
