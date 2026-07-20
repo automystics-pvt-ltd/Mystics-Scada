@@ -1,0 +1,75 @@
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# # Who is the parent of the rogue process?
+PID=$(ss -tlnp | grep 8080 | grep -oP 'pid=\K[0-9]+' | head -1)
+echo "Rogue PID: $PID"
+cat /proc/$PID/status | grep -E "^(Name|PPid|Uid)"
+ps -p $(cat /proc/$PID/status | grep PPid | awk '{print $2}') -o pid,user,cmd
+
+# What working directory is it running from?
+ls -la /proc/$PID/cwd
+
+# Is PM2 running?
+pm2 list 2>/dev/null || echo "no pm2"
+
+# Any other node processes?
+ps aux | grep node | grep -v grep
+Rogue PID: 5512
+Name:   node
+PPid:   55082
+Uid:    1004    1004    1004    1004
+    PID USER     CMD
+  55082 automys+ PM2 v6.0.14: God Daemon (/home/automystics-mysticshr/.pm2)
+lrwxrwxrwx 1 automystics-mysticshr automystics-mysticshr 0 Jul 20 13:41 /proc/5512/cwd -> /home/automystics-mysticshr/htdocs/mysticshr.automystics.tech
+┌────┬───────────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name                  │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼───────────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 28 │ automystics-api       │ default     │ 0.0.0   │ fork    │ 1524446  │ 9D     │ 2    │ online    │ 0%       │ 227.9mb  │ root     │ disabled │
+│ 29 │ automystics-api       │ default     │ N/A     │ fork    │ 20045    │ 0s     │ 118… │ online    │ 33.3%    │ 49.3mb   │ root     │ disabled │
+│ 11 │ erp-automystics       │ default     │ N/A     │ fork    │ 2085506  │ 9D     │ 10   │ online    │ 0%       │ 119.6mb  │ root     │ disabled │
+│ 1  │ fitro360              │ default     │ 1.0.0   │ fork    │ 1524182  │ 9D     │ 4    │ online    │ 0%       │ 119.8mb  │ root     │ disabled │
+│ 2  │ kalvicore-api         │ default     │ 0.0.0   │ fork    │ 1524189  │ 9D     │ 4    │ online    │ 0%       │ 123.3mb  │ root     │ disabled │
+│ 13 │ mmwear-erp            │ default     │ 0.0.0   │ fork    │ 3061362  │ 2D     │ 135  │ online    │ 0%       │ 533.8mb  │ root     │ disabled │
+│ 14 │ mystics-audit         │ default     │ 0.0.0   │ fork    │ 1035800  │ 5D     │ 586  │ online    │ 0%       │ 214.0mb  │ root     │ disabled │
+│ 5  │ mysticscivil-api      │ default     │ N/A     │ fork    │ 1524242  │ 9D     │ 4    │ online    │ 0%       │ 225.2mb  │ root     │ disabled │
+│ 26 │ mysticshr-api         │ default     │ 0.0.0   │ fork    │ 852146   │ 4D     │ 14   │ online    │ 0%       │ 397.8mb  │ root     │ disabled │
+│ 12 │ mysticsinventory      │ default     │ N/A     │ fork    │ 20033    │ 0s     │ 197… │ online    │ 66.7%    │ 47.5mb   │ root     │ disabled │
+│ 3  │ people-connect-api    │ default     │ 0.0.0   │ fork    │ 1524209  │ 9D     │ 4    │ online    │ 0%       │ 214.4mb  │ root     │ disabled │
+│ 6  │ solarnexus-api        │ default     │ 0.0.0   │ fork    │ 1524251  │ 9D     │ 4    │ online    │ 0%       │ 138.7mb  │ root     │ disabled │
+│ 4  │ tkprabhu-api          │ default     │ 0.0.0   │ fork    │ 1524217  │ 9D     │ 4    │ online    │ 0%       │ 209.4mb  │ root     │ disabled │
+│ 8  │ ungalrajeev-api       │ default     │ N/A     │ fork    │ 20012    │ 0s     │ 782… │ online    │ 33.3%    │ 71.0mb   │ root     │ disabled │
+│ 7  │ ungaludan-sarath      │ default     │ 0.0.0   │ fork    │ 1524287  │ 9D     │ 4    │ online    │ 0%       │ 213.4mb  │ root     │ disabled │
+│ 9  │ ungalvignesh-api      │ default     │ N/A     │ fork    │ 19915    │ 1s     │ 170… │ online    │ 33.3%    │ 99.3mb   │ root     │ disabled │
+│ 10 │ ungalvignesh-api      │ default     │ N/A     │ fork    │ 1524307  │ 9D     │ 199… │ online    │ 0%       │ 114.8mb  │ root     │ disabled │
+└────┴───────────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+host metrics | cpu: 99.6% | ram usage: 38.5% | lo: ⇓ 0.014mb/s ⇑ 0.014mb/s | eth0: ⇓ 0.003mb/s ⇑ 0.003mb/s | disk: ⇓ 0mb/s ⇑ 0.036mb/s |
+automys+    5512  2.0  1.6 1507004 276824 ?      Ssl  13:41   0:03 node --enable-source-maps artifacts/api-server/dist/index.mjs
+root       19915 46.4  0.6 1526460 105484 ?      Rsl  13:43   0:00 node /usr/bin/pnpm --filter @workspace/api-server run start
+root       19964  101  0.8 1566528 141452 ?      Rsl  13:43   0:01 /usr/bin/node --enable-source-maps /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/dist/index.mjs
+root       20012 42.3  0.5 1535172 84728 ?       Rsl  13:43   0:00 node /usr/bin/pnpm
+root       20033 25.6  0.3 1407316 57216 ?       Rsl  13:43   0:00 /usr/bin/node /usr/lib/node_modules/pm2/lib/ProcessContainerFork.js start
+root       20045 79.1  0.3 1515212 65352 ?       Rsl  13:43   0:00 node /usr/bin/pm2
+root       20060  0.0  0.1 1136604 27624 ?       Rsl  13:43   0:00 /usr/bin/node /usr/lib/node_modules/pm2/lib/ProcessContainerFork.js start
+root      447015  0.3  0.3 1526096 61348 pts/1   Sl+  Jun10 209:14 node /usr/bin/pm2 logs mystics-api --lines 50
+root      852146  0.2  2.4 1914204 407864 ?      Ssl  Jul16  16:52 node /home/automystics-mysticshr/htdocs/mysticshr.automystics.tech/artifacts/ap
+automys+  988626  0.0  0.6 1357080 99064 ?       Ssl  Jul15   0:00 node /usr/bin/pnpm --filter @workspace/api-server run start
+automys+  988895  0.0  0.0   2804  1928 ?        S    Jul15   0:00 sh -c node --enable-source-maps ./dist/index.mjs
+automys+  988896  0.0  0.8 11873812 147204 ?     Sl   Jul15   1:20 node --enable-source-maps ./dist/index.mjs
+root     1035800  0.2  1.3 1833228 219628 ?      Ssl  Jul15  16:42 node /home/automystics-mysticsaudit/htdocs/mysticsaudit.automystics
+root     1524182  0.2  0.7 1745944 123048 ?      Ssl  Jul11  29:44 node /home/fitro360/htdocs/www.fitro360.com/dist/index.cjs
+root     1524189  0.1  0.7 1695548 126572 ?      Ssl  Jul11  21:39 node /home/automystics-kalvicore/htdocs/kalvicore.automystics.tech/artifacts/ap
+root     1524209  0.1  1.3 1863588 219996 ?      Ssl  Jul11  22:50 node /home/ctr/htdocs/ctr.tamilagavetrikalagam.com/artifacts/api-server/dist/in
+root     1524217  0.1  1.3 1861836 214848 ?      Ssl  Jul11  22:45 node /home/tamilagavetrikalagam/htdocs/tkprabhu.tamilagavetrikalaga
+root     1524242  0.0  1.4 1860788 231100 ?      Ssl  Jul11   0:19 node --enable-source-maps dist/index.mjs
+root     1524251  0.1  0.8 1580500 142540 ?      Ssl  Jul11  21:22 node /home/automystics-solarnexus/htdocs/solarnexus.automystics.tech/app/artifacts/api-s
+root     1524287  0.1  1.3 1857628 218916 ?      Ssl  Jul11  26:13 node /home/ungaludansarath/htdocs/ungaludansarath.tamilagavetrikalagam.com/arti
+root     1524307  0.0  0.7 1769452 118008 ?      Ssl  Jul11   0:16 node /usr/bin/pnpm --filter @workspace/api-server run start
+root     1524446  0.1  1.4 1670700 233732 ?      Ssl  Jul11  22:24 node /root/artifacts/api-server/dist/index.mjs
+root     1524645  0.0  0.0   2804  1928 ?        S    Jul11   0:00 sh -c node --enable-source-maps ./dist/index.mjs
+root     1524647  0.0  1.3 1855976 215452 ?      Sl   Jul11   3:05 node --enable-source-maps ./dist/index.mjs
+root     2085506  0.0  0.7 1769196 123020 ?      Ssl  Jul11   0:19 node /usr/bin/pnpm --filter @workspace/api-server start
+root     2085639  0.0  0.0   2804  1924 ?        S    Jul11   0:00 sh -c node --enable-source-maps --env-file-if-exists=.env --env-file-if-exists=../../.env ./dist/index.mjs
+root     2085640  0.0  1.6 1896936 268104 ?      Sl   Jul11   0:54 node --enable-source-maps --env-file-if-exists=.env --env-file-if-exists=../../.env ./dist/index.mjs
+automys+ 2467311  0.0  0.0   2800  1816 ?        S    May06   0:00 sh -c node src/server.js
+automys+ 2467313  0.0  0.5 11864964 90468 ?      Sl   May06  71:35 node src/server.js
+root     3061362  0.9  3.3 10503408 546784 ?     Ssl  Jul18  30:18 node --enable-source-maps /home/mmwearerp/htdocs/erp.mmwear.in/artifacts/api-server/dist/index.mjs
+root     4062570  0.0  0.3 1484908 59476 ?       Ssl  13:16   0:00 /usr/bin/node serve.mjs
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# 
