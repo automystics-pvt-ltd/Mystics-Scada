@@ -91,8 +91,17 @@ fi
 cd "\$DIR" || fail "Deploy directory not found: \$DIR"
 log "Working directory: \$(pwd)"
 
-# ── 1. Pull API binary ─────────────────────────────────────────────────────────
-section "1/7  API binary"
+# ── 1. Git pull ───────────────────────────────────────────────────────────────
+section "1/8  Git pull"
+if [ -d ".git" ]; then
+  git pull --ff-only 2>&1 | while IFS= read -r line; do info "  \$line"; done
+  log "  git pull ✓"
+else
+  warn "  Not a git repository — skipping git pull"
+fi
+
+# ── 2. Pull API binary ─────────────────────────────────────────────────────────
+section "2/8  API binary"
 info "Downloading from \$REPLIT (cache-buster: \$CB)..."
 curl -fsSL \\
   -H "Cache-Control: no-cache" -H "Pragma: no-cache" \\
@@ -111,7 +120,7 @@ fi
 log "  Verified: \$PW_HITS password-login ref(s) ✓"
 
 # ── 2. Pull frontend ───────────────────────────────────────────────────────────
-section "2/7  Frontend"
+section "3/8  Frontend"
 curl -fsSL \\
   -H "Cache-Control: no-cache" -H "Pragma: no-cache" \\
   "\$REPLIT/api/dist/frontend.tar.gz?v=\$CB" \\
@@ -127,7 +136,7 @@ tar -xzf /tmp/fe.tar.gz -C artifacts/solar-scada/dist/public || fail "Failed to 
 log "  Extracted to artifacts/solar-scada/dist/public ✓"
 
 # ── 3. Environment / SMTP setup ───────────────────────────────────────────────
-section "3/7  Environment"
+section "4/8  Environment"
 ENV_FILE="artifacts/api-server/.env"
 mkdir -p "\$(dirname "\$ENV_FILE")"
 touch "\$ENV_FILE"
@@ -191,7 +200,7 @@ else
 fi
 
 # ── 4. DB migrations ──────────────────────────────────────────────────────────
-section "4/7  Database migrations"
+section "5/8  Database migrations"
 # Export DATABASE_URL from .env so drizzle-kit can reach the database
 DB_URL=\$(grep "^DATABASE_URL=" "\$ENV_FILE" 2>/dev/null | cut -d= -f2-)
 if [ -z "\$DB_URL" ]; then
@@ -203,7 +212,7 @@ else
 fi
 
 # ── 5. Restart services ───────────────────────────────────────────────────────
-section "5/7  Restart services"
+section "6/8  Restart services"
 info "  Clearing port 8080..."
 fuser -k 8080/tcp 2>/dev/null || true
 sleep 2
@@ -217,7 +226,7 @@ systemctl restart solar-scada-proxy 2>/dev/null && log "  solar-scada-proxy rest
 sleep 2
 
 # ── 6. Health checks ──────────────────────────────────────────────────────────
-section "6/7  Health checks"
+section "7/8  Health checks"
 
 # API liveness
 API_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/api/healthz)
@@ -243,7 +252,7 @@ OTP_RESULT=\$(curl -s -X POST http://127.0.0.1:8080/api/platform-admin/login/ema
 log "  /api/platform-admin/login/email → \$(echo "\$OTP_RESULT" | head -c 120)"
 
 # ── 7. Done ───────────────────────────────────────────────────────────────────
-section "7/7  Complete"
+section "8/8  Complete"
 echo ""
 echo -e "\${BOLD}\${GREEN}  ✅  Deploy successful!\${NC}"
 echo ""
