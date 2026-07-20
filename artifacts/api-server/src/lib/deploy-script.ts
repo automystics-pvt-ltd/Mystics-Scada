@@ -201,10 +201,13 @@ fi
 
 # ── 4. DB migrations ──────────────────────────────────────────────────────────
 section "5/8  Database migrations"
-# Export DATABASE_URL from .env so drizzle-kit can reach the database
+# Look for DATABASE_URL in artifact .env first, then root .env (where systemd reads it from)
 DB_URL=\$(grep "^DATABASE_URL=" "\$ENV_FILE" 2>/dev/null | cut -d= -f2-)
 if [ -z "\$DB_URL" ]; then
-  warn "  DATABASE_URL not found in \$ENV_FILE — skipping schema push"
+  DB_URL=\$(grep "^DATABASE_URL=" "\$DIR/.env" 2>/dev/null | cut -d= -f2-)
+fi
+if [ -z "\$DB_URL" ]; then
+  warn "  DATABASE_URL not found in \$ENV_FILE or \$DIR/.env — skipping schema push"
 else
   DATABASE_URL="\$DB_URL" pnpm --filter @workspace/db run push \\
     && log "  Migrations applied ✓" \\
