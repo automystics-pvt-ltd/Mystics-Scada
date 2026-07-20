@@ -213,8 +213,8 @@ fi
 
 # ── 5. Restart services ───────────────────────────────────────────────────────
 section "6/8  Restart services"
-info "  Clearing port 8080..."
-fuser -k 8080/tcp 2>/dev/null || true
+info "  Clearing port 18080 (solar-scada dedicated port)..."
+fuser -k 18080/tcp 2>/dev/null || true
 sleep 2
 
 systemctl daemon-reload
@@ -229,7 +229,7 @@ sleep 2
 section "7/8  Health checks"
 
 # API liveness
-API_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/api/healthz)
+API_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:18080/api/healthz)
 if [ "\$API_STATUS" = "200" ]; then
   log "  /api/healthz → HTTP \$API_STATUS ✓"
 else
@@ -237,7 +237,7 @@ else
 fi
 
 # Password-login route
-PW_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:8080/api/auth/password-login \\
+PW_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:18080/api/auth/password-login \\
   -H "Content-Type: application/json" -d '{"email":"x","password":"x"}')
 if [ "\$PW_STATUS" = "401" ] || [ "\$PW_STATUS" = "400" ] || [ "\$PW_STATUS" = "200" ]; then
   log "  /api/auth/password-login → HTTP \$PW_STATUS ✓  (route exists)"
@@ -246,7 +246,7 @@ else
 fi
 
 # OTP route (smoke test)
-OTP_RESULT=\$(curl -s -X POST http://127.0.0.1:8080/api/platform-admin/login/email \\
+OTP_RESULT=\$(curl -s -X POST http://127.0.0.1:18080/api/platform-admin/login/email \\
   -H "Content-Type: application/json" \\
   -d '{"email":"automystics.com@gmail.com"}')
 log "  /api/platform-admin/login/email → \$(echo "\$OTP_RESULT" | head -c 120)"
