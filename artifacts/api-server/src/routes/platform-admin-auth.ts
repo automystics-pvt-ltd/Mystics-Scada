@@ -216,6 +216,46 @@ router.post("/platform-admin/login/verify-otp", async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── POST /platform-admin/login/passcode ──────────────────────────────────────
+// Password-based login: whitelisted email + PLATFORM_ADMIN_PASSCODE.
+// Replaces the OTP flow — no email delivery required.
+
+router.post("/platform-admin/login/passcode", async (req, res) => {
+  const { email, passcode } = req.body as { email?: unknown; passcode?: unknown };
+
+  if (typeof email !== "string" || !email.trim()) {
+    res.status(400).json({ error: "invalid_body", message: "Email is required." });
+    return;
+  }
+  if (typeof passcode !== "string" || !passcode.trim()) {
+    res.status(400).json({ error: "invalid_body", message: "Passcode is required." });
+    return;
+  }
+
+  const n = email.trim().toLowerCase();
+  console.log(`[PlatformAdmin] Passcode login attempt: ${n} | whitelisted: ${WHITELISTED.has(n)}`);
+
+  if (!WHITELISTED.has(n)) {
+    res.status(403).json({ error: "not_whitelisted", message: "This email is not authorised for platform access." });
+    return;
+  }
+
+  if (!isMaster(passcode.trim())) {
+    res.status(401).json({ error: "invalid_passcode", message: "Incorrect passcode." });
+    return;
+  }
+
+  const payload = await adminSession();
+  if (!payload) {
+    res.status(500).json({ error: "no_admin_user", message: "Platform admin account not found in database." });
+    return;
+  }
+
+  res.cookie(SESSION_COOKIE, JSON.stringify(payload), cookieOpts());
+  console.log(`[PlatformAdmin] Passcode login successful: ${n}`);
+  res.json({ ok: true });
+});
+
 // ── POST /platform-admin/login/logout ────────────────────────────────────────
 
 router.post("/platform-admin/login/logout", (_req, res) => {
