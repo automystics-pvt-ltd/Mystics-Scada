@@ -303,10 +303,9 @@ router.post("/auth/forgot-password", async (req, res) => {
         .set({ resetToken: tokenHash, resetTokenExpiresAt: expiresAt })
         .where(eq(usersTable.id, user.id));
 
-      // Build reset URL from request origin or APP_URL env
+      // APP_URL e.g. "https://scada.automystics.tech" — set in .env on the VPS
       const appUrl = (process.env.APP_URL ?? "").replace(/\/$/, "");
-      const basePath = (process.env.VITE_BASE_PATH ?? "").replace(/\/$/, "");
-      const resetUrl = `${appUrl}${basePath}/reset-password?token=${rawToken}`;
+      const resetUrl = `${appUrl}/reset-password?token=${rawToken}`;
 
       await sendPasswordResetEmail(n, resetUrl);
     } catch (err) {

@@ -187,6 +187,14 @@ else
   warn "  └──────────────────────────────────────────────────────────────────────"
 fi
 
+# APP_URL — used in password-reset emails; set to production URL if not overridden
+if ! grep -q "^APP_URL=" "\$ENV_FILE" 2>/dev/null; then
+  set_env APP_URL "https://scada.automystics.tech"
+  log "  APP_URL=https://scada.automystics.tech set ✓"
+else
+  log "  APP_URL present ✓"
+fi
+
 # AUTH_BYPASS — always enable so the app opens without login
 set_env AUTH_BYPASS "true"
 log "  AUTH_BYPASS=true set ✓"
