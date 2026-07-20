@@ -137,8 +137,9 @@ log "  Extracted to artifacts/solar-scada/dist/public ✓"
 
 # ── 3. Environment / SMTP setup ───────────────────────────────────────────────
 section "4/8  Environment"
-ENV_FILE="artifacts/api-server/.env"
-mkdir -p "\$(dirname "\$ENV_FILE")"
+# The systemd EnvironmentFile points to the ROOT .env — write everything here.
+# artifacts/api-server/.env is NOT read by systemd, so writing there had no effect.
+ENV_FILE="\$DIR/.env"
 touch "\$ENV_FILE"
 
 # Helper: set/replace a key=value in .env (does not duplicate)
@@ -201,13 +202,10 @@ fi
 
 # ── 4. DB migrations ──────────────────────────────────────────────────────────
 section "5/8  Database migrations"
-# Look for DATABASE_URL in artifact .env first, then root .env (where systemd reads it from)
+# ENV_FILE is now the root .env — no fallback needed
 DB_URL=\$(grep "^DATABASE_URL=" "\$ENV_FILE" 2>/dev/null | cut -d= -f2-)
 if [ -z "\$DB_URL" ]; then
-  DB_URL=\$(grep "^DATABASE_URL=" "\$DIR/.env" 2>/dev/null | cut -d= -f2-)
-fi
-if [ -z "\$DB_URL" ]; then
-  warn "  DATABASE_URL not found in \$ENV_FILE or \$DIR/.env — skipping schema push"
+  warn "  DATABASE_URL not found in \$ENV_FILE — skipping schema push"
 else
   DATABASE_URL="\$DB_URL" pnpm --filter @workspace/db run push \\
     && log "  Migrations applied ✓" \\
