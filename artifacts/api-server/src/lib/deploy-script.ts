@@ -151,6 +151,11 @@ set_env() {
 [ -n "\${SMTP_FROM:-}" ]              && set_env SMTP_FROM              "\$SMTP_FROM"              && log "  SMTP_FROM written to .env"
 [ -n "\${PLATFORM_ADMIN_EMAILS:-}" ]  && set_env PLATFORM_ADMIN_EMAILS  "\$PLATFORM_ADMIN_EMAILS"  && log "  PLATFORM_ADMIN_EMAILS written to .env"
 [ -n "\${PLATFORM_ADMIN_PASSCODE:-}" ] && set_env PLATFORM_ADMIN_PASSCODE "\$PLATFORM_ADMIN_PASSCODE" && log "  PLATFORM_ADMIN_PASSCODE written to .env"
+[ -n "\${MQTT_BROKER_URL:-}" ]        && set_env MQTT_BROKER_URL        "\$MQTT_BROKER_URL"        && log "  MQTT_BROKER_URL written to .env"
+[ -n "\${MQTT_TOPIC:-}" ]             && set_env MQTT_TOPIC             "\$MQTT_TOPIC"             && log "  MQTT_TOPIC written to .env"
+[ -n "\${MQTT_USERNAME:-}" ]          && set_env MQTT_USERNAME          "\$MQTT_USERNAME"          && log "  MQTT_USERNAME written to .env"
+[ -n "\${MQTT_PASSWORD:-}" ]          && set_env MQTT_PASSWORD          "\$MQTT_PASSWORD"          && log "  MQTT_PASSWORD written to .env"
+[ -n "\${MQTT_DEVICE_NAME:-}" ]       && set_env MQTT_DEVICE_NAME       "\$MQTT_DEVICE_NAME"       && log "  MQTT_DEVICE_NAME written to .env"
 
 if grep -q "^SMTP_HOST=" "\$ENV_FILE" 2>/dev/null; then
   SMTP_HOST_VAL=\$(grep "^SMTP_HOST=" "\$ENV_FILE" | cut -d= -f2)
