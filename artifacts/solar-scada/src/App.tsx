@@ -27,6 +27,8 @@ import AdminRoles from '@/pages/admin-roles';
 import Settings from '@/pages/settings';
 import NotFound from '@/pages/not-found';
 import PlatformAdminLogin from '@/pages/platform-admin-login';
+import ForgotPassword from '@/pages/forgot-password';
+import ResetPassword from '@/pages/reset-password';
 import SuperAdminDashboard from '@/pages/superadmin-dashboard';
 import SuperAdminOrgs from '@/pages/superadmin-orgs';
 import SuperAdminOrgDetail from '@/pages/superadmin-org-detail';
@@ -139,6 +141,8 @@ function Router() {
       <Route path="/platform-admin" component={PlatformAdminLogin} />
       {/* Regular login is always public — outside the AuthGuard */}
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route component={ProtectedRoutes} />
     </Switch>
   );

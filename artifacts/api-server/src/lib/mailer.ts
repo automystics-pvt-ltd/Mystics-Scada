@@ -103,6 +103,41 @@ export async function sendOtpEmail(to: string, otp: string): Promise<void> {
   }
 }
 
+export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
+  console.log(`[RESET] to=${to}  url=${resetUrl}  smtp=${mailerEnabled ? "on" : "OFF"}`);
+  if (!transport) throw new Error("SMTP not configured — cannot send password reset email.");
+
+  const from = process.env.SMTP_FROM?.trim() ?? `"Solar SCADA" <${SMTP_USER}>`;
+  try {
+    const info = await transport.sendMail({
+      from, to,
+      subject: "Solar SCADA — Password reset link",
+      text: `Reset your password by visiting the link below (valid for 1 hour):\n\n${resetUrl}\n\nIf you did not request this, ignore this email.`,
+      html: `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0f1629;font-family:sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 20px;">
+<table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;">
+<tr><td style="background:linear-gradient(135deg,#6366f1,#4f46e5);padding:28px;text-align:center;">
+  <h1 style="color:#fff;margin:0;font-size:22px;font-weight:700;">Solar SCADA</h1>
+  <p style="color:rgba(255,255,255,0.7);margin:4px 0 0;font-size:13px;">Automystics Technologies</p>
+</td></tr>
+<tr><td style="padding:32px;">
+  <p style="color:#374151;font-size:15px;margin:0 0 16px;">We received a request to reset the password for your account (<strong>${to}</strong>).</p>
+  <div style="text-align:center;margin:24px 0;">
+    <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;text-decoration:none;font-weight:600;font-size:15px;padding:14px 32px;border-radius:12px;">Reset password</a>
+  </div>
+  <p style="color:#6b7280;font-size:13px;margin:0;">This link expires in <strong>1 hour</strong>. If you did not request a reset, ignore this email.</p>
+  <p style="color:#9ca3af;font-size:11px;margin:16px 0 0;">Or copy this URL into your browser:<br><span style="color:#6366f1;word-break:break-all;">${resetUrl}</span></p>
+</td></tr>
+</table></td></tr></table></body></html>`,
+    });
+    console.log(`[RESET] ✅ Email delivered to ${to} (messageId: ${info.messageId})`);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[RESET] ❌ SMTP failed to ${to}: ${msg}`);
+    throw err;
+  }
+}
+
 // ── SMTP diagnostics — used by /api/smtp-test ─────────────────────────────
 export async function smtpDiagnostics(): Promise<{
   configured: boolean; host: string; port: number; user: string;

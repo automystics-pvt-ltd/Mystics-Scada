@@ -38,6 +38,8 @@ export const usersTable = pgTable(
     passwordHash: text("password_hash"),
     isSuperAdmin: boolean("is_super_admin").notNull().default(false),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+    resetToken: text("reset_token"),
+    resetTokenExpiresAt: timestamp("reset_token_expires_at", { withTimezone: true }),
     userPreferences: jsonb("user_preferences").$type<{
       dismissedInsights?: string[];
     }>().default({}),

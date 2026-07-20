@@ -13,7 +13,7 @@ import { Router, type IRouter } from "express";
 import { db, usersTable, rolesTable, organizationsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { SESSION_COOKIE, type SessionPayload } from "../middleware/authenticate";
-import { sendOtpEmail, mailerEnabled } from "../lib/mailer";
+import { sendOtpEmail, sendPasswordResetEmail, mailerEnabled } from "../lib/mailer";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
@@ -258,6 +258,103 @@ router.post("/auth/password-login", async (req, res) => {
     .catch(() => {});
 
   req.log?.info({ userId: user.id, orgId: user.orgId }, "User logged in via password");
+  res.json({ ok: true });
+});
+
+// ── POST /auth/forgot-password ────────────────────────────────────────────────
+// Accepts an email, generates a 1-hour reset token, stores its SHA-256 hash in
+// the DB, and emails a reset link. Always returns 200 to prevent enumeration.
+
+const RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+router.post("/auth/forgot-password", async (req, res) => {
+  const { email } = req.body as { email?: unknown };
+  if (typeof email !== "string" || !email.trim()) {
+    res.status(400).json({ error: "invalid_body", message: "Email is required." });
+    return;
+  }
+
+  const n = email.trim().toLowerCase();
+
+  // Always respond 200 regardless of whether email exists (prevent enumeration)
+  res.json({ ok: true });
+
+  // Do the work after sending the response (fire-and-forget)
+  (async () => {
+    try {
+      const [user] = await db
+        .select({ id: usersTable.id, passwordHash: usersTable.passwordHash })
+        .from(usersTable)
+        .where(eq(usersTable.email, n))
+        .limit(1);
+
+      if (!user || !user.passwordHash) {
+        // No account or no password set — silently skip
+        console.log(`[RESET] No password-enabled account for ${n} — skipping`);
+        return;
+      }
+
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+      const expiresAt = new Date(Date.now() + RESET_TTL_MS);
+
+      await db
+        .update(usersTable)
+        .set({ resetToken: tokenHash, resetTokenExpiresAt: expiresAt })
+        .where(eq(usersTable.id, user.id));
+
+      // Build reset URL from request origin or APP_URL env
+      const appUrl = (process.env.APP_URL ?? "").replace(/\/$/, "");
+      const basePath = (process.env.VITE_BASE_PATH ?? "").replace(/\/$/, "");
+      const resetUrl = `${appUrl}${basePath}/reset-password?token=${rawToken}`;
+
+      await sendPasswordResetEmail(n, resetUrl);
+    } catch (err) {
+      console.error("[RESET] forgot-password error:", err);
+    }
+  })();
+});
+
+// ── POST /auth/reset-password ─────────────────────────────────────────────────
+// Accepts { token, password } — validates the token hash, updates the password,
+// then clears the token so it can't be reused.
+
+router.post("/auth/reset-password", async (req, res) => {
+  const { token, password } = req.body as { token?: unknown; password?: unknown };
+
+  if (typeof token !== "string" || !token.trim()) {
+    res.status(400).json({ error: "invalid_body", message: "Reset token is required." });
+    return;
+  }
+  if (typeof password !== "string" || password.length < 8) {
+    res.status(400).json({ error: "invalid_body", message: "Password must be at least 8 characters." });
+    return;
+  }
+
+  const tokenHash = crypto.createHash("sha256").update(token.trim()).digest("hex");
+
+  const [user] = await db
+    .select({
+      id: usersTable.id,
+      resetToken: usersTable.resetToken,
+      resetTokenExpiresAt: usersTable.resetTokenExpiresAt,
+    })
+    .from(usersTable)
+    .where(eq(usersTable.resetToken, tokenHash))
+    .limit(1);
+
+  if (!user || !user.resetTokenExpiresAt || user.resetTokenExpiresAt < new Date()) {
+    res.status(400).json({ error: "invalid_token", message: "Reset link is invalid or has expired. Please request a new one." });
+    return;
+  }
+
+  const newHash = await bcrypt.hash(password, 10);
+  await db
+    .update(usersTable)
+    .set({ passwordHash: newHash, resetToken: null, resetTokenExpiresAt: null })
+    .where(eq(usersTable.id, user.id));
+
+  console.log(`[RESET] Password reset successful for user ${user.id}`);
   res.json({ ok: true });
 });
 

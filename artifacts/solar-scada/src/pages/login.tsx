@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { Link } from "wouter";
 import {
   Zap, Loader2, CheckCircle2, AlertTriangle, Eye, EyeOff,
 } from "lucide-react";
@@ -102,9 +103,17 @@ export default function Login() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Password
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm font-semibold text-gray-700">
+                Password
+              </label>
+              <Link
+                href="/forgot-password"
+                className="text-xs text-indigo-600 hover:text-indigo-500 font-medium"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <div className="relative">
               <input
                 type={showPwd ? "text" : "password"}
