@@ -113,11 +113,18 @@ router.post("/auth/login/email", async (req, res) => {
   const otp = rng();
   store.set(n, { otp, expiresAt: now + OTP_TTL_MS, cooldownUntil: now + RESEND_COOLDOWN_MS });
 
-  sendOtpEmail(n, otp).catch((err: unknown) => {
+  // Await delivery — if SMTP is configured but fails (bad credentials, network
+  // error, etc.) we report mailerEnabled:false so the frontend shows the
+  // "check server logs" prompt instead of "check your email".
+  let delivered = mailerEnabled;
+  try {
+    await sendOtpEmail(n, otp);
+  } catch (err: unknown) {
     req.log?.error({ err }, "Failed to send login OTP");
-  });
+    delivered = false;
+  }
 
-  res.json({ ok: true, maskedEmail: mask(n), expiresInMs: OTP_TTL_MS, resendCooldownMs: RESEND_COOLDOWN_MS, mailerEnabled });
+  res.json({ ok: true, maskedEmail: mask(n), expiresInMs: OTP_TTL_MS, resendCooldownMs: RESEND_COOLDOWN_MS, mailerEnabled: delivered });
 });
 
 // ── POST /auth/login/resend ──────────────────────────────────────────────────
@@ -143,9 +150,16 @@ router.post("/auth/login/resend", async (req, res) => {
 
   const otp = rng();
   store.set(n, { otp, expiresAt: now + OTP_TTL_MS, cooldownUntil: now + RESEND_COOLDOWN_MS });
-  sendOtpEmail(n, otp).catch((err: unknown) => { req.log?.error({ err }, "Failed to resend OTP"); });
 
-  res.json({ ok: true, maskedEmail: mask(n), expiresInMs: OTP_TTL_MS, resendCooldownMs: RESEND_COOLDOWN_MS, mailerEnabled });
+  let delivered = mailerEnabled;
+  try {
+    await sendOtpEmail(n, otp);
+  } catch (err: unknown) {
+    req.log?.error({ err }, "Failed to resend OTP");
+    delivered = false;
+  }
+
+  res.json({ ok: true, maskedEmail: mask(n), expiresInMs: OTP_TTL_MS, resendCooldownMs: RESEND_COOLDOWN_MS, mailerEnabled: delivered });
 });
 
 // ── POST /auth/login/verify-otp ──────────────────────────────────────────────

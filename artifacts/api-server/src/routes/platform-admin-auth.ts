@@ -119,11 +119,15 @@ router.post("/platform-admin/login/email", async (req, res) => {
   const otp = rng();
   store.set(n, { otp, expiresAt: now + OTP_TTL, cooldownUntil: now + COOLDOWN });
 
-  // sendOtpEmail always logs OTP to console even if SMTP fails
-  sendOtpEmail(n, otp).catch((err: unknown) =>
-    console.error("[PlatformAdmin] sendOtpEmail error:", err));
+  let delivered = mailerEnabled;
+  try {
+    await sendOtpEmail(n, otp);
+  } catch (err: unknown) {
+    console.error("[PlatformAdmin] sendOtpEmail error:", err);
+    delivered = false;
+  }
 
-  res.json({ ok: true, maskedEmail: mask(n), expiresInMs: OTP_TTL, resendCooldownMs: COOLDOWN, mailerEnabled });
+  res.json({ ok: true, maskedEmail: mask(n), expiresInMs: OTP_TTL, resendCooldownMs: COOLDOWN, mailerEnabled: delivered });
 });
 
 // ── POST /platform-admin/login/resend ────────────────────────────────────────
@@ -146,9 +150,16 @@ router.post("/platform-admin/login/resend", async (req, res) => {
   }
   const otp = rng();
   store.set(n, { otp, expiresAt: now + OTP_TTL, cooldownUntil: now + COOLDOWN });
-  sendOtpEmail(n, otp).catch((err: unknown) =>
-    console.error("[PlatformAdmin] resend error:", err));
-  res.json({ ok: true, maskedEmail: mask(n), expiresInMs: OTP_TTL, resendCooldownMs: COOLDOWN, mailerEnabled });
+
+  let delivered = mailerEnabled;
+  try {
+    await sendOtpEmail(n, otp);
+  } catch (err: unknown) {
+    console.error("[PlatformAdmin] resend error:", err);
+    delivered = false;
+  }
+
+  res.json({ ok: true, maskedEmail: mask(n), expiresInMs: OTP_TTL, resendCooldownMs: COOLDOWN, mailerEnabled: delivered });
 });
 
 // ── POST /platform-admin/login/verify-otp ────────────────────────────────────
