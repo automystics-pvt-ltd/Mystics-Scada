@@ -8,6 +8,7 @@ import { driverRegistry } from "./lib/drivers/registry";
 import { startRetryWorker } from "./lib/retryWorker";
 import { startFtpScheduler } from "./lib/ftpScheduler";
 import { startOfflineDetectionJob } from "./lib/offlineDetection";
+import { startMqttSubscriber } from "./lib/mqttSubscriber";
 import { db, plantsTable } from "@workspace/db";
 import { loadDbPlant } from "./lib/simulation";
 
@@ -75,6 +76,12 @@ async function startServer(): Promise<void> {
   // Start the device offline-detection sweep (60s interval).
   try { startOfflineDetectionJob(); } catch (err) {
     logger.warn({ err }, "startOfflineDetectionJob skipped");
+  }
+
+  // Start the MQTT subscriber — connects to broker and ingests messages forever.
+  // Silently skipped when MQTT_BROKER_URL is not set.
+  try { startMqttSubscriber(); } catch (err) {
+    logger.warn({ err }, "startMqttSubscriber skipped");
   }
 
   // Now open the port
