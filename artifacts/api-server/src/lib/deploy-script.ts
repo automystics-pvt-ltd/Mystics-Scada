@@ -114,10 +114,14 @@ log "  Binary: \$SIZE"
 
 # Verify key routes exist
 PW_HITS=\$(grep -c "password-login" artifacts/api-server/dist/index.mjs 2>/dev/null || echo 0)
+PC_HITS=\$(grep -c "login/passcode" artifacts/api-server/dist/index.mjs 2>/dev/null || echo 0)
 if [ "\$PW_HITS" -lt 1 ]; then
-  fail "STALE BINARY: password-login route missing (\$PW_HITS hits). Replit may still be building — wait 30 s and retry."
+  fail "STALE BINARY: password-login route missing. Replit may still be building — wait 30 s and retry."
 fi
-log "  Verified: \$PW_HITS password-login ref(s) ✓"
+if [ "\$PC_HITS" -lt 1 ]; then
+  fail "STALE BINARY: platform-admin passcode route missing. Replit may still be building — wait 30 s and retry."
+fi
+log "  Verified: password-login ✓  platform-admin/passcode ✓"
 
 # ── 2. Pull frontend ───────────────────────────────────────────────────────────
 section "3/8  Frontend"

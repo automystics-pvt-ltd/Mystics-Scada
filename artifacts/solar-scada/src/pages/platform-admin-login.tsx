@@ -29,9 +29,9 @@ export default function PlatformAdminLogin() {
         body: JSON.stringify({ email: email.trim(), passcode }),
       });
       let b: { ok?: boolean; message?: string } = {};
-      try { b = await r.json(); } catch { /* non-JSON */ }
+      try { b = await r.json(); } catch { /* non-JSON body (e.g. 404 HTML) */ }
       if (!r.ok) {
-        setError(b.message ?? "Access denied.");
+        setError(b.message ?? `Server error ${r.status} — check that the latest API is deployed and running.`);
         setLoading(false);
         return;
       }

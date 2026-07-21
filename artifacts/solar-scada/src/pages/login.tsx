@@ -50,9 +50,9 @@ export default function Login() {
         body: JSON.stringify({ email: email.trim(), password }),
       });
       let b: { ok?: boolean; message?: string } = {};
-      try { b = await r.json(); } catch { /* non-JSON */ }
+      try { b = await r.json(); } catch { /* non-JSON body (e.g. 404 HTML) */ }
       if (!r.ok) {
-        setError(b.message ?? "Incorrect email or password.");
+        setError(b.message ?? `Server error ${r.status} — try again or contact your administrator.`);
         setLoading(false);
         return;
       }
