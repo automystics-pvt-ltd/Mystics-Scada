@@ -1,0 +1,40 @@
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# sed -i 's|proxy_pass http://127.0.0.1:8080;|proxy_pass http://127.0.0.1:18080;|' \
+  /etc/nginx/sites-enabled/scada.automystics.tech.conf && \
+nginx -t && systemctl reload nginx && \
+echo "✓ nginx reloaded" && \
+curl -s -X POST https://scada.automystics.tech/api/platform-admin/login/passcode \
+  -H "Content-Type: application/json" \
+  -d '{"email":"automystics.com@gmail.com","passcode":"Automystics@2026$"}'
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/ctr.tamilagavetrikalagam.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/erp.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/erp.mmwear.in.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/kalvicore.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/kuralai.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/mysticsaudit.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/mysticscivil.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/mysticshr.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/mysticsinv.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/scada.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/solarnexus.automystics.tech.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/tkprabhu.tamilagavetrikalagam.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/ungalrajeev.tamilagavetrikalagam.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/ungaludansarath.tamilagavetrikalagam.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/ungalvignesh.tamilagavetrikalagam.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/www.automystics.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/www.automystics.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/www.fitro360.com.crt"
+nginx: [warn] "ssl_stapling" ignored, no OCSP responder URL in the certificate "/etc/nginx/ssl-certificates/www.fitro360.com.crt"
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+✓ nginx reloaded
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Cannot POST /api/platform-admin/login/passcode</pre>
+</body>
+</html>
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# 
