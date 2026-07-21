@@ -1,0 +1,43 @@
+curl -fsSL \
+  -H "Cache-Control: no-cache" \
+  "https://b374b4f9-0594-4265-a46a-a2422069eeba-00-2eey4le8q0k3m.sisko.replit.dev/api/dist/api.mjs?v=$(date +%s)" \
+  -o artifacts/api-server/dist/index.mjs && \
+echo "Binary: $(du -h artifacts/api-server/dist/index.mjs | cut -f1)" && \
+echo "Routes: pw=$(grep -c 'password-login' artifacts/api-server/dist/index.mjs) passcode=$(grep -c 'login/passcode' artifacts/api-server/dist/index.mjs)" && \
+psql "$(grep '^DATABASE_URL=' .env | cut -d= -f2-)" -c "
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token text;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires_at timestamptz;
+" && \
+systemctl restart solar-scada-api && sleep 5 && \
+curl -s -X POST http://127.0.0.1:18080/api/platform-admin/login/passcode \
+  -H "Content-Type: application/json" \
+  -d '{"email":"automystics.com@gmail.com","passcode":"Automystics@2026$"}'
+Binary: 3.8M
+Routes: pw=7 passcode=2
+NOTICE:  column "reset_token" of relation "users" already exists, skipping
+NOTICE:  column "reset_token_expires_at" of relation "users" already exists, skipping
+ALTER TABLE
+ALTER TABLE
+{"ok":true}root@srv1609330:/home/automystics-scada/htdocs/scada.automys# Check current nginx configginx config
+cat /etc/nginx/sites-enabled/scada.automystics.tech 2>/dev/null \
+  || cat /etc/nginx/sites-enabled/default 2>/dev/null \
+  || grep -r "scada\|18080" /etc/nginx/ --include="*.conf" -l
+/etc/nginx/sites-enabled/scada.automystics.tech.conf
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# location /api/ {
+    proxy_pass         http://127.0.0.1:18080;
+    proxy_http_version 1.1;
+    proxy_set_header   Host              $host;
+    proxy_set_header   X-Real-IP         $remote_addr;
+    proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header   X-Forwarded-Proto $scheme;
+}
+Command 'location' not found, but can be installed with:
+apt install location
+proxy_pass: command not found
+proxy_http_version: command not found
+proxy_set_header: command not found
+proxy_set_header: command not found
+proxy_set_header: command not found
+proxy_set_header: command not found
+-bash: syntax error near unexpected token `}'
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# 
