@@ -14,6 +14,8 @@ export interface FieldDef {
   offset?: number;
   // MQTT / HTTP / WebSocket-specific
   jsonPath?: string;    // dot-notation path, e.g. "$.data.acPower"
+  /** For name-value MQTT mode: the register name string to match (e.g. "Acurrent"). Falls back to `key` if omitted. */
+  registerName?: string;
   // OPC-UA-specific
   nodeId?: string;           // e.g. "ns=2;i=1002"
   samplingIntervalMs?: number;
@@ -54,6 +56,16 @@ export interface DriverConfig {
   topic?: string;
   mqttUsername?: string;
   mqttPassword?: string;
+  /**
+   * "json-path" (default): each message contains all fields; use jsonPath to extract them.
+   * "name-value": each message contains one register; driver extracts $.name + $.value and
+   *               accumulates across messages, matching by FieldDef.registerName.
+   */
+  payloadMode?: "json-path" | "name-value";
+  /** JSONPath to the register name in name-value mode. Default: "$.Automystics.name" */
+  nameKeyPath?: string;
+  /** JSONPath to the register value in name-value mode. Default: "$.Automystics.data" */
+  nameValuePath?: string;
   // HTTP / WebSocket / OPC-UA
   url?: string;
   // HTTP auth

@@ -10,7 +10,20 @@ export type HealthState = "normal" | "warning" | "fault" | "offline";
 export type InverterStatus = "running" | "standby" | "fault" | "comm_lost";
 export type TrackerType = "fixed_tilt" | "single_axis_tracker";
 
+// ─── Live driver override store ───────────────────────────────────────────────
+// Driver readings for real devices override the simulation layer on a per-key
+// basis. Keys are deviceIds; values are partial InverterLiveReading fields.
+
+const _deviceLiveReadings = new Map<string, Partial<InverterLiveReading>>();
+
+/** Called by the driver registry whenever a live reading arrives for a real inverter device. */
+export function setDeviceLiveReading(deviceId: string, params: Partial<InverterLiveReading>): void {
+  _deviceLiveReadings.set(deviceId, { ...(_deviceLiveReadings.get(deviceId) ?? {}), ...params });
+}
+
 export interface PlantConfig {
+  /** If set, live driver readings from this device override the simulation for idx=0 of this plant. */
+  primaryDeviceId?: string;
   id: string;
   name: string;
   location: string;
@@ -35,6 +48,7 @@ export const PLANT_ORG_MAP: Record<string, string> = {
   "plant-sundarbans": "org-1",
   "plant-deccan":     "org-1",
   "plant-coastal":    "org-1",
+  "plant-ana":        "org-1",
 };
 
 /**
@@ -102,6 +116,21 @@ export const PLANTS: PlantConfig[] = [
     stringsPerInverter: 18,
     weatherStationCount: 2,
     cloudinessSeed: 0.22,
+  },
+  {
+    id: "plant-ana",
+    name: "Ana Solar Plant",
+    location: "Tamil Nadu, India",
+    timezoneOffsetHours: 5.5,
+    capacityMw: 0.2,
+    trackerType: "fixed_tilt",
+    commissionedYear: 2026,
+    inverterCount: 1,
+    inverterRatingKw: 200,
+    stringsPerInverter: 6,
+    weatherStationCount: 0,
+    cloudinessSeed: 0.2,
+    primaryDeviceId: "dev-ana-inv-01",
   },
 ];
 
@@ -327,6 +356,32 @@ export function inverterLiveReading(plant: PlantConfig, idx: number, now: Date):
   const efficiencyPct = isProducing ? 96.5 + seededRandom(`${id}:eff`, Math.floor(now.getTime() / 60000)) * 2 : 0;
   const acPowerKw = isProducing ? dcPowerKw * (efficiencyPct / 100) : 0;
   const tempC = plantAmbientTempC(plant, now) + (isProducing ? 18 * irradianceFactor : 2);
+
+  // ── Live driver override (real devices) ────────────────────────────────────
+  // If idx=0 and this plant has a primaryDeviceId with live readings, merge them
+  // over the simulation values so the dashboard shows real hardware data.
+  if (idx === 0 && plant.primaryDeviceId) {
+    const live = _deviceLiveReadings.get(plant.primaryDeviceId);
+    if (live && Object.keys(live).length > 0) {
+      const hour = localHour(plant, now);
+      const dayFractionElapsed = Math.max(0, Math.min(1, (hour - 6) / 12.3));
+      const baseEnergy = plant.inverterRatingKw * 5.4 * dayFractionElapsed * (1 - plant.cloudinessSeed * 0.4);
+      const baseLifetime = (plant.inverterRatingKw * 5.1 * 365 * (2026 - plant.commissionedYear + dayFractionElapsed / 365)) / 1000;
+      const liveAcPower = (live.acPowerKw ?? 0);
+      return {
+        acPowerKw:         live.acPowerKw        ?? 0,
+        dcPowerKw:         live.dcPowerKw        ?? (liveAcPower > 0 ? Math.round(liveAcPower / 0.965 * 10) / 10 : 0),
+        acVoltageV:        live.acVoltageV        ?? 0,
+        dcVoltageV:        live.dcVoltageV        ?? (liveAcPower > 0 ? 620 : 0),
+        acCurrentA:        live.acCurrentA        ?? 0,
+        frequencyHz:       live.frequencyHz       ?? 0,
+        temperatureC:      live.temperatureC      ?? 0,
+        efficiencyPct:     live.efficiencyPct     ?? (liveAcPower > 0 ? 96.5 : 0),
+        energyTodayKwh:    live.energyTodayKwh    ?? Math.round(baseEnergy),
+        energyLifetimeMwh: live.energyLifetimeMwh ?? Math.round(baseLifetime * 10) / 10,
+      };
+    }
+  }
 
   const hour = localHour(plant, now);
   const dayFractionElapsed = Math.max(0, Math.min(1, (hour - 6) / 12.3));

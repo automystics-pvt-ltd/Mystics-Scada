@@ -43,6 +43,62 @@ function decodePayload(raw: string, fields: FieldDef[]): ParamMap | null {
   return params;
 }
 
+// ─── Name-value accumulator (TRB246 / per-register MQTT format) ──────────────
+
+/**
+ * Decodes a single "name-value" message where each MQTT publish carries one
+ * register reading:  { "Automystics": { "name": "Acurrent", "data": "1347" }, … }
+ *
+ * Returns { _name, _rawValue } so the caller can update its accumulator, or
+ * null if the message doesn't match the expected shape.
+ */
+function extractNameValue(
+  raw: string,
+  namePath: string,
+  valuePath: string,
+): { name: string; rawValue: number } | null {
+  let obj: unknown;
+  try { obj = JSON.parse(raw); } catch { return null; }
+  const name = resolveJsonPath(obj, namePath);
+  const val  = resolveJsonPath(obj, valuePath);
+  if (typeof name !== "string" || name === "") return null;
+  const num = typeof val === "number" ? val : parseFloat(String(val ?? ""));
+  if (!isFinite(num)) return null;
+  return { name, rawValue: num };
+}
+
+/**
+ * Build a ParamMap from the current accumulator state using the field map.
+ * Each FieldDef is matched by `registerName` (or `key` as fallback).
+ */
+function buildParamsFromAccumulator(
+  state: Map<string, number>,
+  fields: FieldDef[],
+): ParamMap {
+  const params: ParamMap = {};
+  for (const field of fields) {
+    const regName = field.registerName ?? field.key;
+    const raw = state.get(regName);
+    if (raw === undefined) continue;
+    const scaled = raw * (field.multiplier ?? 1) + (field.offset ?? 0);
+    params[field.key] = Math.round(scaled * 1000) / 1000;
+  }
+
+  // Derived: acPowerKw = √3 × V × I × PF / 1000 (if all three present)
+  const v  = params["acVoltageV"]  as number | undefined;
+  const i  = params["acCurrentA"]  as number | undefined;
+  const pf = params["powerFactor"] as number | undefined;
+  if (v != null && i != null && pf != null && v > 0 && i > 0) {
+    params["acPowerKw"] = Math.round(Math.sqrt(3) * v * i * pf / 1000 * 10) / 10;
+    // Estimate DC side (assume ~96.5 % efficiency)
+    if ((params["acPowerKw"] as number) > 0) {
+      params["dcPowerKw"] = Math.round((params["acPowerKw"] as number) / 0.965 * 10) / 10;
+    }
+  }
+
+  return params;
+}
+
 // ─── Driver ──────────────────────────────────────────────────────────────────
 
 export class MqttDriver extends EventEmitter implements IDriver {
@@ -51,6 +107,8 @@ export class MqttDriver extends EventEmitter implements IDriver {
   private _client: MqttClient | null = null;
   private _stopped = false;
   private readonly _cfg: DriverConfig;
+  /** Accumulator for name-value mode — persists across individual register messages */
+  private readonly _nvState = new Map<string, number>();
 
   constructor(cfg: DriverConfig) {
     super();
@@ -145,8 +203,28 @@ export class MqttDriver extends EventEmitter implements IDriver {
     client.on("message", (_topic: string, payload: Buffer) => {
       const t0 = Date.now();
       const raw = payload.toString("utf8");
-      const params = decodePayload(raw, this._cfg.fieldMap ?? []);
       const rttMs = Date.now() - t0;
+
+      if (this._cfg.payloadMode === "name-value") {
+        // ── Per-register accumulator mode (TRB246 / Teltonika format) ──────
+        const namePath  = this._cfg.nameKeyPath  ?? "$.Automystics.name";
+        const valuePath = this._cfg.nameValuePath ?? "$.Automystics.data";
+        const extracted = extractNameValue(raw, namePath, valuePath);
+        if (!extracted) {
+          this.emit("log", "PARSE_ERROR", `name-value: could not extract name/value from ${_topic}`);
+          return;
+        }
+        this._nvState.set(extracted.name, extracted.rawValue);
+        const params = buildParamsFromAccumulator(this._nvState, this._cfg.fieldMap ?? []);
+        if (Object.keys(params).length > 0) {
+          this.emit("log", "READ_OK", `[nv] ${extracted.name}=${extracted.rawValue} → ${Object.keys(params).length} accumulated params`, rttMs);
+          this.emit("reading", params);
+        }
+        return;
+      }
+
+      // ── Standard JSON-path mode ──────────────────────────────────────────
+      const params = decodePayload(raw, this._cfg.fieldMap ?? []);
       if (params === null) {
         // JSON parse failure — device is publishing non-JSON (binary, CSV, etc.)
         this.emit("log", "PARSE_ERROR", `Invalid JSON in MQTT payload on ${_topic} (${Buffer.byteLength(raw, "utf8")} bytes)`);

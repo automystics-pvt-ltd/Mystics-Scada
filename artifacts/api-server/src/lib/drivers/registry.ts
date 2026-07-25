@@ -26,6 +26,7 @@ import { OpcuaDriver } from "./opcua-driver.js";
 import { BacnetDriver } from "./bacnet-driver.js";
 import { applyFormulas } from "../formulaEngine.js";
 import { publish } from "../sseRegistry.js";
+import { setDeviceLiveReading } from "../simulation.js";
 import { computeDeviceHealthScore } from "../deviceHealth.js";
 import { resolveDeviceOfflineAlert } from "../offlineDetection.js";
 
@@ -337,6 +338,25 @@ class DriverRegistry {
         ts: new Date().toISOString(),
         params: processed,
       });
+
+      // Push live readings into the simulation override store so real inverter
+      // data replaces simulation on the dashboard immediately.
+      const stat = this._stats.get(deviceId);
+      if (stat?.plantId) {
+        const p = processed as Record<string, number>;
+        const liveReading: Record<string, number> = {};
+        if (p["acPowerKw"]         != null) liveReading["acPowerKw"]         = p["acPowerKw"];
+        if (p["dcPowerKw"]         != null) liveReading["dcPowerKw"]         = p["dcPowerKw"];
+        if (p["acVoltageV"]        != null) liveReading["acVoltageV"]        = p["acVoltageV"];
+        if (p["acCurrentA"]        != null) liveReading["acCurrentA"]        = p["acCurrentA"];
+        if (p["frequencyHz"]       != null) liveReading["frequencyHz"]       = p["frequencyHz"];
+        if (p["temperatureC"]      != null) liveReading["temperatureC"]      = p["temperatureC"];
+        if (p["energyTodayKwh"]    != null) liveReading["energyTodayKwh"]    = p["energyTodayKwh"];
+        if (p["energyLifetimeMwh"] != null) liveReading["energyLifetimeMwh"] = p["energyLifetimeMwh"];
+        if (Object.keys(liveReading).length > 0) {
+          setDeviceLiveReading(deviceId, liveReading);
+        }
+      }
 
       void this._persistReading(deviceId, orgId, processed);
       void this._checkFirmwareVersion(deviceId, processed);

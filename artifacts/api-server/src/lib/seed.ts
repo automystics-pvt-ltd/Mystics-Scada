@@ -10,6 +10,7 @@ import {
   rolesTable,
   devicesTable,
   deviceTemplatesTable,
+  plantsTable,
 } from "@workspace/db";
 import { eq, isNull } from "drizzle-orm";
 import { SYSTEM_TEMPLATES } from "./systemTemplates";
@@ -399,6 +400,43 @@ function buildDeviceSeed(): (typeof devicesTable.$inferInsert)[] {
       config: { ipAddress: "10.0.4.1", port: 8080, pollingIntervalSec: 15, pendingDeploy: false },
       createdAt: now, updatedAt: now,
     },
+
+    // ── plant-ana — 1 real TRB246 inverter (MQTT, name-value mode) ──────────
+    {
+      id: "dev-ana-inv-01", orgId: "org-1", plantId: "plant-ana",
+      name: "Ana Inverter (TRB246)", type: "inverter", protocol: "mqtt",
+      status: "online", firmwareVersion: "TRB2M_R_00.07.22.1",
+      config: {
+        brokerUrl: "mqtt://76.13.4.214:1883",
+        topic: "trb246/modbus",
+        payloadMode: "name-value",
+        nameKeyPath: "$.Automystics.name",
+        nameValuePath: "$.Automystics.data",
+        pollingIntervalSec: 60,
+        fieldMap: [
+          { key: "acVoltageV",        registerName: "phaseABvoltage",      label: "AC Voltage (AB)",   unit: "V",   multiplier: 0.1 },
+          { key: "acVoltageBcV",      registerName: "phaseBCvoltage",      label: "AC Voltage (BC)",   unit: "V",   multiplier: 0.1 },
+          { key: "acVoltageCaV",      registerName: "phaseCAvoltage",      label: "AC Voltage (CA)",   unit: "V",   multiplier: 0.1 },
+          { key: "acCurrentA",        registerName: "Acurrent",            label: "AC Current (A)",    unit: "A",   multiplier: 0.1 },
+          { key: "acCurrentBA",       registerName: "Bcurrent",            label: "AC Current (B)",    unit: "A",   multiplier: 0.1 },
+          { key: "acCurrentCA",       registerName: "Ccurrent",            label: "AC Current (C)",    unit: "A",   multiplier: 0.1 },
+          { key: "powerFactor",       registerName: "pf",                  label: "Power Factor",      unit: "",    multiplier: 0.001 },
+          { key: "frequencyHz",       registerName: "frq",                 label: "Frequency",         unit: "Hz",  multiplier: 0.1 },
+          { key: "temperatureC",      registerName: "internaltemperature", label: "Internal Temp",     unit: "°C",  multiplier: 0.1 },
+          { key: "energyTodayKwh",    registerName: "dailyeneregykwh",     label: "Daily Energy",      unit: "kWh", multiplier: 0.1 },
+          { key: "energyLifetimeMwh", registerName: "totalenergy",         label: "Total Energy",      unit: "MWh", multiplier: 0.000001 },
+          { key: "faultCode",         registerName: "faultcode",           label: "Fault Code",        unit: "",    multiplier: 1 },
+          { key: "faultAlarm",        registerName: "faultalarm",          label: "Fault Alarm",       unit: "",    multiplier: 1 },
+          { key: "string1CurrentA",   registerName: "string1current",      label: "String 1 Current",  unit: "A",   multiplier: 0.01 },
+          { key: "string2CurrentA",   registerName: "str2A",               label: "String 2 Current",  unit: "A",   multiplier: 0.01 },
+          { key: "string3CurrentA",   registerName: "STR3A",               label: "String 3 Current",  unit: "A",   multiplier: 0.01 },
+          { key: "string4CurrentA",   registerName: "STR4A",               label: "String 4 Current",  unit: "A",   multiplier: 0.01 },
+          { key: "string5CurrentA",   registerName: "STR5A",               label: "String 5 Current",  unit: "A",   multiplier: 0.01 },
+          { key: "string6CurrentA",   registerName: "STR6A",               label: "String 6 Current",  unit: "A",   multiplier: 0.01 },
+        ],
+      },
+      createdAt: now, updatedAt: now,
+    },
   ];
 }
 
@@ -474,6 +512,49 @@ export async function ensureSeedData(): Promise<void> {
     const devices = buildDeviceSeed();
     await db.insert(devicesTable).values(devices);
     logger.info({ count: devices.length }, "Seeded IoT devices");
+  }
+
+  // ── Ana Solar Plant — real TRB246 device (idempotent) ────────────────────
+  const [existingAna] = await db
+    .select({ id: plantsTable.id })
+    .from(plantsTable)
+    .where(eq(plantsTable.id, "plant-ana"))
+    .limit(1);
+  if (!existingAna) {
+    const now2 = new Date();
+    await db.insert(plantsTable).values({
+      id: "plant-ana",
+      orgId: "org-1",
+      name: "Ana Solar Plant",
+      location: "Tamil Nadu, India",
+      capacityMw: 0.2,
+      timezoneOffsetHours: 5.5,
+      trackerType: "fixed_tilt",
+      commissionedYear: 2026,
+      inverterCount: 1,
+      inverterRatingKw: 200,
+      stringsPerInverter: 6,
+      weatherStationCount: 0,
+      cloudinessSeed: 0.2,
+      createdAt: now2,
+      updatedAt: now2,
+    });
+    logger.info("Seeded Ana Solar Plant (real TRB246 device)");
+  }
+
+  // Ensure the TRB246 inverter device exists (idempotent)
+  const [existingAnaDev] = await db
+    .select({ id: devicesTable.id })
+    .from(devicesTable)
+    .where(eq(devicesTable.id, "dev-ana-inv-01"))
+    .limit(1);
+  if (!existingAnaDev) {
+    const now2 = new Date();
+    const [anaDev] = buildDeviceSeed().filter((d) => d.id === "dev-ana-inv-01");
+    if (anaDev) {
+      await db.insert(devicesTable).values({ ...anaDev, createdAt: now2, updatedAt: now2 });
+      logger.info("Seeded Ana TRB246 inverter device");
+    }
   }
 
   // ── System device templates (idempotent — keyed by stable IDs) ────────────
