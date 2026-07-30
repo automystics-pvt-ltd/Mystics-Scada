@@ -11,7 +11,7 @@
  */
 
 import { Router, type IRouter } from "express";
-import { db, usersTable, rolesTable } from "@workspace/db";
+import { db, usersTable, rolesTable, organizationsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { SESSION_COOKIE, type SessionPayload } from "../middleware/authenticate";
 import { sendOtpEmail, mailerEnabled } from "../lib/mailer";
@@ -79,9 +79,51 @@ const isMaster = (p: string) => {
 };
 
 async function adminSession(): Promise<SessionPayload | null> {
+  // 1. Happy path: a super-admin user already exists.
   const [u] = await db.select().from(usersTable)
     .where(eq(usersTable.isSuperAdmin, true)).limit(1);
-  return u ? { userId: u.id, orgId: u.orgId, roleId: u.roleId } : null;
+  if (u) return { userId: u.id, orgId: u.orgId, roleId: u.roleId };
+
+  // 2. Self-provision on first use.
+  // This handles fresh VPS installs where the production-mode seed guard
+  // prevented the isSuperAdmin flag from being set at startup.
+  console.log("[PlatformAdmin] No super-admin user found — self-provisioning platform-admin account.");
+
+  // Find the first available org (any tenant is fine for the platform admin record).
+  const [firstOrg] = await db.select({ id: organizationsTable.id })
+    .from(organizationsTable).limit(1);
+  // Find an admin-level role, fall back to any role.
+  const [adminRole] = await db.select({ id: rolesTable.id }).from(rolesTable)
+    .where(eq(rolesTable.id, "role-admin")).limit(1);
+  const [anyRole] = await db.select({ id: rolesTable.id }).from(rolesTable).limit(1);
+
+  const orgId  = firstOrg?.id;
+  const roleId = (adminRole ?? anyRole)?.id;
+
+  if (!orgId || !roleId) {
+    console.error("[PlatformAdmin] Cannot self-provision: no org or role found in DB.");
+    return null;
+  }
+
+  const adminId = "user-platform-admin";
+  await db.insert(usersTable).values({
+    id: adminId,
+    orgId,
+    name: "Platform Administrator",
+    email: "platform-admin@system.internal",
+    roleId,
+    plantIds: [],
+    status: "active",
+    isSuperAdmin: true,
+    lastLoginAt: null,
+    createdAt: new Date(),
+  }).onConflictDoUpdate({
+    target: usersTable.id,
+    set: { isSuperAdmin: true },
+  });
+
+  console.log(`[PlatformAdmin] Self-provisioned platform-admin user (orgId=${orgId}, roleId=${roleId})`);
+  return { userId: adminId, orgId, roleId };
 }
 
 // ── POST /platform-admin/login/email ────────────────────────────────────────

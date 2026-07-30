@@ -23,3 +23,4 @@
 - [OPC-UA driver decisions](opcua-driver-decisions.md) — polling-only (push subscriptions unverifiable without live server), security-mode mapping, ns=0;i=2255 as universal liveness check, credential encryption pattern.
 - [Data Connector Wizard vs Device registration scope](data-connector-wizard-scope.md) — industrial protocols (Modbus/OPC-UA/BACnet) belong on Devices/Templates pages, not the generic wizard.
 - [Edge Gateway Agent architecture](edge-gateway-agent.md) — token-router mounting pitfall, super-admin write-guard prefixes, gateway-assignment driver status, edge-agent protocol scope.
+- [Platform-admin self-provision](platform-admin-self-provision.md) — adminSession() must upsert a super-admin user on first use; production guard in seedPasswordUser blocks the flag from being set at startup.
