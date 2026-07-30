@@ -1,0 +1,73 @@
+root@srv1609330:~# cd /home/automystics-scada/htdocs/scada.automystics.tech
+root@srv1609330:/home/automystics-scada/htdocs/scada.automystics.tech# echo "=== SERVICE STATUS ===" && systemctl status solar-scada-api --no-pager && \
+echo "=== LAST 30 LOGS ===" && journalctl -u solar-scada-api -n 30 --no-pager && \
+echo "=== PORT CHECK ===" && ss -tlnp | grep 18080 || echo "NOTHING on 18080" && \
+echo "=== ENV FILE ===" && grep -E "^PORT|^DATABASE_URL|^SESSION" /home/automystics-scada/htdocs/scada.automystics.tech/.env 2>/dev/null | head -5 && \
+echo "=== NGINX PROXY ===" && grep -E "proxy_pass|listen|server_name" /etc/nginx/sites-enabled/scada.automystics.tech.conf 2>/dev/null | head -10
+=== SERVICE STATUS ===
+● solar-scada-api.service - Solar SCADA API Server
+     Loaded: loaded (/etc/systemd/system/solar-scada-api.service; enabled; preset: enabled)
+     Active: active (running) since Thu 2026-07-30 12:10:32 UTC; 346ms ago
+   Main PID: 2509842 (MainThread)
+      Tasks: 2 (limit: 19144)
+     Memory: 58.1M (peak: 58.6M)
+        CPU: 308ms
+     CGroup: /system.slice/solar-scada-api.service
+             └─2509842 "[MainThread]"
+
+Jul 30 12:10:33 srv1609330 node[2509842]:     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:708:38)
+Jul 30 12:10:33 srv1609330 node[2509842]:     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:740:52)
+Jul 30 12:10:33 srv1609330 node[2509842]:     at #resolve (node:internal/modules/esm/loader:673:17)
+Jul 30 12:10:33 srv1609330 node[2509842]:     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:593:35)
+Jul 30 12:10:33 srv1609330 node[2509842]:     at ModuleJob.syncLink (node:internal/modules/esm/module_job:163:33) {
+Jul 30 12:10:33 srv1609330 node[2509842]:   code: 'ERR_MODULE_NOT_FOUND'
+Jul 30 12:10:33 srv1609330 node[2509842]: }
+Jul 30 12:10:33 srv1609330 node[2509842]: Node.js v24.16.0
+Jul 30 12:10:33 srv1609330 systemd[1]: solar-scada-api.service: Main process exited, code=exited, status=1/FAILURE
+Jul 30 12:10:33 srv1609330 systemd[1]: solar-scada-api.service: Failed with result 'exit-code'.
+=== LAST 30 LOGS ===
+Jul 30 12:10:27 srv1609330 node[2509607]:     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:740:52)
+Jul 30 12:10:27 srv1609330 node[2509607]:     at #resolve (node:internal/modules/esm/loader:673:17)
+Jul 30 12:10:27 srv1609330 node[2509607]:     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:593:35)
+Jul 30 12:10:27 srv1609330 node[2509607]:     at ModuleJob.syncLink (node:internal/modules/esm/module_job:163:33) {
+Jul 30 12:10:27 srv1609330 node[2509607]:   code: 'ERR_MODULE_NOT_FOUND'
+Jul 30 12:10:27 srv1609330 node[2509607]: }
+Jul 30 12:10:27 srv1609330 node[2509607]: Node.js v24.16.0
+Jul 30 12:10:27 srv1609330 systemd[1]: solar-scada-api.service: Main process exited, code=exited, status=1/FAILURE
+Jul 30 12:10:27 srv1609330 systemd[1]: solar-scada-api.service: Failed with result 'exit-code'.
+Jul 30 12:10:32 srv1609330 systemd[1]: solar-scada-api.service: Scheduled restart job, restart counter is at 2123.
+Jul 30 12:10:32 srv1609330 systemd[1]: Started solar-scada-api.service - Solar SCADA API Server.
+Jul 30 12:10:33 srv1609330 node[2509842]: node:internal/modules/package_json_reader:301
+Jul 30 12:10:33 srv1609330 node[2509842]:   throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+Jul 30 12:10:33 srv1609330 node[2509842]:         ^
+Jul 30 12:10:33 srv1609330 node[2509842]: Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'nodemailer' imported from /home/automystics-scada/htdocs/scada.automystics.tech/artifacts/api-server/dist/index.mjs
+Jul 30 12:10:33 srv1609330 node[2509842]:     at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)
+Jul 30 12:10:33 srv1609330 node[2509842]:     at packageResolve (node:internal/modules/esm/resolve:768:81)
+Jul 30 12:10:33 srv1609330 node[2509842]:     at moduleResolve (node:internal/modules/esm/resolve:859:18)
+Jul 30 12:10:33 srv1609330 node[2509842]:     at defaultResolve (node:internal/modules/esm/resolve:992:11)
+Jul 30 12:10:33 srv1609330 node[2509842]:     at #cachedDefaultResolve (node:internal/modules/esm/loader:691:20)
+Jul 30 12:10:33 srv1609330 node[2509842]:     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:708:38)
+Jul 30 12:10:33 srv1609330 node[2509842]:     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:740:52)
+Jul 30 12:10:33 srv1609330 node[2509842]:     at #resolve (node:internal/modules/esm/loader:673:17)
+Jul 30 12:10:33 srv1609330 node[2509842]:     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:593:35)
+Jul 30 12:10:33 srv1609330 node[2509842]:     at ModuleJob.syncLink (node:internal/modules/esm/module_job:163:33) {
+Jul 30 12:10:33 srv1609330 node[2509842]:   code: 'ERR_MODULE_NOT_FOUND'
+Jul 30 12:10:33 srv1609330 node[2509842]: }
+Jul 30 12:10:33 srv1609330 node[2509842]: Node.js v24.16.0
+Jul 30 12:10:33 srv1609330 systemd[1]: solar-scada-api.service: Main process exited, code=exited, status=1/FAILURE
+Jul 30 12:10:33 srv1609330 systemd[1]: solar-scada-api.service: Failed with result 'exit-code'.
+=== PORT CHECK ===
+NOTHING on 18080
+=== ENV FILE ===
+DATABASE_URL=postgresql://scada:scada@localhost:5432/solar_scada
+SESSION_SECRET=f55ee78eb52fb7ad6b8460e98a1a3ff40c6bff587459c947a986146ff9dc664b
+PORT=18080
+=== NGINX PROXY ===
+  listen 80;
+  listen [::]:80;
+  listen 443 quic;
+  listen 443 ssl;
+  listen [::]:443 quic;
+  listen [::]:443 ssl;
+  server_name scada.automystics.tech;
+    proxy_pass http://127.0.0.1:18080;
