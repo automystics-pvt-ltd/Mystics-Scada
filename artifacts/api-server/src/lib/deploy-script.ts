@@ -214,6 +214,9 @@ fi
 
 # ── 4. DB migrations ──────────────────────────────────────────────────────────
 section "5/8  Database migrations"
+# Newer pnpm versions block native-build packages until explicitly approved.
+# Approve them silently before running any pnpm script — idempotent and safe.
+pnpm approve-builds 2>/dev/null || true
 # ENV_FILE is now the root .env — no fallback needed
 DB_URL=\$(grep "^DATABASE_URL=" "\$ENV_FILE" 2>/dev/null | cut -d= -f2-)
 if [ -z "\$DB_URL" ]; then
