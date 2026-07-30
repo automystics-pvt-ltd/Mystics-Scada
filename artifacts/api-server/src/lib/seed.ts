@@ -544,18 +544,25 @@ export async function ensureSeedData(): Promise<void> {
     logger.info("Seeded Ana Solar Plant (real TRB246 device)");
   }
 
-  // Ensure the TRB246 inverter device exists (idempotent)
-  const [existingAnaDev] = await db
-    .select({ id: devicesTable.id })
-    .from(devicesTable)
-    .where(eq(devicesTable.id, "dev-ana-inv-01"))
-    .limit(1);
-  if (!existingAnaDev) {
+  // Ensure the TRB246 inverter device exists and has the latest config (upsert).
+  // This always runs so that VPS installs with an older config row are patched
+  // on every deploy — e.g. topic, payloadMode, pollingIntervalSec, credentials.
+  {
     const now2 = new Date();
     const [anaDev] = buildDeviceSeed().filter((d) => d.id === "dev-ana-inv-01");
     if (anaDev) {
-      await db.insert(devicesTable).values({ ...anaDev, createdAt: now2, updatedAt: now2 });
-      logger.info("Seeded Ana TRB246 inverter device");
+      await db.insert(devicesTable)
+        .values({ ...anaDev, createdAt: now2, updatedAt: now2 })
+        .onConflictDoUpdate({
+          target: devicesTable.id,
+          set: {
+            config: anaDev.config,
+            name: anaDev.name,
+            protocol: anaDev.protocol,
+            updatedAt: now2,
+          },
+        });
+      logger.info("Upserted Ana TRB246 inverter device config");
     }
   }
 

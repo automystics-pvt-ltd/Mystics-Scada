@@ -42,6 +42,7 @@ export function triggerOfflineDetection(): void { void sweepOnce().catch(() => u
 
 interface DeviceConfigShape {
   pollingIntervalSec?: number;
+  payloadMode?: string;
 }
 
 /**
@@ -92,7 +93,13 @@ async function sweepOnce(): Promise<void> {
   for (const device of devices) {
     const cfg = (device.config ?? {}) as DeviceConfigShape;
     const pollIntervalS = cfg.pollingIntervalSec ?? 30;
-    const staleAfterMs = pollIntervalS * 3 * 1000;
+    // MQTT push devices don't poll on a fixed schedule — they publish when data
+    // changes (or at their own interval, which may be several minutes).  Use a
+    // minimum stale threshold of 10 minutes so a quiet inverter at night or a
+    // slow-publishing TRB246 isn't immediately flagged offline.
+    const isMqttPush = device.protocol === "mqtt" || cfg.payloadMode === "name-value";
+    const minStaleMs = isMqttPush ? 10 * 60 * 1000 : 0;
+    const staleAfterMs = Math.max(pollIntervalS * 3 * 1000, minStaleMs);
     const lastSeen = device.lastSeenAt;
 
     // No lastSeenAt at all means the device has never reported — only flag it

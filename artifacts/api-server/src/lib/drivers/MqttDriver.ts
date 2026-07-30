@@ -177,7 +177,16 @@ export class MqttDriver extends EventEmitter implements IDriver {
   private _connect() {
     if (this._stopped) return;
     const brokerUrl = this._cfg.brokerUrl ?? "mqtt://localhost:1883";
-    const topic = this._cfg.topic ?? "#";
+    const configTopic = this._cfg.topic ?? "#";
+
+    // In name-value mode the TRB246 publishes one register per message, often
+    // on sub-topics (e.g. trn246/modbus/phaseABvoltage).  Automatically append
+    // a wildcard so we catch every sub-topic without requiring the user to
+    // change their stored config.  Skip if the topic already contains # or +.
+    const hasWildcard = configTopic.includes("#") || configTopic.includes("+");
+    const topic = (this._cfg.payloadMode === "name-value" && !hasWildcard)
+      ? `${configTopic}/#`
+      : configTopic;
 
     this._setStatus("connecting");
 
@@ -185,6 +194,8 @@ export class MqttDriver extends EventEmitter implements IDriver {
       clientId: `solar-scada-${this.deviceId.slice(0, 8)}`,
       reconnectPeriod: 15_000,
       connectTimeout: 10_000,
+      keepalive: 30,   // explicit 30 s — prevents broker dropping at 60 s KeepAlive boundary
+      clean: true,
       ...(this._cfg.mqttUsername ? { username: this._cfg.mqttUsername } : {}),
       ...(this._cfg.mqttPassword ? { password: this._cfg.mqttPassword } : {}),
     });
@@ -205,13 +216,17 @@ export class MqttDriver extends EventEmitter implements IDriver {
       const raw = payload.toString("utf8");
       const rttMs = Date.now() - t0;
 
+      // Raw diagnostic log (first 120 chars) — helps confirm what the device
+      // is actually publishing when debugging a silent subscription.
+      this.emit("log", "RAW_MSG", `topic=${_topic} payload=${raw.slice(0, 120)}`);
+
       if (this._cfg.payloadMode === "name-value") {
         // ── Per-register accumulator mode (TRB246 / Teltonika format) ──────
         const namePath  = this._cfg.nameKeyPath  ?? "$.Automystics.name";
         const valuePath = this._cfg.nameValuePath ?? "$.Automystics.data";
         const extracted = extractNameValue(raw, namePath, valuePath);
         if (!extracted) {
-          this.emit("log", "PARSE_ERROR", `name-value: could not extract name/value from ${_topic}`);
+          this.emit("log", "PARSE_ERROR", `name-value: could not extract name/value from ${_topic}: ${raw.slice(0, 80)}`);
           return;
         }
         this._nvState.set(extracted.name, extracted.rawValue);
