@@ -94,8 +94,23 @@ log "Working directory: \$(pwd)"
 # ── 1. Git pull ───────────────────────────────────────────────────────────────
 section "1/8  Git pull"
 if [ -d ".git" ]; then
-  git pull --ff-only 2>&1 | while IFS= read -r line; do info "  \$line"; done
+  # Stash any local changes so pull never gets blocked by unstaged files.
+  STASH_OUT=\$(git stash 2>&1)
+  STASHED=0
+  if echo "\$STASH_OUT" | grep -q "Saved working directory"; then
+    STASHED=1
+    info "  Stashed local changes before pull"
+  fi
+
+  git fetch origin 2>&1 | while IFS= read -r line; do info "  \$line"; done
+  git reset --hard origin/main 2>&1 | while IFS= read -r line; do info "  \$line"; done \
+    || fail "git reset --hard origin/main failed"
   log "  git pull ✓"
+
+  if [ "\$STASHED" -eq 1 ]; then
+    git stash pop 2>&1 | while IFS= read -r line; do info "  \$line"; done || true
+    info "  Restored stashed changes"
+  fi
 else
   warn "  Not a git repository — skipping git pull"
 fi
