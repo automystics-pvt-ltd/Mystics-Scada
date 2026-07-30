@@ -7,7 +7,7 @@
  *
  * Configuration (environment variables — set in VPS systemd unit):
  *   MQTT_BROKER_URL   broker address, e.g. mqtt://76.13.4.214:1883  (required)
- *   MQTT_TOPIC        topic to subscribe, e.g. trb246/modbus         (default: trb246/modbus)
+ *   MQTT_TOPIC        topic to subscribe, e.g. trn246/modbus         (default: trn246/modbus)
  *   MQTT_USERNAME     optional broker username
  *   MQTT_PASSWORD     optional broker password
  *   MQTT_DEVICE_NAME  name to register the device as                 (default: TRB246)
@@ -28,7 +28,7 @@ import { driverRegistry } from "./drivers/registry.js";
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const BROKER_URL   = process.env["MQTT_BROKER_URL"]   ?? "";
-const TOPIC        = process.env["MQTT_TOPIC"]         ?? "trb246/modbus";
+const TOPIC        = process.env["MQTT_TOPIC"]         ?? "trn246/modbus";
 const USERNAME     = process.env["MQTT_USERNAME"];
 const PASSWORD     = process.env["MQTT_PASSWORD"];
 const DEVICE_NAME  = process.env["MQTT_DEVICE_NAME"]  ?? "TRB246";

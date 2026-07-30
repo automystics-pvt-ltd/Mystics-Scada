@@ -409,6 +409,8 @@ function buildDeviceSeed(): (typeof devicesTable.$inferInsert)[] {
       config: {
         brokerUrl: "mqtt://76.13.4.214:1883",
         topic: "trn246/modbus",
+        mqttUsername: "automystics",
+        mqttPassword: "automystics",
         payloadMode: "name-value",
         nameKeyPath: "$.Automystics.name",
         nameValuePath: "$.Automystics.data",
