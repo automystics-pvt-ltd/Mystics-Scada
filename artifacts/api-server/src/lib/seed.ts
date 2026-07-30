@@ -585,6 +585,29 @@ export async function ensureSeedData(): Promise<void> {
   }
   logger.info({ count: SYSTEM_TEMPLATES.length }, "System device templates ensured");
 
+  // ── Ensure isSuperAdmin on all known admin emails (ALL environments) ─────────
+  // adminSession() requires isSuperAdmin=true to exist in the DB.
+  // The production guard below blocks demo passwords but must NOT block this
+  // flag — without it the platform-admin login always returns 500.
+  const ADMIN_EMAILS = [
+    "admin@automystics.com",
+    "automystics.com@gmail.com",
+    "automystics.ai@gmail.com",
+    "anandakumar.mani012@gmail.com",
+    "anand02.pm@gmail.com",
+  ];
+  for (const adminEmail of ADMIN_EMAILS) {
+    const [existingForPatch] = await db
+      .select({ id: usersTable.id, isSuperAdmin: usersTable.isSuperAdmin })
+      .from(usersTable)
+      .where(eq(usersTable.email, adminEmail))
+      .limit(1);
+    if (existingForPatch && !existingForPatch.isSuperAdmin) {
+      await db.update(usersTable).set({ isSuperAdmin: true }).where(eq(usersTable.id, existingForPatch.id));
+      logger.info({ email: adminEmail }, "Patched isSuperAdmin=true on admin user");
+    }
+  }
+
   // ── Demo credentials ──────────────────────────────────────────────────────
   // Gate strictly to non-production environments.  In production the demo
   // account must be provisioned via the normal user-management flow.
