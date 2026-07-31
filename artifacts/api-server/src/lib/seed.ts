@@ -408,9 +408,9 @@ function buildDeviceSeed(): (typeof devicesTable.$inferInsert)[] {
       status: "online", firmwareVersion: "TRB2M_R_00.07.22.1",
       config: {
         brokerUrl: "mqtt://76.13.4.214:1883",
-        topic: "trn246/modbus",
+        topic: "trb246/modbus",
         mqttUsername: "automystics",
-        mqttPassword: "automystics",
+        mqttPassword: "StrongPassword@123",
         payloadMode: "name-value",
         nameKeyPath: "$.Automystics.name",
         nameValuePath: "$.Automystics.data",
