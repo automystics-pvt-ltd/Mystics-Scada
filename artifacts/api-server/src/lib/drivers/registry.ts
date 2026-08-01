@@ -216,6 +216,12 @@ class DriverRegistry {
   }
 
   /** Call this after a device's config or template changes */
+  async stopDevice(deviceId: string): Promise<void> {
+    await this._stopDriver(deviceId);
+    // Remove from the tracked device list so it is not restarted on reconnect
+    this._allDevices = this._allDevices.filter((d) => d.id !== deviceId);
+  }
+
   async restartDevice(deviceId: string): Promise<void> {
     await this._stopDriver(deviceId);
     const [device] = await db.select().from(devicesTable).where(eq(devicesTable.id, deviceId));

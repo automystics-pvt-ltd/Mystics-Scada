@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Activity, Wifi, WifiOff, AlertCircle, RotateCcw,
-  Clock, Zap, TrendingUp, Filter, RefreshCw,
+  Clock, Zap, TrendingUp, Filter, RefreshCw, Trash2,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,16 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -69,8 +79,9 @@ export default function DriverHealthPage() {
   const queryClient      = useQueryClient();
   const { user }         = useAuth();
   const canManage        = user?.permissions?.includes("device.manage") ?? false;
-  const [search, setSearch]     = useState("");
+  const [search, setSearch]         = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [deleteTarget, setDeleteTarget] = useState<DriverStat | null>(null);
 
   const { data: stats = [], isLoading, dataUpdatedAt } = useQuery<DriverStat[]>({
     queryKey: ["driver-health"],
@@ -93,6 +104,20 @@ export default function DriverHealthPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["driver-health"] });
       toast({ title: "Restart sent", description: "Driver will reconnect shortly." });
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (deviceId: string) => {
+      const r = await fetch(`${BASE}api/devices/${deviceId}`, {
+        method: "DELETE", credentials: "include",
+      });
+      if (!r.ok) throw new Error("Delete failed");
+    },
+    onSuccess: (_, deviceId) => {
+      void queryClient.invalidateQueries({ queryKey: ["driver-health"] });
+      toast({ title: "Device deleted", description: "Device and its data have been removed." });
     },
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -201,7 +226,7 @@ export default function DriverHealthPage() {
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Errors</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Subscriptions</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Uptime</th>
-                  {canManage && <th className="w-20 px-4 py-2.5" />}
+                  {canManage && <th className="w-28 px-4 py-2.5" />}
                 </tr>
               </thead>
               <tbody>
@@ -266,15 +291,26 @@ export default function DriverHealthPage() {
                       </td>
                       {canManage && (
                         <td className="px-4 py-3">
-                          <Button
-                            variant="ghost" size="sm"
-                            className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
-                            title="Restart driver"
-                            onClick={() => restartMutation.mutate(s.deviceId)}
-                            disabled={restartMutation.isPending}
-                          >
-                            <RotateCcw className="h-3.5 w-3.5" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost" size="sm"
+                              className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
+                              title="Restart driver"
+                              onClick={() => restartMutation.mutate(s.deviceId)}
+                              disabled={restartMutation.isPending || deleteMutation.isPending}
+                            >
+                              <RotateCcw className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost" size="sm"
+                              className="h-9 w-9 p-0 text-muted-foreground hover:text-red-400"
+                              title="Delete device"
+                              onClick={() => setDeleteTarget(s)}
+                              disabled={restartMutation.isPending || deleteMutation.isPending}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </td>
                       )}
                     </tr>
@@ -291,6 +327,33 @@ export default function DriverHealthPage() {
           </p>
         )}
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete device?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{deleteTarget?.deviceName}</strong> will be permanently removed along with all its
+              readings and logs. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteTarget) {
+                  deleteMutation.mutate(deleteTarget.deviceId);
+                  setDeleteTarget(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

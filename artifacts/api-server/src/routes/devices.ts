@@ -815,6 +815,30 @@ router.post("/devices/:id/restart", requirePermission("device.manage"), async (r
   res.json({ ok: true, message: "Restart command sent to device" });
 });
 
+// ── DELETE /devices/:id ───────────────────────────────────────────────────────
+
+router.delete("/devices/:id", requirePermission("device.manage"), async (req, res) => {
+  const orgId    = resolveOrgId(req);
+  const deviceId = (req.params["id"] as string) ?? "";
+  const [row]    = await db.select().from(devicesTable).where(eq(devicesTable.id, deviceId));
+  if (!row || (orgId !== null && row.orgId !== orgId)) {
+    res.status(404).json({ error: "not_found", message: "Device not found" });
+    return;
+  }
+
+  // Stop driver first (best-effort)
+  await driverRegistry.stopDevice(deviceId).catch(() => undefined);
+
+  // Cascade-delete dependent rows then the device itself
+  await db.delete(deviceCommLogsTable).where(eq(deviceCommLogsTable.deviceId, deviceId));
+  await db.delete(deviceReadingsTable).where(eq(deviceReadingsTable.deviceId, deviceId));
+  await db.delete(firmwareVersionHistoryTable).where(eq(firmwareVersionHistoryTable.deviceId, deviceId));
+  await db.delete(devicesTable).where(eq(devicesTable.id, deviceId));
+
+  req.log.info({ deviceId, orgId }, "Device deleted");
+  res.json({ ok: true, message: "Device deleted" });
+});
+
 // ── POST /devices/:id/sync ────────────────────────────────────────────────────
 
 router.post("/devices/:id/sync", requirePermission("device.manage"), async (req, res) => {
