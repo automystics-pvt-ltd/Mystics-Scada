@@ -44,7 +44,6 @@ const OPERATIONS_ITEMS: NavItem[] = [
 ];
 
 const DEVICES_ITEMS: NavItem[] = [
-  { name: "Devices",        href: "/devices",              icon: Cpu        },
   { name: "Firmware",       href: "/devices/firmware",     icon: HardDrive  },
   { name: "Dev Templates",  href: "/device-templates",     icon: BookOpen   },
   { name: "Driver Health",  href: "/driver-health",        icon: Gauge      },

@@ -16,7 +16,6 @@ const PRIMARY_NAV = [
 
 // All remaining items shown in the "More" drawer
 const MORE_NAV = [
-  { name: "Devices",         href: "/devices",             icon: Cpu        },
   { name: "Dev Templates",   href: "/device-templates",    icon: BookOpen   },
   { name: "Driver Health",   href: "/driver-health",       icon: Activity   },
   { name: "Connect Source",  href: "/connect-data-source", icon: Database   },

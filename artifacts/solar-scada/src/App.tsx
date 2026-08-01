@@ -47,7 +47,6 @@ import SuperAdminJobs from '@/pages/superadmin-jobs';
 import SuperAdminConfig from '@/pages/superadmin-config';
 import SuperAdminNotifications from '@/pages/superadmin-notifications';
 import SuperAdminLoginHistory from '@/pages/superadmin-login-history';
-import DevicesPage from '@/pages/devices';
 import DeviceDetailPage from '@/pages/device-detail';
 import DeviceFirmwareReportPage from '@/pages/device-firmware-report';
 import DeviceTemplatesPage from '@/pages/device-templates';
@@ -91,7 +90,6 @@ function ProtectedRoutes() {
           <Route path="/maintenance" component={MaintenanceBoard} />
           <Route path="/reports" component={ReportsView} />
           <Route path="/insights" component={InsightsPage} />
-          <Route path="/devices" component={DevicesPage} />
           <Route path="/devices/firmware" component={DeviceFirmwareReportPage} />
           <Route path="/devices/:id" component={DeviceDetailPage} />
           <Route path="/device-templates" component={DeviceTemplatesPage} />

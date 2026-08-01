@@ -68,29 +68,45 @@ function extractNameValue(
 }
 
 /**
- * Build a ParamMap from the current accumulator state using the field map.
- * Each FieldDef is matched by `registerName` (or `key` as fallback).
+ * Build a ParamMap from the current accumulator state.
+ *
+ * Priority:
+ *  1. fieldMap entries — applied with scaling/offset, output under their `key`.
+ *     The register names consumed by fieldMap are tracked so they aren't
+ *     double-emitted as raw keys.
+ *  2. Every remaining register in the accumulator is emitted as-is, using the
+ *     register name directly as the key (raw value, no scaling).
+ *     This gives automatic pass-through for any register not explicitly mapped.
  */
 function buildParamsFromAccumulator(
   state: Map<string, number>,
   fields: FieldDef[],
 ): ParamMap {
   const params: ParamMap = {};
+  const mappedRegNames = new Set<string>();
+
+  // ── 1. fieldMap-configured keys (scaled) ────────────────────────────────
   for (const field of fields) {
     const regName = field.registerName ?? field.key;
     const raw = state.get(regName);
     if (raw === undefined) continue;
     const scaled = raw * (field.multiplier ?? 1) + (field.offset ?? 0);
     params[field.key] = Math.round(scaled * 1000) / 1000;
+    mappedRegNames.add(regName);
   }
 
-  // Derived: acPowerKw = √3 × V × I × PF / 1000 (if all three present)
+  // ── 2. Auto-mapped remainder (raw, register name used as key) ───────────
+  for (const [regName, raw] of state) {
+    if (mappedRegNames.has(regName)) continue;
+    params[regName] = Math.round(raw * 1000) / 1000;
+  }
+
+  // ── 3. Derived: acPowerKw = √3 × V × I × PF / 1000 ─────────────────────
   const v  = params["acVoltageV"]  as number | undefined;
   const i  = params["acCurrentA"]  as number | undefined;
   const pf = params["powerFactor"] as number | undefined;
   if (v != null && i != null && pf != null && v > 0 && i > 0) {
     params["acPowerKw"] = Math.round(Math.sqrt(3) * v * i * pf / 1000 * 10) / 10;
-    // Estimate DC side (assume ~96.5 % efficiency)
     if ((params["acPowerKw"] as number) > 0) {
       params["dcPowerKw"] = Math.round((params["acPowerKw"] as number) / 0.965 * 10) / 10;
     }
