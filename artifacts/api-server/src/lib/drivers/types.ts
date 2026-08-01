@@ -16,6 +16,13 @@ export interface FieldDef {
   jsonPath?: string;    // dot-notation path, e.g. "$.data.acPower"
   /** For name-value MQTT mode: the register name string to match (e.g. "Acurrent"). Falls back to `key` if omitted. */
   registerName?: string;
+  /**
+   * Special value encoding for raw integer fields that carry non-decimal data.
+   * "ieee754_be" — treat the raw 32-bit integer as a big-endian IEEE 754 single-precision float.
+   *               Useful for inverters that store FLOAT32 Modbus registers and the gateway
+   *               forwards the raw 4-byte value as a decimal integer (e.g. TRB246 actpow).
+   */
+  encoding?: "decimal" | "ieee754_be";
   // OPC-UA-specific
   nodeId?: string;           // e.g. "ns=2;i=1002"
   samplingIntervalMs?: number;

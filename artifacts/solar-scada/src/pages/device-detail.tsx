@@ -1615,7 +1615,11 @@ export default function DeviceDetailPage() {
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {Object.entries(latestReading.params).map(([key, value]) => {
-                        const fieldDef = device.template?.fieldMap.find((f) => f.key === key);
+                        // Prefer inline config fieldMap (e.g. TRB246) over template fieldMap
+                        const effectiveFM = (device.config?.fieldMap?.length ? device.config.fieldMap : device.template?.fieldMap) ?? [];
+                        const fieldDef = effectiveFM.find((f) => f.key === key);
+                        // Human-readable label fallback for auto-mapped raw registers
+                        const displayLabel = fieldDef?.label ?? key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase()).trim();
                         const justChanged = changedKeys.has(key);
                         return (
                           <div
@@ -1624,7 +1628,7 @@ export default function DeviceDetailPage() {
                               justChanged ? "border-primary/50 bg-primary/5" : "border-border bg-card"
                             }`}
                           >
-                            <div className="text-xs text-muted-foreground mb-0.5">{fieldDef?.label ?? key}</div>
+                            <div className="text-xs text-muted-foreground mb-0.5">{displayLabel}</div>
                             <div className="font-semibold text-sm tabular-nums">
                               {typeof value === "number" ? value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : String(value ?? "—")}
                               {fieldDef?.unit && <span className="text-xs font-normal text-muted-foreground ml-1">{fieldDef.unit}</span>}
@@ -1637,7 +1641,7 @@ export default function DeviceDetailPage() {
                     {chartField && readingHistory.length >= 2 && (
                       <div className="rounded-lg border border-border bg-card p-3">
                         <div className="text-xs text-muted-foreground mb-1">
-                          {device.template?.fieldMap.find((f) => f.key === chartField)?.label ?? chartField} — live trend
+                          {((device.config?.fieldMap?.length ? device.config.fieldMap : device.template?.fieldMap) ?? []).find((f) => f.key === chartField)?.label ?? chartField} — live trend
                         </div>
                         <MiniLineChart
                           color="hsl(var(--primary))"

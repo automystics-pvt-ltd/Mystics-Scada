@@ -84,25 +84,40 @@ function buildDeviceSeed(): (typeof devicesTable.$inferInsert)[] {
         nameValuePath: "$.Automystics.data",
         pollingIntervalSec: 60,
         fieldMap: [
-          { key: "acVoltageV",        registerName: "phaseABvoltage",      label: "AC Voltage (AB)",   unit: "V",   multiplier: 0.1 },
-          { key: "acVoltageBcV",      registerName: "phaseBCvoltage",      label: "AC Voltage (BC)",   unit: "V",   multiplier: 0.1 },
-          { key: "acVoltageCaV",      registerName: "phaseCAvoltage",      label: "AC Voltage (CA)",   unit: "V",   multiplier: 0.1 },
-          { key: "acCurrentA",        registerName: "Acurrent",            label: "AC Current (A)",    unit: "A",   multiplier: 0.1 },
-          { key: "acCurrentBA",       registerName: "Bcurrent",            label: "AC Current (B)",    unit: "A",   multiplier: 0.1 },
-          { key: "acCurrentCA",       registerName: "Ccurrent",            label: "AC Current (C)",    unit: "A",   multiplier: 0.1 },
-          { key: "powerFactor",       registerName: "pf",                  label: "Power Factor",      unit: "",    multiplier: 0.001 },
-          { key: "frequencyHz",       registerName: "frq",                 label: "Frequency",         unit: "Hz",  multiplier: 0.1 },
-          { key: "temperatureC",      registerName: "internaltemperature", label: "Internal Temp",     unit: "°C",  multiplier: 0.1 },
-          { key: "energyTodayKwh",    registerName: "dailyeneregykwh",     label: "Daily Energy",      unit: "kWh", multiplier: 0.1 },
-          { key: "energyLifetimeMwh", registerName: "totalenergy",         label: "Total Energy",      unit: "MWh", multiplier: 0.000001 },
-          { key: "faultCode",         registerName: "faultcode",           label: "Fault Code",        unit: "",    multiplier: 1 },
-          { key: "faultAlarm",        registerName: "faultalarm",          label: "Fault Alarm",       unit: "",    multiplier: 1 },
-          { key: "string1CurrentA",   registerName: "string1current",      label: "String 1 Current",  unit: "A",   multiplier: 0.01 },
-          { key: "string2CurrentA",   registerName: "str2A",               label: "String 2 Current",  unit: "A",   multiplier: 0.01 },
-          { key: "string3CurrentA",   registerName: "STR3A",               label: "String 3 Current",  unit: "A",   multiplier: 0.01 },
-          { key: "string4CurrentA",   registerName: "STR4A",               label: "String 4 Current",  unit: "A",   multiplier: 0.01 },
-          { key: "string5CurrentA",   registerName: "STR5A",               label: "String 5 Current",  unit: "A",   multiplier: 0.01 },
-          { key: "string6CurrentA",   registerName: "STR6A",               label: "String 6 Current",  unit: "A",   multiplier: 0.01 },
+          // ── AC grid measurements ────────────────────────────────────────────
+          // Raw register values are in 0.1× units (e.g. 7920 → 792.0 V, 748 → 74.8 A)
+          { key: "acVoltageV",        registerName: "phaseABvoltage",      label: "AC Voltage (AB)",    unit: "V",   multiplier: 0.1 },
+          { key: "acVoltageBcV",      registerName: "phaseBCvoltage",      label: "AC Voltage (BC)",    unit: "V",   multiplier: 0.1 },
+          { key: "acVoltageCaV",      registerName: "phaseCAvoltage",      label: "AC Voltage (CA)",    unit: "V",   multiplier: 0.1 },
+          { key: "acCurrentA",        registerName: "Acurrent",            label: "AC Current (A)",     unit: "A",   multiplier: 0.1 },
+          { key: "acCurrentBA",       registerName: "Bcurrent",            label: "AC Current (B)",     unit: "A",   multiplier: 0.1 },
+          { key: "acCurrentCA",       registerName: "Ccurrent",            label: "AC Current (C)",     unit: "A",   multiplier: 0.1 },
+          { key: "powerFactor",       registerName: "pf",                  label: "Power Factor",       unit: "",    multiplier: 0.001 },
+          { key: "frequencyHz",       registerName: "frq",                 label: "Frequency",          unit: "Hz",  multiplier: 0.1 },
+          // ── Thermal ────────────────────────────────────────────────────────
+          // Raw value IS degrees Celsius (e.g. 64 → 64 °C); multiplier = 1
+          { key: "temperatureC",      registerName: "internaltemperature", label: "Internal Temp",      unit: "°C",  multiplier: 1 },
+          // ── Energy meters ──────────────────────────────────────────────────
+          { key: "energyTodayKwh",    registerName: "dailyeneregykwh",     label: "Daily Energy",       unit: "kWh", multiplier: 0.1 },
+          { key: "energyLifetimeMwh", registerName: "totalenergy",         label: "Total Energy",       unit: "MWh", multiplier: 0.000001 },
+          // ── Active power (direct register reading) ─────────────────────────
+          // The TRB246 encodes the 32-bit Modbus FLOAT32 as a decimal integer.
+          // Re-interpret those bits as IEEE 754 big-endian float → kW.
+          // The *derived* acPowerKw (from V×I×PF) is also computed automatically
+          // and is more reliable; actPowerKw is kept for cross-check.
+          { key: "actPowerKw",        registerName: "actpow",              label: "Active Power",       unit: "kW",  multiplier: 1, encoding: "ieee754_be" },
+          // ── Alarms & faults ────────────────────────────────────────────────
+          { key: "faultCode",         registerName: "faultcode",           label: "Fault Code",         unit: "",    multiplier: 1 },
+          { key: "faultAlarm",        registerName: "faultalarm",          label: "Fault Alarm",        unit: "",    multiplier: 1 },
+          { key: "alarmCode",         registerName: "alarmcode",           label: "Alarm Code",         unit: "",    multiplier: 1 },
+          // ── DC string currents ─────────────────────────────────────────────
+          // Raw values are in 0.01 A units (e.g. 831 → 8.31 A per string)
+          { key: "string1CurrentA",   registerName: "string1current",      label: "String 1 Current",   unit: "A",   multiplier: 0.01 },
+          { key: "string2CurrentA",   registerName: "str2A",               label: "String 2 Current",   unit: "A",   multiplier: 0.01 },
+          { key: "string3CurrentA",   registerName: "STR3A",               label: "String 3 Current",   unit: "A",   multiplier: 0.01 },
+          { key: "string4CurrentA",   registerName: "STR4A",               label: "String 4 Current",   unit: "A",   multiplier: 0.01 },
+          { key: "string5CurrentA",   registerName: "STR5A",               label: "String 5 Current",   unit: "A",   multiplier: 0.01 },
+          { key: "string6CurrentA",   registerName: "STR6A",               label: "String 6 Current",   unit: "A",   multiplier: 0.01 },
         ],
       },
       createdAt: now, updatedAt: now,

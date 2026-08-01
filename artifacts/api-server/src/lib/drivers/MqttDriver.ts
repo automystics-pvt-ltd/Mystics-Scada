@@ -90,7 +90,25 @@ function buildParamsFromAccumulator(
     const regName = field.registerName ?? field.key;
     const raw = state.get(regName);
     if (raw === undefined) continue;
-    const scaled = raw * (field.multiplier ?? 1) + (field.offset ?? 0);
+
+    let numericValue: number;
+
+    if (field.encoding === "ieee754_be") {
+      // The raw integer carries the 4 bytes of a big-endian IEEE 754 float.
+      // E.g. TRB246 reads a FLOAT32 Modbus register and encodes the raw 32-bit
+      // value as a signed decimal integer; we reinterpret those bits as a float.
+      const buf = Buffer.allocUnsafe(4);
+      buf.writeUInt32BE(raw >>> 0);          // >>> 0 handles negative/large ints
+      const floatVal = buf.readFloatBE(0);
+      if (!isFinite(floatVal)) { mappedRegNames.add(regName); continue; }
+      // Sanity-gate: skip if clearly out of operating range (e.g. ~0 or huge)
+      // Allow 0 for genuine zero-power readings.
+      numericValue = floatVal;
+    } else {
+      numericValue = raw;
+    }
+
+    const scaled = numericValue * (field.multiplier ?? 1) + (field.offset ?? 0);
     params[field.key] = Math.round(scaled * 1000) / 1000;
     mappedRegNames.add(regName);
   }
