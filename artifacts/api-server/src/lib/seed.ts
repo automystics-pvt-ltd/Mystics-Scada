@@ -111,13 +111,25 @@ function buildDeviceSeed(): (typeof devicesTable.$inferInsert)[] {
           { key: "faultAlarm",        registerName: "faultalarm",          label: "Fault Alarm",        unit: "",    multiplier: 1 },
           { key: "alarmCode",         registerName: "alarmcode",           label: "Alarm Code",         unit: "",    multiplier: 1 },
           // ── DC string currents ─────────────────────────────────────────────
-          // Raw values are in 0.01 A units (e.g. 831 → 8.31 A per string)
-          { key: "string1CurrentA",   registerName: "string1current",      label: "String 1 Current",   unit: "A",   multiplier: 0.01 },
-          { key: "string2CurrentA",   registerName: "str2A",               label: "String 2 Current",   unit: "A",   multiplier: 0.01 },
-          { key: "string3CurrentA",   registerName: "STR3A",               label: "String 3 Current",   unit: "A",   multiplier: 0.01 },
-          { key: "string4CurrentA",   registerName: "STR4A",               label: "String 4 Current",   unit: "A",   multiplier: 0.01 },
-          { key: "string5CurrentA",   registerName: "STR5A",               label: "String 5 Current",   unit: "A",   multiplier: 0.01 },
-          { key: "string6CurrentA",   registerName: "STR6A",               label: "String 6 Current",   unit: "A",   multiplier: 0.01 },
+          // Raw values are in 0.1 A units (e.g. 150 → 15.0 A per string)
+          { key: "string1CurrentA",   registerName: "string1current",      label: "String 1 Current",   unit: "A",   multiplier: 0.1 },
+          { key: "string2CurrentA",   registerName: "str2A",               label: "String 2 Current",   unit: "A",   multiplier: 0.1 },
+          { key: "string3CurrentA",   registerName: "STR3A",               label: "String 3 Current",   unit: "A",   multiplier: 0.1 },
+          { key: "string4CurrentA",   registerName: "STR4A",               label: "String 4 Current",   unit: "A",   multiplier: 0.1 },
+          { key: "string5CurrentA",   registerName: "STR5A",               label: "String 5 Current",   unit: "A",   multiplier: 0.1 },
+          { key: "string6CurrentA",   registerName: "STR6A",               label: "String 6 Current",   unit: "A",   multiplier: 0.1 },
+          // ── MPPT channel measurements ─────────────────────────────────────
+          // TRB246 encodes these 32-bit Modbus FLOATs as decimal integers;
+          // re-interpret as IEEE 754 BE float. 0 / 65535 = channel not connected.
+          { key: "mppt1VoltageV",     registerName: "MPPT1Voltage",        label: "MPPT 1 Voltage",     unit: "V",   multiplier: 1, encoding: "ieee754_be" },
+          { key: "mppt1CurrentA",     registerName: "MPPT1current",        label: "MPPT 1 Current",     unit: "A",   multiplier: 1, encoding: "ieee754_be" },
+          { key: "mppt2VoltageV",     registerName: "MPPT2Voltage",        label: "MPPT 2 Voltage",     unit: "V",   multiplier: 1, encoding: "ieee754_be" },
+          { key: "mppt2CurrentA",     registerName: "MPPT2current",        label: "MPPT 2 Current",     unit: "A",   multiplier: 1, encoding: "ieee754_be" },
+          // ── Meter / phase power readings ──────────────────────────────────
+          // 65535 (0xFFFF) = external meter not connected; otherwise IEEE 754 kW
+          { key: "meterPowerKw",      registerName: "meterpower",          label: "Meter Power",        unit: "kW",  multiplier: 1, encoding: "ieee754_be" },
+          { key: "phaseAPowerKw",     registerName: "aphpower",            label: "Phase A Power",      unit: "kW",  multiplier: 1, encoding: "ieee754_be" },
+          { key: "phaseBPowerKw",     registerName: "bphpower",            label: "Phase B Power",      unit: "kW",  multiplier: 1, encoding: "ieee754_be" },
         ],
       },
       createdAt: now, updatedAt: now,
