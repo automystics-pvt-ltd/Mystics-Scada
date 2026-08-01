@@ -44,11 +44,7 @@ export interface PlantConfig {
  * When new orgs get plants, add entries here.
  */
 export const PLANT_ORG_MAP: Record<string, string> = {
-  "plant-thar":       "org-1",
-  "plant-sundarbans": "org-1",
-  "plant-deccan":     "org-1",
-  "plant-coastal":    "org-1",
-  "plant-ana":        "org-1",
+  "plant-ana": "org-1",
 };
 
 /**
@@ -61,62 +57,6 @@ export function getOrgPlants(orgId: string | null): PlantConfig[] {
 }
 
 export const PLANTS: PlantConfig[] = [
-  {
-    id: "plant-thar",
-    name: "Thar Desert Solar Farm",
-    location: "Jaisalmer, Rajasthan",
-    timezoneOffsetHours: 5.5,
-    capacityMw: 100,
-    trackerType: "single_axis_tracker",
-    commissionedYear: 2021,
-    inverterCount: 20,
-    inverterRatingKw: 3300,
-    stringsPerInverter: 20,
-    weatherStationCount: 3,
-    cloudinessSeed: 0.08,
-  },
-  {
-    id: "plant-sundarbans",
-    name: "Sundarbans Solar Park",
-    location: "South 24 Parganas, West Bengal",
-    timezoneOffsetHours: 5.5,
-    capacityMw: 50,
-    trackerType: "fixed_tilt",
-    commissionedYear: 2019,
-    inverterCount: 10,
-    inverterRatingKw: 3300,
-    stringsPerInverter: 16,
-    weatherStationCount: 2,
-    cloudinessSeed: 0.32,
-  },
-  {
-    id: "plant-deccan",
-    name: "Deccan Plateau Array",
-    location: "Pavagada, Karnataka",
-    timezoneOffsetHours: 5.5,
-    capacityMw: 30,
-    trackerType: "fixed_tilt",
-    commissionedYear: 2020,
-    inverterCount: 6,
-    inverterRatingKw: 3300,
-    stringsPerInverter: 14,
-    weatherStationCount: 2,
-    cloudinessSeed: 0.15,
-  },
-  {
-    id: "plant-coastal",
-    name: "Coastal Ridge Plant",
-    location: "Tuticorin, Tamil Nadu",
-    timezoneOffsetHours: 5.5,
-    capacityMw: 40,
-    trackerType: "single_axis_tracker",
-    commissionedYear: 2022,
-    inverterCount: 8,
-    inverterRatingKw: 3300,
-    stringsPerInverter: 18,
-    weatherStationCount: 2,
-    cloudinessSeed: 0.22,
-  },
   {
     id: "plant-ana",
     name: "Ana Solar Plant",

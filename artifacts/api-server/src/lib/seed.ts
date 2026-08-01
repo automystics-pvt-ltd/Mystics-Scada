@@ -1,45 +1,37 @@
-import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import {
   db,
   organizationsTable,
-  alertsTable,
-  alertHistoryTable,
-  workOrdersTable,
   usersTable,
   rolesTable,
   devicesTable,
   deviceTemplatesTable,
   plantsTable,
 } from "@workspace/db";
-import { eq, isNull } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
+import {
+  alertsTable,
+  alertHistoryTable,
+  workOrdersTable,
+} from "@workspace/db";
 import { SYSTEM_TEMPLATES } from "./systemTemplates";
 import { logger } from "./logger";
-import { PLANTS } from "./simulation";
 import { DEFAULT_ROLE_PERMISSIONS } from "@workspace/permissions";
 
-// ── Demo organizations ───────────────────────────────────────────────────────
+// ── Organization ─────────────────────────────────────────────────────────────
 
 const ORG_SEED = [
   {
     id: "org-1",
-    name: "Automystics Demo",
-    slug: "automystics-demo",
+    name: "Automystics",
+    slug: "automystics",
     planTier: "enterprise",
-    status: "active",
-    logoUrl: null,
-  },
-  {
-    id: "org-2",
-    name: "Sunergy Corp",
-    slug: "sunergy-corp",
-    planTier: "professional",
     status: "active",
     logoUrl: null,
   },
 ] as const;
 
-// ── Roles & users (org-1) ────────────────────────────────────────────────────
+// ── Roles (org-1) ─────────────────────────────────────────────────────────────
 
 const ROLE_SEED = [
   {
@@ -72,336 +64,12 @@ const ROLE_SEED = [
   },
 ];
 
-const USER_SEED = [
-  {
-    id: "user-1",
-    orgId: "org-1",
-    name: "Ananya Rao",
-    email: "ananya.rao@automystics.com",
-    roleId: "role-admin",
-    plantIds: PLANTS.map((p) => p.id),
-    status: "active",
-  },
-  {
-    id: "user-2",
-    orgId: "org-1",
-    name: "Vikram Sethi",
-    email: "vikram.sethi@automystics.com",
-    roleId: "role-operator",
-    plantIds: ["plant-thar", "plant-coastal"],
-    status: "active",
-  },
-  {
-    id: "user-3",
-    orgId: "org-1",
-    name: "Fatima Sheikh",
-    email: "fatima.sheikh@automystics.com",
-    roleId: "role-operator",
-    plantIds: ["plant-sundarbans", "plant-deccan"],
-    status: "active",
-  },
-  {
-    id: "user-4",
-    orgId: "org-1",
-    name: "Rohan Mehta",
-    email: "rohan.mehta@automystics.com",
-    roleId: "role-technician",
-    plantIds: ["plant-thar"],
-    status: "active",
-  },
-  {
-    id: "user-5",
-    orgId: "org-1",
-    name: "Priya Nair",
-    email: "priya.nair@automystics.com",
-    roleId: "role-technician",
-    plantIds: ["plant-sundarbans", "plant-coastal"],
-    status: "invited",
-  },
-  {
-    id: "user-6",
-    orgId: "org-1",
-    name: "Karan Bose",
-    email: "karan.bose@automystics.com",
-    roleId: "role-viewer",
-    plantIds: PLANTS.map((p) => p.id),
-    status: "active",
-  },
-];
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function pastDate(minutesAgo: number): Date {
-  return new Date(Date.now() - minutesAgo * 60 * 1000);
-}
-
-const DEVICE_TYPES = ["inverter", "string", "weather_station", "tracker", "transformer", "plant"] as const;
-const SEVERITIES = ["critical", "major", "minor", "informational"] as const;
-const STATUSES = ["open", "acknowledged", "assigned", "resolved", "closed"] as const;
-
-// ── Alert seed ───────────────────────────────────────────────────────────────
-
-function buildAlertSeed() {
-  const alerts: (typeof alertsTable.$inferInsert)[] = [];
-  const history: (typeof alertHistoryTable.$inferInsert)[] = [];
-
-  let n = 0;
-  for (const plant of PLANTS) {
-    const alertCount = plant.id === "plant-thar" ? 6 : 4;
-    for (let i = 0; i < alertCount; i++) {
-      n++;
-      const id = `alert-${n}`;
-      const deviceType = DEVICE_TYPES[n % DEVICE_TYPES.length]!;
-      const severity = SEVERITIES[(n * 3) % SEVERITIES.length]!;
-      const status = STATUSES[n % 3]! as (typeof STATUSES)[number];
-      const invIdx = n % plant.inverterCount;
-      const deviceName =
-        deviceType === "inverter"
-          ? `Inverter ${invIdx + 1}`
-          : deviceType === "plant"
-            ? plant.name
-            : `${deviceType.replace("_", " ")} ${invIdx + 1}`;
-      const titles: Record<string, string> = {
-        inverter: "Inverter efficiency below threshold",
-        string: "String current deviation detected",
-        weather_station: "Weather station data gap",
-        tracker: "Tracker position error",
-        transformer: "Transformer temperature high",
-        plant: "Grid export limit approaching",
-      };
-      const createdAt = pastDate(30 + n * 47);
-
-      alerts.push({
-        id,
-        orgId: "org-1",
-        plantId: plant.id,
-        plantName: plant.name,
-        deviceType,
-        deviceName,
-        title: titles[deviceType] ?? "Anomaly detected",
-        message: `${titles[deviceType] ?? "Anomaly detected"} on ${deviceName} at ${plant.name}.`,
-        severity,
-        status,
-        assignedTo: status === "assigned" ? "Rohan Mehta" : null,
-        createdAt,
-        acknowledgedAt: status !== "open" ? pastDate(30 + n * 47 - 5) : null,
-        resolvedAt: status === "resolved" || status === "closed" ? pastDate(30 + n * 47 - 20) : null,
-      });
-
-      history.push({
-        id: randomUUID(),
-        orgId: "org-1",
-        alertId: id,
-        timestamp: createdAt,
-        actor: "System",
-        action: "Alert raised",
-        note: null,
-        sortOrder: "0",
-      });
-      if (status !== "open") {
-        history.push({
-          id: randomUUID(),
-          orgId: "org-1",
-          alertId: id,
-          timestamp: pastDate(30 + n * 47 - 5),
-          actor: "Vikram Sethi",
-          action: "Acknowledged",
-          note: null,
-          sortOrder: "1",
-        });
-      }
-      if (status === "resolved" || status === "closed") {
-        history.push({
-          id: randomUUID(),
-          orgId: "org-1",
-          alertId: id,
-          timestamp: pastDate(30 + n * 47 - 20),
-          actor: "Rohan Mehta",
-          action: "Resolved",
-          note: "Verified in the field, reading back to normal.",
-          sortOrder: "2",
-        });
-      }
-    }
-  }
-  return { alerts, history };
-}
-
-// ── Work order seed ──────────────────────────────────────────────────────────
-
-function buildWorkOrderSeed() {
-  const orders: (typeof workOrdersTable.$inferInsert)[] = [];
-  const priorities = ["low", "medium", "high", "critical"] as const;
-  const statuses = ["open", "assigned", "in_progress", "resolved", "verified", "closed"] as const;
-  let n = 0;
-  for (const plant of PLANTS.slice(0, 3)) {
-    for (let i = 0; i < 3; i++) {
-      n++;
-      const status = statuses[n % statuses.length]!;
-      const dueAt = pastDate(-60 * 24 * (n % 5));
-      orders.push({
-        id: `wo-${n}`,
-        orgId: "org-1",
-        plantId: plant.id,
-        plantName: plant.name,
-        equipment: `Inverter ${(n % plant.inverterCount) + 1}`,
-        faultDescription: "DC ground fault reported, isolation resistance below limit.",
-        priority: priorities[n % priorities.length]!,
-        status,
-        assignedTo: status === "open" ? null : "Priya Nair",
-        sourceAlertId: null,
-        rootCause:
-          status === "resolved" || status === "verified" || status === "closed"
-            ? "Cable insulation damage from rodent activity."
-            : null,
-        resolutionNotes:
-          status === "verified" || status === "closed"
-            ? "Replaced damaged cable section and re-tested insulation resistance."
-            : null,
-        slaBreached: dueAt.getTime() < Date.now() && status !== "closed" && status !== "verified",
-        dueAt,
-        createdAt: pastDate(60 * 24 + n * 200),
-        updatedAt: pastDate(n * 40),
-        closedAt: status === "closed" ? pastDate(n * 10) : null,
-      });
-    }
-  }
-  return orders;
-}
-
-// ── Device seed ───────────────────────────────────────────────────────────────
+// ── Real device seed ──────────────────────────────────────────────────────────
 
 function buildDeviceSeed(): (typeof devicesTable.$inferInsert)[] {
   const now = new Date();
   return [
-    // plant-thar — 5 devices
-    {
-      id: "dev-thar-rtu-01", orgId: "org-1", plantId: "plant-thar",
-      name: "Thar RTU-01 (Blocks A–D)", type: "RTU", protocol: "modbus",
-      status: "online", firmwareVersion: "4.2.1",
-      config: { ipAddress: "10.0.1.10", port: 502, modbusUnitId: 1, pollingIntervalSec: 30, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-    {
-      id: "dev-thar-plc-01", orgId: "org-1", plantId: "plant-thar",
-      name: "Thar PLC Inverter Controller", type: "PLC", protocol: "modbus",
-      status: "online", firmwareVersion: "3.9.5",
-      config: { ipAddress: "10.0.1.20", port: 502, modbusUnitId: 2, pollingIntervalSec: 10, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-    {
-      id: "dev-thar-wx-01", orgId: "org-1", plantId: "plant-thar",
-      name: "Thar Weather Station (Primary)", type: "weather_station", protocol: "mqtt",
-      status: "online", firmwareVersion: "5.1.0",
-      config: { brokerUrl: "mqtt://10.0.1.50:1883", topic: "plant/thar/wx/0/data", pollingIntervalSec: 60, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-    {
-      id: "dev-thar-gw-01", orgId: "org-1", plantId: "plant-thar",
-      name: "Thar Edge Gateway", type: "gateway", protocol: "http",
-      status: "online", firmwareVersion: "2.4.3",
-      config: { ipAddress: "10.0.1.1", port: 8080, pollingIntervalSec: 15, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-    {
-      id: "dev-thar-meter-01", orgId: "org-1", plantId: "plant-thar",
-      name: "Thar Grid Export Meter", type: "smart_meter", protocol: "modbus",
-      status: "online", firmwareVersion: "3.1.7",
-      config: { ipAddress: "10.0.1.30", port: 502, modbusUnitId: 5, pollingIntervalSec: 30, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-
-    // plant-sundarbans — 4 devices
-    {
-      id: "dev-sun-rtu-01", orgId: "org-1", plantId: "plant-sundarbans",
-      name: "Sundarbans RTU-01", type: "RTU", protocol: "modbus",
-      status: "online", firmwareVersion: "4.1.8",
-      config: { ipAddress: "10.0.2.10", port: 502, modbusUnitId: 1, pollingIntervalSec: 30, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-    {
-      id: "dev-sun-logger-01", orgId: "org-1", plantId: "plant-sundarbans",
-      name: "Sundarbans Data Logger", type: "data_logger", protocol: "http",
-      status: "online", firmwareVersion: "1.9.2",
-      config: { ipAddress: "10.0.2.20", port: 80, pollingIntervalSec: 60, pendingDeploy: true },
-      createdAt: now, updatedAt: now,
-    },
-    {
-      id: "dev-sun-wx-01", orgId: "org-1", plantId: "plant-sundarbans",
-      name: "Sundarbans Weather Station", type: "weather_station", protocol: "mqtt",
-      status: "online", firmwareVersion: "5.0.4",
-      config: { brokerUrl: "mqtt://10.0.2.50:1883", topic: "plant/sun/wx/0/data", pollingIntervalSec: 60, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-    {
-      id: "dev-sun-gw-01", orgId: "org-1", plantId: "plant-sundarbans",
-      name: "Sundarbans Edge Gateway", type: "gateway", protocol: "http",
-      status: "offline", firmwareVersion: "2.3.9",
-      config: { ipAddress: "10.0.2.1", port: 8080, pollingIntervalSec: 15, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-
-    // plant-deccan — 3 devices
-    {
-      id: "dev-dec-rtu-01", orgId: "org-1", plantId: "plant-deccan",
-      name: "Deccan RTU-01", type: "RTU", protocol: "modbus",
-      status: "online", firmwareVersion: "4.0.12",
-      config: { ipAddress: "10.0.3.10", port: 502, modbusUnitId: 1, pollingIntervalSec: 30, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-    {
-      id: "dev-dec-wx-01", orgId: "org-1", plantId: "plant-deccan",
-      name: "Deccan Weather Station", type: "weather_station", protocol: "mqtt",
-      status: "online", firmwareVersion: "5.1.2",
-      config: { brokerUrl: "mqtt://10.0.3.50:1883", topic: "plant/dec/wx/0/data", pollingIntervalSec: 60, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-    {
-      id: "dev-dec-meter-01", orgId: "org-1", plantId: "plant-deccan",
-      name: "Deccan Export Meter", type: "smart_meter", protocol: "modbus",
-      status: "online", firmwareVersion: "3.2.5",
-      config: { ipAddress: "10.0.3.30", port: 502, modbusUnitId: 3, pollingIntervalSec: 30, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-
-    // plant-coastal — 5 devices
-    {
-      id: "dev-cst-rtu-01", orgId: "org-1", plantId: "plant-coastal",
-      name: "Coastal RTU-01", type: "RTU", protocol: "modbus",
-      status: "online", firmwareVersion: "4.3.0",
-      config: { ipAddress: "10.0.4.10", port: 502, modbusUnitId: 1, pollingIntervalSec: 30, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-    {
-      id: "dev-cst-plc-01", orgId: "org-1", plantId: "plant-coastal",
-      name: "Coastal PLC Tracker Ctrl", type: "PLC", protocol: "modbus",
-      status: "online", firmwareVersion: "3.8.1",
-      config: { ipAddress: "10.0.4.20", port: 502, modbusUnitId: 2, pollingIntervalSec: 10, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-    {
-      id: "dev-cst-wx-01", orgId: "org-1", plantId: "plant-coastal",
-      name: "Coastal Weather Station", type: "weather_station", protocol: "mqtt",
-      status: "online", firmwareVersion: "5.0.9",
-      config: { brokerUrl: "mqtt://10.0.4.50:1883", topic: "plant/cst/wx/0/data", pollingIntervalSec: 60, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-    {
-      id: "dev-cst-tracker-01", orgId: "org-1", plantId: "plant-coastal",
-      name: "Coastal Tracker Controller", type: "tracker_controller", protocol: "mqtt",
-      status: "online", firmwareVersion: "2.7.4",
-      config: { brokerUrl: "mqtt://10.0.4.50:1883", topic: "plant/cst/tracker/data", pollingIntervalSec: 30, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-    {
-      id: "dev-cst-gw-01", orgId: "org-1", plantId: "plant-coastal",
-      name: "Coastal Edge Gateway", type: "gateway", protocol: "http",
-      status: "error", firmwareVersion: "2.4.1",
-      config: { ipAddress: "10.0.4.1", port: 8080, pollingIntervalSec: 15, pendingDeploy: false },
-      createdAt: now, updatedAt: now,
-    },
-
-    // ── plant-ana — 1 real TRB246 inverter (MQTT, name-value mode) ──────────
+    // ── plant-ana — real TRB246 inverter (MQTT, name-value mode) ────────────
     {
       id: "dev-ana-inv-01", orgId: "org-1", plantId: "plant-ana",
       name: "Ana Inverter (TRB246)", type: "inverter", protocol: "mqtt",
@@ -442,13 +110,52 @@ function buildDeviceSeed(): (typeof devicesTable.$inferInsert)[] {
   ];
 }
 
+// ── Demo data cleanup ─────────────────────────────────────────────────────────
+
+const DEMO_PLANT_IDS   = ["plant-thar", "plant-sundarbans", "plant-deccan", "plant-coastal"];
+const DEMO_DEVICE_IDS  = [
+  "dev-thar-rtu-01", "dev-thar-plc-01", "dev-thar-wx-01", "dev-thar-gw-01", "dev-thar-meter-01",
+  "dev-sun-rtu-01",  "dev-sun-logger-01", "dev-sun-wx-01", "dev-sun-gw-01",
+  "dev-dec-rtu-01",  "dev-dec-wx-01",    "dev-dec-meter-01",
+  "dev-cst-rtu-01",  "dev-cst-plc-01",   "dev-cst-wx-01", "dev-cst-tracker-01", "dev-cst-gw-01",
+];
+const DEMO_USER_IDS    = ["user-1", "user-2", "user-3", "user-4", "user-5", "user-6", "user-admin"];
+const DEMO_ORG_IDS     = ["org-2"];
+
+async function cleanupDemoData(): Promise<void> {
+  // Work orders & alerts reference plants — delete children before parents
+  const [woCount] = await db
+    .delete(workOrdersTable)
+    .where(inArray(workOrdersTable.plantId, DEMO_PLANT_IDS))
+    .returning({ id: workOrdersTable.id });
+
+  // Alert history references alerts — delete history first
+  const demoAlerts = await db
+    .select({ id: alertsTable.id })
+    .from(alertsTable)
+    .where(inArray(alertsTable.plantId, DEMO_PLANT_IDS));
+  if (demoAlerts.length > 0) {
+    const ids = demoAlerts.map((a) => a.id);
+    await db.delete(alertHistoryTable).where(inArray(alertHistoryTable.alertId, ids));
+    await db.delete(alertsTable).where(inArray(alertsTable.id, ids));
+  }
+
+  await db.delete(devicesTable).where(inArray(devicesTable.id, DEMO_DEVICE_IDS));
+  await db.delete(plantsTable).where(inArray(plantsTable.id, DEMO_PLANT_IDS));
+  await db.delete(usersTable).where(inArray(usersTable.id, DEMO_USER_IDS));
+  await db.delete(organizationsTable).where(inArray(organizationsTable.id, DEMO_ORG_IDS));
+
+  const removed = (woCount ? 1 : 0) + demoAlerts.length + DEMO_DEVICE_IDS.length + DEMO_PLANT_IDS.length;
+  if (removed > 0) {
+    logger.info("Removed demo plants, devices, users, alerts and work orders");
+  }
+}
+
 // ── Main seed entry point ─────────────────────────────────────────────────────
 
 export async function ensureSeedData(): Promise<void> {
-  // Organizations must be created first — all other tables have a FK to this.
-  // We check for the specific demo org IDs rather than "any org exists" so that
-  // a partial or externally-provisioned DB doesn't silently skip org creation
-  // and then fail FK constraints on the dependent seed inserts.
+  await cleanupDemoData();
+  // ── Organization ─────────────────────────────────────────────────────────
   for (const org of ORG_SEED) {
     const [existing] = await db
       .select()
@@ -461,19 +168,12 @@ export async function ensureSeedData(): Promise<void> {
     }
   }
 
-  const existingUsers = await db.select().from(usersTable).limit(1);
-  if (existingUsers.length === 0) {
+  // ── Roles (insert once; migrate permissions format on subsequent starts) ──
+  const existingRoles = await db.select().from(rolesTable).limit(1);
+  if (existingRoles.length === 0) {
     await db.insert(rolesTable).values(ROLE_SEED);
-    await db.insert(usersTable).values(
-      USER_SEED.map((u) => ({ ...u, lastLoginAt: pastDate(Math.random() * 1000) })),
-    );
-    logger.info("Seeded roles and users");
+    logger.info("Seeded roles");
   } else {
-    // ── Permissions migration ─────────────────────────────────────────────
-    // Migrate each built-in role individually: if any of its permissions still
-    // use the old underscore format, replace the full set with the canonical
-    // dot-notation defaults.  Checking per-role avoids skipping roles that
-    // were already partially migrated.
     let migrated = 0;
     for (const [roleId, perms] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
       const [role] = await db
@@ -494,29 +194,7 @@ export async function ensureSeedData(): Promise<void> {
     }
   }
 
-  const existingAlerts = await db.select().from(alertsTable).limit(1);
-  if (existingAlerts.length === 0) {
-    const { alerts, history } = buildAlertSeed();
-    await db.insert(alertsTable).values(alerts);
-    await db.insert(alertHistoryTable).values(history);
-    logger.info({ count: alerts.length }, "Seeded alerts");
-  }
-
-  const existingWorkOrders = await db.select().from(workOrdersTable).limit(1);
-  if (existingWorkOrders.length === 0) {
-    const orders = buildWorkOrderSeed();
-    await db.insert(workOrdersTable).values(orders);
-    logger.info({ count: orders.length }, "Seeded work orders");
-  }
-
-  const existingDevices = await db.select().from(devicesTable).limit(1);
-  if (existingDevices.length === 0) {
-    const devices = buildDeviceSeed();
-    await db.insert(devicesTable).values(devices);
-    logger.info({ count: devices.length }, "Seeded IoT devices");
-  }
-
-  // ── Ana Solar Plant — real TRB246 device (idempotent) ────────────────────
+  // ── Ana Solar Plant (idempotent) ──────────────────────────────────────────
   const [existingAna] = await db
     .select({ id: plantsTable.id })
     .from(plantsTable)
@@ -541,12 +219,10 @@ export async function ensureSeedData(): Promise<void> {
       createdAt: now2,
       updatedAt: now2,
     });
-    logger.info("Seeded Ana Solar Plant (real TRB246 device)");
+    logger.info("Seeded Ana Solar Plant");
   }
 
-  // Ensure the TRB246 inverter device exists and has the latest config (upsert).
-  // This always runs so that VPS installs with an older config row are patched
-  // on every deploy — e.g. topic, payloadMode, pollingIntervalSec, credentials.
+  // ── TRB246 inverter device (always upsert so config stays current) ────────
   {
     const now2 = new Date();
     const [anaDev] = buildDeviceSeed().filter((d) => d.id === "dev-ana-inv-01");
@@ -566,7 +242,7 @@ export async function ensureSeedData(): Promise<void> {
     }
   }
 
-  // ── System device templates (idempotent — keyed by stable IDs) ────────────
+  // ── System device templates (idempotent) ──────────────────────────────────
   const now = new Date();
   for (const t of SYSTEM_TEMPLATES) {
     const [existing] = await db
@@ -592,12 +268,9 @@ export async function ensureSeedData(): Promise<void> {
   }
   logger.info({ count: SYSTEM_TEMPLATES.length }, "System device templates ensured");
 
-  // ── Ensure isSuperAdmin on all known admin emails (ALL environments) ─────────
-  // adminSession() requires isSuperAdmin=true to exist in the DB.
-  // The production guard below blocks demo passwords but must NOT block this
-  // flag — without it the platform-admin login always returns 500.
+  // ── Ensure isSuperAdmin on all known admin emails (ALL environments) ──────
+  // adminSession() requires isSuperAdmin=true in the DB.
   const ADMIN_EMAILS = [
-    "admin@automystics.com",
     "automystics.com@gmail.com",
     "automystics.ai@gmail.com",
     "anandakumar.mani012@gmail.com",
@@ -615,51 +288,25 @@ export async function ensureSeedData(): Promise<void> {
     }
   }
 
-  // ── Demo credentials ──────────────────────────────────────────────────────
-  // Gate strictly to non-production environments.  In production the demo
-  // account must be provisioned via the normal user-management flow.
+  // ── Seed password for the primary admin account (dev only) ───────────────
   if (process.env.NODE_ENV === "production") {
-    logger.info("Skipping demo credential seed (production mode)");
+    logger.info("Skipping dev credential seed (production mode)");
     return;
   }
 
-  // Always ensure the primary demo admin account exists with a known password.
-  // This runs every startup via upsert so it survives DB resets in dev/demo.
-  const demoAdminEmail = "admin@automystics.com";
-  const [existingAdmin] = await db
+  const primaryAdminEmail = "automystics.com@gmail.com";
+  const [primaryAdmin] = await db
     .select()
     .from(usersTable)
-    .where(eq(usersTable.email, demoAdminEmail))
+    .where(eq(usersTable.email, primaryAdminEmail))
     .limit(1);
 
-  if (!existingAdmin) {
-    const passwordHash = await bcrypt.hash("demo1234", 10);
-    await db.insert(usersTable).values({
-      id: "user-admin",
-      orgId: "org-1",
-      name: "System Administrator",
-      email: demoAdminEmail,
-      roleId: "role-admin",
-      plantIds: PLANTS.map((p) => p.id),
-      status: "active",
-      passwordHash,
-      isSuperAdmin: true,
-      lastLoginAt: null,
-      createdAt: new Date(),
-    });
-    logger.info({ email: demoAdminEmail }, "Seeded demo admin account");
-  } else {
-    // Patch existing admin: ensure password and super-admin flag are set
-    const updates: Record<string, unknown> = { isSuperAdmin: true };
-    if (!existingAdmin.passwordHash) {
-      updates.passwordHash = await bcrypt.hash("demo1234", 10);
-    }
+  if (primaryAdmin && !primaryAdmin.passwordHash) {
+    const passwordHash = await bcrypt.hash("admin1234", 10);
     await db
       .update(usersTable)
-      .set(updates)
-      .where(eq(usersTable.id, existingAdmin.id));
-    if (!existingAdmin.passwordHash) {
-      logger.info({ email: demoAdminEmail }, "Patched demo admin password hash + super-admin flag");
-    }
+      .set({ passwordHash, isSuperAdmin: true })
+      .where(eq(usersTable.id, primaryAdmin.id));
+    logger.info({ email: primaryAdminEmail }, "Set initial password for primary admin");
   }
 }
