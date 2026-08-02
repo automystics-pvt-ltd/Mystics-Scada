@@ -98,7 +98,7 @@
   --secondary: 214 15% 91%;
   --secondary-foreground: 220 10% 10%;
   --muted: 214 15% 94%;
-  --muted-foreground: 215 16% 28%;
+  --muted-foreground: 215 16% 15%;
   --accent: 214 15% 91%;
   --accent-foreground: 220 10% 10%;
   --destructive: 0 84.2% 60.2%;
@@ -111,7 +111,7 @@
   --accent-brand: 190 85% 42%;
 
   --sidebar: 210 20% 98%;
-  --sidebar-foreground: 215 16% 32%;
+  --sidebar-foreground: 215 16% 18%;
   --sidebar-border: 214 15% 91%;
   --sidebar-primary: 220 10% 10%;
   --sidebar-primary-foreground: 0 0% 100%;
@@ -251,4 +251,35 @@
 }
 .animate-fade-up {
   animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Light-mode global readability overrides ───────────────────────────
+   In dark mode, opacity-reduced muted text and semi-transparent card
+   backgrounds create the intended layered depth effect. In light mode,
+   the same rules render text nearly invisible and cards indistinct from
+   the page background. These overrides restore contrast across all pages
+   without touching individual component files.
+──────────────────────────────────────────────────────────────────────── */
+:root:not(.dark) {
+  /* Collapse all opacity-reduced variants of muted-foreground text back
+     to the full token value. Matches: text-muted-foreground/30 through /80 */
+  [class*="text-muted-foreground"] {
+    color: hsl(var(--muted-foreground)) !important;
+  }
+
+  /* Raise semi-transparent card and background surfaces so they are
+     distinguishable from the page background in light mode */
+  [class*="bg-card\/"] {
+    background-color: hsl(var(--card) / 0.92) !important;
+  }
+
+  /* Border and divider lines — keep subtle but visible */
+  [class*="border-border\/"] {
+    border-color: hsl(var(--border) / 0.7) !important;
+  }
+
+  /* Sidebar nav items — ensure full-opacity readable text */
+  [class*="text-sidebar-foreground"] {
+    color: hsl(var(--sidebar-foreground)) !important;
+  }
 }
