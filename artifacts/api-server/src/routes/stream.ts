@@ -30,6 +30,7 @@ import { getFaultedInverterIds, isPlantDisconnected } from "../lib/faultInjectio
 import { resolveOrgId } from "../lib/orgScope";
 import { registerOrgNotificationClient } from "../lib/notificationRegistry";
 import { subscribe } from "../lib/sseRegistry";
+import { getMqttStatus, onMqttStatusChange } from "../lib/mqttSubscriber";
 import { db, devicesTable, deviceReadingsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 
@@ -288,6 +289,41 @@ router.get("/stream/devices/:deviceId", async (req: Request, res: Response) => {
   priming = false;
   for (const data of buffered) sendEvent(res, "device_reading", data);
   buffered.length = 0;
+
+  const keepaliveTimer = setInterval(() => sendKeepalive(res), KEEPALIVE_INTERVAL_MS);
+
+  req.on("close", () => {
+    clearInterval(keepaliveTimer);
+    unsubscribe();
+  });
+});
+
+/* ── MQTT broker connection-state stream ──────────────────────────────── */
+
+/**
+ * GET /stream/mqtt-status
+ *
+ * Pushes the current MQTT broker connection state immediately on connect,
+ * then streams every state change in real time.  No org scoping needed —
+ * MQTT is a system-level singleton shared by all orgs.
+ *
+ * Payload: `{ status: "disabled" | "connecting" | "connected" | "reconnecting" | "disconnected" }`
+ */
+router.get("/stream/mqtt-status", (req: Request, res: Response) => {
+  sseHeaders(res);
+
+  // Send the current state immediately so the client doesn't wait for the
+  // first transition.
+  sendEvent(res, "mqtt_status", { status: getMqttStatus() });
+
+  // Subscribe to future state changes
+  const unsubscribe = onMqttStatusChange((status) => {
+    try {
+      sendEvent(res, "mqtt_status", { status });
+    } catch {
+      /* client already disconnected */
+    }
+  });
 
   const keepaliveTimer = setInterval(() => sendKeepalive(res), KEEPALIVE_INTERVAL_MS);
 

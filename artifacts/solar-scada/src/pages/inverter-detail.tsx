@@ -17,6 +17,7 @@ import {
 import { SvgAreaChart } from "@/components/ui/svg-charts";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
+import { useMqttStatus, type MqttStatus } from "@/hooks/useMqttStatus";
 
 const BASE = import.meta.env.BASE_URL as string;
 
@@ -341,6 +342,45 @@ function Tab({ active, onClick, icon: Icon, children }: {
   );
 }
 
+// ── MQTT connection-state badge ───────────────────────────────────────────────
+function MqttStatusBadge({ status }: { status: MqttStatus | null }) {
+  if (status === "disabled" || status === null) {
+    // No broker configured or SSE not yet ready — show a neutral badge
+    return (
+      <div className="ml-auto flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-muted/20 px-3 py-1.5 rounded-lg border border-border/30">
+        <Radio className="w-3.5 h-3.5" />
+        MQTT OFF
+      </div>
+    );
+  }
+
+  if (status === "connected") {
+    return (
+      <div className="ml-auto flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-accent-brand bg-accent-brand/10 px-3 py-1.5 rounded-lg border border-accent-brand/20">
+        <Radio className="w-3.5 h-3.5 animate-pulse" />
+        LIVE
+      </div>
+    );
+  }
+
+  if (status === "reconnecting" || status === "connecting") {
+    return (
+      <div className="ml-auto flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-status-warning bg-status-warning/10 px-3 py-1.5 rounded-lg border border-status-warning/20">
+        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+        RECONNECTING…
+      </div>
+    );
+  }
+
+  // disconnected
+  return (
+    <div className="ml-auto flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-status-fault bg-status-fault/10 px-3 py-1.5 rounded-lg border border-status-fault/20">
+      <Radio className="w-3.5 h-3.5" />
+      OFFLINE
+    </div>
+  );
+}
+
 type TabId = "general" | "curve" | "fault" | "settings";
 
 // ── Month options ─────────────────────────────────────────────────────────────
@@ -439,6 +479,7 @@ export default function InverterDetail() {
     setFaultPage(1);
   };
 
+  const { status: mqttStatus } = useMqttStatus();
   const statusCfg = STATUS_CFG[inv?.status ?? "comm_lost"];
   const handleRefresh = () => { refetch(); setLastRefreshed(new Date()); };
 
@@ -490,10 +531,7 @@ export default function InverterDetail() {
             <span className={`w-2 h-2 rounded-full ${statusCfg.dot} ${inv?.status === "running" ? "animate-pulse" : ""}`} />
             {statusCfg.label}
           </div>
-          <div className="ml-auto flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-accent-brand bg-accent-brand/10 px-3 py-1.5 rounded-lg border border-accent-brand/20">
-            <Radio className="w-3.5 h-3.5 animate-pulse" />
-            LIVE SYNC
-          </div>
+          <MqttStatusBadge status={mqttStatus} />
         </div>
 
         {/* ── Tabs ─────────────────────────────────────────────────────── */}

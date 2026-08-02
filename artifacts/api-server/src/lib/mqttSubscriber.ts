@@ -13,11 +13,13 @@
  *   MQTT_DEVICE_NAME  name to register the device as                 (default: TRB246)
  *
  * Behaviour:
- *   - Auto-connects and auto-reconnects (exponential backoff via mqtt.js)
+ *   - Auto-connects and auto-reconnects with exponential backoff (2 s → 64 s)
  *   - Auto-provisions the device on first message — no pre-registration needed
  *   - Handles invalid JSON gracefully (logs + skips, never crashes)
  *   - Runs as a background singleton — never blocks the HTTP server
  *   - Safe to call startMqttSubscriber() multiple times (only starts once)
+ *   - Exposes connection state via getMqttStatus() / onMqttStatusChange()
+ *     so SSE stream endpoints can push Live / Reconnecting badges to the UI
  */
 
 import mqtt, { type MqttClient } from "mqtt";
@@ -33,12 +35,50 @@ const USERNAME     = process.env["MQTT_USERNAME"];
 const PASSWORD     = process.env["MQTT_PASSWORD"];
 const DEVICE_NAME  = process.env["MQTT_DEVICE_NAME"]  ?? "TRB246";
 
-// ── State ─────────────────────────────────────────────────────────────────────
+// Exponential backoff config
+const BACKOFF_BASE_MS  = 2_000;
+const BACKOFF_MAX_MS   = 64_000;
+const CONNECT_TIMEOUT  = 15_000;
+
+// ── Connection state ──────────────────────────────────────────────────────────
+
+export type MqttStatus = "disabled" | "connecting" | "connected" | "reconnecting" | "disconnected";
+
+let _currentStatus: MqttStatus = "disabled";
+const _statusListeners = new Set<(status: MqttStatus) => void>();
+
+function _setStatus(s: MqttStatus): void {
+  if (_currentStatus === s) return;
+  _currentStatus = s;
+  _statusListeners.forEach((fn) => {
+    try { fn(s); } catch { /* listener threw */ }
+  });
+}
+
+/**
+ * Returns the current MQTT broker connection state.
+ */
+export function getMqttStatus(): MqttStatus {
+  return _currentStatus;
+}
+
+/**
+ * Subscribe to MQTT connection-state changes.
+ * Returns an unsubscribe function.
+ */
+export function onMqttStatusChange(listener: (status: MqttStatus) => void): () => void {
+  _statusListeners.add(listener);
+  return () => _statusListeners.delete(listener);
+}
+
+// ── Singleton state ───────────────────────────────────────────────────────────
 
 let _client: MqttClient | null = null;
 let _started = false;
+let _reconnectAttempt = 0;
+let _reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-// ── Subscriber ────────────────────────────────────────────────────────────────
+// ── Public API ────────────────────────────────────────────────────────────────
 
 /**
  * Start the MQTT subscriber. Safe to call multiple times — only one connection
@@ -52,24 +92,61 @@ export function startMqttSubscriber(): void {
       "MQTT_BROKER_URL not set — MQTT subscriber disabled. " +
       "Set it in the systemd unit to enable automatic data ingestion.",
     );
+    _setStatus("disabled");
     return;
   }
 
   _started = true;
+  _setStatus("connecting");
   _connect();
 }
 
 /** Gracefully stop the subscriber (called on process shutdown). */
 export async function stopMqttSubscriber(): Promise<void> {
+  if (_reconnectTimer) {
+    clearTimeout(_reconnectTimer);
+    _reconnectTimer = null;
+  }
   if (_client) {
     await _client.endAsync(true).catch(() => undefined);
     _client = null;
   }
+  _setStatus("disconnected");
 }
 
 // ── Internal ──────────────────────────────────────────────────────────────────
 
+/**
+ * Compute next reconnect delay with full-jitter exponential backoff.
+ * Attempt 0 → 2 s, attempt 1 → 4 s, … capped at 64 s.
+ */
+function _backoffDelay(): number {
+  const cap = Math.min(BACKOFF_BASE_MS * 2 ** _reconnectAttempt, BACKOFF_MAX_MS);
+  // Add up to 25 % jitter so multiple clients don't stampede the broker
+  return cap * (0.75 + Math.random() * 0.25);
+}
+
+function _scheduleReconnect(): void {
+  const delay = _backoffDelay();
+  _reconnectAttempt++;
+  logger.info(
+    { broker: BROKER_URL, attempt: _reconnectAttempt, delayMs: Math.round(delay) },
+    "MQTT subscriber: scheduling reconnect…",
+  );
+  _reconnectTimer = setTimeout(() => {
+    _reconnectTimer = null;
+    _connect();
+  }, delay);
+}
+
 function _connect(): void {
+  // Tear down any lingering client before creating a new one
+  if (_client) {
+    _client.removeAllListeners();
+    _client.end(true);
+    _client = null;
+  }
+
   const clientId = `solar-scada-sub-${Math.random().toString(16).slice(2, 10)}`;
 
   logger.info({ broker: BROKER_URL, topic: TOPIC }, "MQTT subscriber: connecting…");
@@ -77,8 +154,10 @@ function _connect(): void {
   const client = mqtt.connect(BROKER_URL, {
     clientId,
     clean:           true,
-    reconnectPeriod: 10_000,   // retry every 10 s on disconnect
-    connectTimeout:  15_000,
+    // Disable mqtt.js built-in auto-reconnect; we manage it ourselves so we
+    // can apply exponential backoff instead of a fixed retry period.
+    reconnectPeriod: 0,
+    connectTimeout:  CONNECT_TIMEOUT,
     keepalive:       60,
     ...(USERNAME ? { username: USERNAME } : {}),
     ...(PASSWORD ? { password: PASSWORD } : {}),
@@ -89,6 +168,8 @@ function _connect(): void {
   // ── Connected ──────────────────────────────────────────────────────────────
   client.on("connect", () => {
     logger.info({ broker: BROKER_URL, topic: TOPIC }, "MQTT subscriber: connected ✓");
+    _reconnectAttempt = 0; // reset backoff on successful connect
+    _setStatus("connected");
 
     client.subscribe(TOPIC, { qos: 0 }, (err) => {
       if (err) {
@@ -146,24 +227,26 @@ function _connect(): void {
       });
   });
 
-  // ── Reconnecting ───────────────────────────────────────────────────────────
-  client.on("reconnect", () => {
-    logger.info({ broker: BROKER_URL }, "MQTT subscriber: reconnecting…");
-  });
+  // ── Close — triggers reconnect logic ──────────────────────────────────────
+  client.on("close", () => {
+    logger.info({ broker: BROKER_URL }, "MQTT subscriber: connection closed");
 
-  // ── Offline ────────────────────────────────────────────────────────────────
-  client.on("offline", () => {
-    logger.warn({ broker: BROKER_URL }, "MQTT subscriber: broker offline — will retry");
+    // Only schedule reconnect when we're not in the middle of a clean shutdown
+    if (_started && _client === client) {
+      _setStatus("reconnecting");
+      _scheduleReconnect();
+    }
   });
 
   // ── Error ──────────────────────────────────────────────────────────────────
   client.on("error", (err: Error) => {
     logger.error({ err: err.message, broker: BROKER_URL }, "MQTT subscriber: connection error");
-    // mqtt.js handles reconnect automatically — no manual retry needed
+    // The "close" event fires after "error", so reconnect is handled there.
   });
 
-  // ── Closed ─────────────────────────────────────────────────────────────────
-  client.on("close", () => {
-    logger.info({ broker: BROKER_URL }, "MQTT subscriber: connection closed");
+  // ── Offline (broker went away while connected) ─────────────────────────────
+  client.on("offline", () => {
+    logger.warn({ broker: BROKER_URL }, "MQTT subscriber: broker offline — will retry");
+    _setStatus("reconnecting");
   });
 }
