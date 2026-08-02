@@ -238,19 +238,19 @@ export default function PortfolioDashboard() {
                             />
                             <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2">
                               <div>
-                                <div className="text-[10px] text-muted-foreground/70 font-medium capitalize">Capacity</div>
+                                <div className="text-[10px] text-muted-foreground font-medium capitalize">Capacity</div>
                                 <div className="font-mono text-sm font-medium">{(plant.capacityKw / 1000).toFixed(1)} MWp</div>
                               </div>
                               <div>
-                                <div className="text-[10px] text-muted-foreground/70 font-medium capitalize">PR</div>
+                                <div className="text-[10px] text-muted-foreground font-medium capitalize">PR</div>
                                 <div className="font-mono text-sm font-medium">{plant.pr.toFixed(1)}%</div>
                               </div>
                               <div>
-                                <div className="text-[10px] text-muted-foreground/70 font-medium capitalize">Avail.</div>
+                                <div className="text-[10px] text-muted-foreground font-medium capitalize">Avail.</div>
                                 <div className="font-mono text-sm font-medium">{plant.availabilityPct.toFixed(1)}%</div>
                               </div>
                               <div>
-                                <div className="text-[10px] text-muted-foreground/70 font-medium capitalize">Alerts</div>
+                                <div className="text-[10px] text-muted-foreground font-medium capitalize">Alerts</div>
                                 <div className="flex items-center gap-1 mt-0.5">
                                   {plant.alertCounts.critical > 0 && (
                                     <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded text-[10px] font-bold bg-status-fault/20 text-status-fault border border-status-fault/30">
@@ -284,7 +284,7 @@ export default function PortfolioDashboard() {
                           <div className="mt-2 flex justify-between items-center">
                             {sseHistory && sseHistory.length >= 2
                               ? <span className="text-[9px] text-status-normal/80 font-mono flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-status-normal animate-pulse" /> {sseHistory.length} live pts</span>
-                              : <span className="text-[9px] text-muted-foreground/50 font-mono">est. curve</span>
+                              : <span className="text-[9px] text-muted-foreground font-mono">est. curve</span>
                             }
                             <span className="text-xs text-accent-brand flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity font-medium">
                               Open plant <ArrowRight className="w-3 h-3" />

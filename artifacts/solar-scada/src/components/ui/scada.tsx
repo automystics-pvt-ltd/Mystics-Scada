@@ -100,7 +100,7 @@ export function LiveValue({
       )}>
         {value.toLocaleString(undefined, { minimumFractionDigits: precision, maximumFractionDigits: precision })}
       </span>
-      <span className="text-xs font-semibold text-muted-foreground font-sans">{unit}</span>
+      <span className="text-xs font-semibold text-foreground/55 font-sans">{unit}</span>
     </div>
   );
 }
@@ -236,7 +236,7 @@ export function StatCard({
         </div>
       )}
       <div className="min-w-0">
-        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest truncate">{label}</div>
+        <div className="text-[11px] font-bold text-foreground/65 uppercase tracking-widest truncate">{label}</div>
         {loading ? (
           <div className="h-7 w-16 bg-muted/40 animate-shimmer rounded mt-1" />
         ) : (
@@ -284,7 +284,7 @@ export function KpiCard({
       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-border/50 to-transparent group-hover:via-accent-brand/50 transition-colors" />
 
       <div className="flex items-center justify-between mb-4 relative z-10">
-        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">{title}</span>
+        <span className="text-xs font-bold text-foreground/65 uppercase tracking-widest">{title}</span>
         {Icon && (
           <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-background/50 border border-border/50 group-hover:bg-accent-brand/10 group-hover:border-accent-brand/30 transition-colors">
             <Icon className="h-4 w-4 text-muted-foreground group-hover:text-accent-brand transition-colors" />
