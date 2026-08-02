@@ -19,11 +19,16 @@ router.get("/alerts", async (req, res) => {
   if (query.plantId) conditions.push(eq(alertsTable.plantId, query.plantId));
   if (query.severity) conditions.push(eq(alertsTable.severity, query.severity));
   if (query.status) conditions.push(eq(alertsTable.status, query.status));
+  // Extra filters not yet in codegen'd zod schema — safe to add here
+  const deviceNameFilter = req.query["deviceName"] as string | undefined;
+  if (deviceNameFilter) conditions.push(eq(alertsTable.deviceName, deviceNameFilter));
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
 
   const rows = await db
     .select()
     .from(alertsTable)
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .where(where)
     .orderBy(desc(alertsTable.createdAt));
 
   const data = ListAlertsResponse.parse(rows);

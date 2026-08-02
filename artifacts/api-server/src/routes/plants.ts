@@ -27,7 +27,7 @@ import { activeAlertCountsByPlant } from "../lib/alertCounts";
 import { resolveOrgId, orgCondition } from "../lib/orgScope";
 import { db, devicesTable, plantsTable } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
-import { deviceStatus, addPlant } from "../lib/simulation";
+import { deviceStatus, addPlant, inverterTrend, plantIrradiance } from "../lib/simulation";
 
 const router: IRouter = Router();
 
@@ -183,6 +183,51 @@ router.get("/plants/:plantId/revenue", (req, res) => {
   }
   const data = GetPlantRevenueResponse.parse(revenueData(plant, new Date()));
   res.json(data);
+});
+
+// GET /plants/:plantId/trend?period=day|week|month|year
+// Returns aggregated plant-level power trend (sum across all inverters)
+router.get("/plants/:plantId/trend", (req, res) => {
+  const orgId = resolveOrgId(req);
+  const plant = getOrgPlants(orgId).find((p) => p.id === req.params["plantId"]);
+  if (!plant) {
+    res.status(404).json({ error: "not_found", message: "Plant not found" });
+    return;
+  }
+  const period = (req.query["period"] as string) ?? "day";
+  const range = (["hour", "day", "week", "month"] as const).includes(period as any)
+    ? (period as "hour" | "day" | "week" | "month")
+    : "day";
+
+  const spec = {
+    hour:  { stepMs: 60 * 1000,           fmt: (t: Date) => t.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) },
+    day:   { stepMs: 15 * 60 * 1000,      fmt: (t: Date) => t.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) },
+    week:  { stepMs: 60 * 60 * 1000,      fmt: (t: Date) => `${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][t.getDay()]} ${t.getHours()}:00` },
+    month: { stepMs: 24 * 60 * 60 * 1000, fmt: (t: Date) => t.toISOString().slice(5, 10) },
+  }[range];
+
+  const now = new Date();
+  // Aggregate across all inverters
+  const invCount = plant.inverterCount ?? 1;
+  // Use inverter 0 as a template; all inverters share the same solar profile
+  const inv0 = inverterTrend(plant, 0, range, now);
+  const irradiance = plantIrradiance(plant, now);
+
+  const points = inv0.map((pt, i) => {
+    const tMs = now.getTime() - (inv0.length - 1 - i) * spec.stepMs;
+    const t = new Date(tMs);
+    const totalAcKw = pt.acPowerKw * invCount;
+    const totalDcKw = pt.dcPowerKw * invCount;
+    return {
+      label:       spec.fmt(t),
+      timestamp:   t.toISOString(),
+      acPowerKw:   Math.round(totalAcKw * 10) / 10,
+      dcPowerKw:   Math.round(totalDcKw * 10) / 10,
+      energyKwh:   Math.round((totalAcKw * spec.stepMs) / 3_600_000 * 10) / 10,
+    };
+  });
+
+  res.json({ period: range, irradianceWm2: Math.round(irradiance), points });
 });
 
 /**
