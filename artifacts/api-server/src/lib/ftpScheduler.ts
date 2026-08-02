@@ -103,12 +103,28 @@ async function ingestRows(
     imported += inserted.length;
   }
 
-  // Touch lastSeenAt
+  // Touch lastSeenAt and apply same retention policy as live driver ingestion
   if (imported > 0) {
     await db
       .update(devicesTable)
       .set({ lastSeenAt: new Date(), updatedAt: new Date() })
       .where(eq(devicesTable.id, deviceId));
+
+    await db.execute(sql`
+      DELETE FROM device_readings
+      WHERE device_id = ${deviceId}
+        AND ts < NOW() - INTERVAL '35 days'
+    `);
+    await db.execute(sql`
+      DELETE FROM device_readings
+      WHERE device_id = ${deviceId}
+        AND id NOT IN (
+          SELECT id FROM device_readings
+          WHERE device_id = ${deviceId}
+          ORDER BY ts DESC
+          LIMIT 100000
+        )
+    `);
   }
   return imported;
 }

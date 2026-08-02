@@ -30,7 +30,9 @@ import { resolveDeviceOfflineAlert } from "../lib/offlineDetection.js";
 import { computeDeviceHealthScore } from "../lib/deviceHealth.js";
 import { logger } from "../lib/logger.js";
 
-const MAX_READINGS_PER_DEVICE = 2_000;
+/** Retain readings for 35 days; a secondary hard cap prevents runaway growth on very frequent devices. */
+const READINGS_RETENTION_DAYS = 35;
+const READINGS_MAX_ROWS_PER_DEVICE = 100_000;
 
 // ── Admin-facing router (session-cookie auth) ──────────────────────────────
 
@@ -223,7 +225,12 @@ gatewayAgentRouter.post("/gateway/readings", validateGatewayToken, async (req, r
       .set({ lastSeenAt: now, status: "online", consecutiveFailures: 0, updatedAt: now })
       .where(eq(devicesTable.id, deviceId));
 
-    // Same bounded-retention policy as live driver ingestion / CSV import
+    // Time-based retention: drop readings older than 35 days, then enforce hard row cap
+    await db.execute(sql`
+      DELETE FROM device_readings
+      WHERE device_id = ${deviceId}
+        AND ts < NOW() - (${READINGS_RETENTION_DAYS} || ' days')::interval
+    `);
     await db.execute(sql`
       DELETE FROM device_readings
       WHERE device_id = ${deviceId}
@@ -231,7 +238,7 @@ gatewayAgentRouter.post("/gateway/readings", validateGatewayToken, async (req, r
           SELECT id FROM device_readings
           WHERE device_id = ${deviceId}
           ORDER BY ts DESC
-          LIMIT ${MAX_READINGS_PER_DEVICE}
+          LIMIT ${READINGS_MAX_ROWS_PER_DEVICE}
         )
     `);
 

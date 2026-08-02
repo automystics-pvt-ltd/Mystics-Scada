@@ -32,7 +32,9 @@ import { resolveDeviceOfflineAlert } from "../offlineDetection.js";
 
 const DEVICE_READING_CHANNEL = "device_reading";
 
-const MAX_READINGS_PER_DEVICE = 2_000;
+/** Retain readings for 35 days; a secondary hard cap prevents runaway growth on very frequent devices. */
+const READINGS_RETENTION_DAYS = 35;
+const READINGS_MAX_ROWS_PER_DEVICE = 100_000;
 const MAX_COMM_LOGS_PER_DEVICE = 1_000;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -422,6 +424,12 @@ class DriverRegistry {
       void resolveDeviceOfflineAlert(deviceId, orgId, stat?.deviceName ?? deviceId);
       void computeDeviceHealthScore(deviceId, now);
 
+      // Time-based retention: drop readings older than 35 days, then enforce hard row cap
+      await db.execute(sql`
+        DELETE FROM device_readings
+        WHERE device_id = ${deviceId}
+          AND ts < NOW() - (${READINGS_RETENTION_DAYS} || ' days')::interval
+      `);
       await db.execute(sql`
         DELETE FROM device_readings
         WHERE device_id = ${deviceId}
@@ -429,7 +437,7 @@ class DriverRegistry {
             SELECT id FROM device_readings
             WHERE device_id = ${deviceId}
             ORDER BY ts DESC
-            LIMIT ${MAX_READINGS_PER_DEVICE}
+            LIMIT ${READINGS_MAX_ROWS_PER_DEVICE}
           )
       `);
     } catch (err) {

@@ -58,7 +58,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useDeviceStream } from "@/hooks/useDeviceStream";
-import { MiniLineChart } from "@/components/ui/svg-charts";
+import { MiniLineChart, SvgAreaChart } from "@/components/ui/svg-charts";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -495,12 +495,73 @@ export default function DeviceDetailPage() {
   const [changedKeys, setChangedKeys] = useState<Set<string>>(new Set());
   const MAX_HISTORY_POINTS = 200;
 
+  // Historical range for Curve tab
+  type CurveRange = "live" | "1h" | "1d" | "1w" | "1m";
+  const [curveRange, setCurveRange] = useState<CurveRange>("live");
+
+  function rangeWindow(range: CurveRange): { from: Date; to: Date } | null {
+    if (range === "live") return null;
+    const to = new Date();
+    const from = new Date(to);
+    if (range === "1h") from.setHours(from.getHours() - 1);
+    else if (range === "1d") from.setDate(from.getDate() - 1);
+    else if (range === "1w") from.setDate(from.getDate() - 7);
+    else if (range === "1m") from.setMonth(from.getMonth() - 1);
+    return { from, to };
+  }
+
+  const curveWindow = rangeWindow(curveRange);
+
+  // Bucket sizes for downsampling: keeps response ≤ ~500 rows for each range window.
+  // 1H: full resolution (no bucket) — max ~120 rows at 30s cadence
+  // 1D: 5-min buckets (300s)  → max ~288 rows
+  // 1W: 30-min buckets (1800s) → max ~336 rows
+  // 1M: 2-hour buckets (7200s) → max ~360 rows
+  const RANGE_BUCKET: Record<string, number> = { "1d": 300, "1w": 1800, "1m": 7200 };
+
+  const { data: historicalReadings = [], isFetching: historicalFetching } = useQuery<Reading[]>({
+    queryKey: ["device-readings-range", deviceId, curveRange],
+    queryFn: async () => {
+      if (!curveWindow) return [];
+      const qp = new URLSearchParams({
+        from: curveWindow.from.toISOString(),
+        to:   curveWindow.to.toISOString(),
+      });
+      const bucket = RANGE_BUCKET[curveRange];
+      if (bucket) qp.set("bucket", String(bucket));
+      const r = await fetch(`${BASE}api/devices/${deviceId}/readings?${qp}`, { credentials: "include" });
+      if (!r.ok) return [];
+      return r.json() as Promise<Reading[]>;
+    },
+    enabled: activeTab === "curve" && curveRange !== "live",
+    staleTime: 60_000,
+    refetchInterval: activeTab === "curve" && curveRange !== "live" ? 60_000 : false,
+  });
+
   useEffect(() => {
     setReadingHistory([]);
     setChartField(null);
     prevParamsRef.current = {};
     setChangedKeys(new Set());
   }, [deviceId]);
+
+  // When historical readings arrive (or range changes), ensure chartField is valid.
+  // If the current field has no numeric values in the new dataset, auto-pick the
+  // first available numeric key (which may differ from the live ring-buffer field).
+  useEffect(() => {
+    if (curveRange === "live" || historicalReadings.length === 0) return;
+    const numericKeysInHistory = new Set<string>();
+    for (const r of historicalReadings) {
+      for (const [k, v] of Object.entries(r.params as Record<string, unknown>)) {
+        if (typeof v === "number") numericKeysInHistory.add(k);
+      }
+    }
+    if (numericKeysInHistory.size === 0) return;
+    setChartField((prev) => {
+      if (prev && numericKeysInHistory.has(prev)) return prev; // existing selection is valid
+      return Array.from(numericKeysInHistory)[0] ?? null;      // fall back to first available key
+    });
+  }, [historicalReadings, curveRange]);
 
   useEffect(() => {
     if (!deviceStream.latest) return;
@@ -1097,17 +1158,24 @@ export default function DeviceDetailPage() {
         {activeTab === "curve" && (
           <div className="bg-card border border-border/60 rounded-b-xl rounded-tr-xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/10">
-              <h3 className="text-xs font-semibold">Live trend — {effectiveFM.find((f) => f.key === chartField)?.label ?? chartField ?? "—"}</h3>
+              <h3 className="text-xs font-semibold">
+                {curveRange === "live" ? "Live trend" : "Historical trend"} — {effectiveFM.find((f) => f.key === chartField)?.label ?? chartField ?? "—"}
+              </h3>
               <div className="flex items-center gap-2">
-                {streamHealth === "live" ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/30">
-                    <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" /> Live
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
-                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
-                    {streamHealth === "stale" ? "Stale" : "Offline"}
-                  </span>
+                {curveRange === "live" && (
+                  streamHealth === "live" ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/30">
+                      <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" /> Live
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
+                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
+                      {streamHealth === "stale" ? "Stale" : "Offline"}
+                    </span>
+                  )
+                )}
+                {historicalFetching && curveRange !== "live" && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                 )}
                 {canManage && (
                   <Button
@@ -1144,42 +1212,135 @@ export default function DeviceDetailPage() {
             )}
 
             <div className="px-4 pt-4 pb-5">
-              {/* Field selector */}
-              {effectiveFM.length > 0 && (
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-[10px] text-muted-foreground">Charted field:</span>
-                  <select
-                    value={chartField ?? ""}
-                    onChange={(e) => setChartField(e.target.value || null)}
-                    className="h-7 px-2 rounded border border-border/60 bg-muted/20 text-xs text-foreground focus:outline-none focus:border-primary/50"
-                  >
-                    {effectiveFM
-                      .filter((f) => latestReading?.params[f.key] != null && typeof latestReading.params[f.key] === "number")
-                      .map((f) => (
-                        <option key={f.key} value={f.key}>{f.label}{f.unit ? ` (${f.unit})` : ""}</option>
-                      ))}
-                  </select>
-                </div>
-              )}
+              {/* Controls row: field selector + range buttons */}
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                {/* Field selector — unions numeric keys from actual readings with
+                    template/fieldmap metadata so keys absent from the current
+                    template (e.g. after a template change or raw-register
+                    ingestion) are still selectable. */}
+                {(() => {
+                  const rangeSource = curveRange !== "live"
+                    ? historicalReadings
+                    : readingHistory.map((h) => ({ params: h.nums } as Reading));
+                  // Collect every key that has a numeric value in the data source
+                  const numericKeySet = new Set<string>();
+                  for (const r of rangeSource) {
+                    for (const [k, v] of Object.entries(r.params as Record<string, unknown>)) {
+                      if (typeof v === "number") numericKeySet.add(k);
+                    }
+                  }
+                  if (numericKeySet.size === 0) return null;
+                  // Augment keys with label/unit from template metadata where available
+                  const metaMap = new Map(effectiveFM.map((f) => [f.key, f]));
+                  const numericKeys = Array.from(numericKeySet).map((k) => {
+                    const meta = metaMap.get(k);
+                    return {
+                      key: k,
+                      label: meta?.label ?? k.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase()).trim(),
+                      unit: meta?.unit ?? "",
+                    };
+                  });
+                  return (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground">Field:</span>
+                      <select
+                        value={chartField ?? ""}
+                        onChange={(e) => setChartField(e.target.value || null)}
+                        className="h-7 px-2 rounded border border-border/60 bg-muted/20 text-xs text-foreground focus:outline-none focus:border-primary/50"
+                      >
+                        {numericKeys.map((f) => (
+                          <option key={f.key} value={f.key}>{f.label}{f.unit ? ` (${f.unit})` : ""}</option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                })()}
 
-              {chartField && readingHistory.filter((p) => chartField in p.nums).length >= 2 ? (
-                <MiniLineChart
-                  color="hsl(var(--primary))"
-                  points={readingHistory
-                    .filter((p) => chartField in p.nums)
-                    .map((p) => ({
-                      label: new Date(p.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-                      value: p.nums[chartField]!,
-                    }))}
-                />
-              ) : (
-                <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
-                  <Activity className="h-8 w-8 opacity-30 mb-3" />
-                  <p className="text-sm">Waiting for live data…</p>
-                  <p className="text-xs mt-1 text-center max-w-xs">
-                    The chart populates as readings arrive. Switch to another tab and back to trigger a fetch, or wait for the next poll cycle.
-                  </p>
+                {/* Range buttons */}
+                <div className="flex items-center gap-1 ml-auto">
+                  {(["live", "1h", "1d", "1w", "1m"] as CurveRange[]).map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setCurveRange(r)}
+                      className={`px-2.5 py-1 rounded text-[10px] font-semibold transition-colors ${
+                        curveRange === r
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted/30 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                      }`}
+                    >
+                      {r === "live" ? "Live" : r === "1h" ? "1H" : r === "1d" ? "1D" : r === "1w" ? "1W" : "1M"}
+                    </button>
+                  ))}
                 </div>
+              </div>
+
+              {/* Chart */}
+              {curveRange === "live" ? (
+                /* ── Live ring-buffer chart ── */
+                chartField && readingHistory.filter((p) => chartField in p.nums).length >= 2 ? (
+                  <MiniLineChart
+                    color="hsl(var(--primary))"
+                    points={readingHistory
+                      .filter((p) => chartField in p.nums)
+                      .map((p) => ({
+                        label: new Date(p.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+                        value: p.nums[chartField]!,
+                      }))}
+                  />
+                ) : (
+                  <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
+                    <Activity className="h-8 w-8 opacity-30 mb-3" />
+                    <p className="text-sm">Waiting for live data…</p>
+                    <p className="text-xs mt-1 text-center max-w-xs">
+                      The chart populates as readings arrive. Switch to another tab and back to trigger a fetch, or wait for the next poll cycle.
+                    </p>
+                  </div>
+                )
+              ) : (
+                /* ── Historical range chart ── */
+                (() => {
+                  if (historicalFetching) {
+                    return (
+                      <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
+                        <Loader2 className="h-7 w-7 opacity-50 mb-3 animate-spin" />
+                        <p className="text-sm">Loading historical data…</p>
+                      </div>
+                    );
+                  }
+                  const field = chartField;
+                  const chartData = historicalReadings
+                    .filter((r) => field && typeof (r.params as Record<string, unknown>)[field] === "number")
+                    .map((r) => {
+                      const ts = new Date(r.ts as unknown as string);
+                      const label = curveRange === "1h"
+                        ? ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                        : curveRange === "1d"
+                          ? ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                          : ts.toLocaleDateString([], { month: "short", day: "numeric" }) + " " + ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                      return { label, value: (r.params as Record<string, unknown>)[field!] as number };
+                    });
+                  if (chartData.length < 2) {
+                    return (
+                      <div className="h-64 flex flex-col items-center justify-center text-muted-foreground">
+                        <Activity className="h-8 w-8 opacity-30 mb-3" />
+                        <p className="text-sm">No readings in this period</p>
+                        <p className="text-xs mt-1 text-center max-w-xs">
+                          Stored readings will appear here once the device has polled during the selected window.
+                        </p>
+                      </div>
+                    );
+                  }
+                  const fd = effectiveFM.find((f) => f.key === field);
+                  return (
+                    <SvgAreaChart
+                      height={240}
+                      data={chartData}
+                      xKey="label"
+                      series={[{ key: "value", name: fd?.label ?? field ?? "", color: "hsl(var(--primary))" }]}
+                      yFmt={(v) => fd?.unit ? `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${fd.unit}` : v.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    />
+                  );
+                })()
               )}
             </div>
 

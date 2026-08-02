@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter } from "express";
-import { and, desc, eq, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, gte, lte, sql, type SQL } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   db,
@@ -1165,8 +1165,13 @@ router.post(
       skippedDuplicate += chunk.length - inserted.length;
     }
 
-    // Apply same bounded-retention policy as live driver ingestion
+    // Time-based retention: drop readings older than 35 days, then enforce hard row cap
     if (imported > 0) {
+      await db.execute(sql`
+        DELETE FROM device_readings
+        WHERE device_id = ${deviceId}
+          AND ts < NOW() - INTERVAL '35 days'
+      `);
       await db.execute(sql`
         DELETE FROM device_readings
         WHERE device_id = ${deviceId}
@@ -1174,7 +1179,7 @@ router.post(
             SELECT id FROM device_readings
             WHERE device_id = ${deviceId}
             ORDER BY ts DESC
-            LIMIT 2000
+            LIMIT 100000
           )
       `);
     }
@@ -1201,15 +1206,61 @@ router.get("/devices/:id/readings", requirePermission("device.view"), async (req
     return;
   }
 
-  const limit = Math.min(Number(req.query["limit"] ?? 1), 100);
-  const readings = await db
-    .select()
-    .from(deviceReadingsTable)
-    .where(eq(deviceReadingsTable.deviceId, deviceId))
-    .orderBy(desc(deviceReadingsTable.ts))
-    .limit(limit);
+  // Support date-range queries via ?from=<ISO>&to=<ISO> (for historical trend charts).
+  // For long ranges (1D / 1W / 1M) callers may pass ?bucket=<seconds> to request
+  // time-bucket downsampling, keeping response size bounded to ~500 representative rows.
+  const fromParam = req.query["from"] ? new Date(req.query["from"] as string) : null;
+  const toParam   = req.query["to"]   ? new Date(req.query["to"]   as string) : null;
+  const hasRange  = fromParam && !Number.isNaN(fromParam.getTime()) && toParam && !Number.isNaN(toParam.getTime());
 
-  res.json(readings.map((r) => ({ ts: r.ts, params: r.params })));
+  if (!hasRange) {
+    // Simple latest-N query (no range)
+    const limit = Math.min(Number(req.query["limit"] ?? 1), 100);
+    const readings = await db
+      .select()
+      .from(deviceReadingsTable)
+      .where(eq(deviceReadingsTable.deviceId, deviceId))
+      .orderBy(desc(deviceReadingsTable.ts))
+      .limit(limit);
+    res.json(readings.map((r) => ({ ts: r.ts, params: r.params })));
+    return;
+  }
+
+  // Range query — optionally downsampled.
+  // If ?bucket=N (seconds) is supplied, we use DISTINCT ON (floor(epoch/N)) to pick
+  // one reading per bucket (the oldest in that bucket), keeping result size ~= windowSec/N.
+  // Callers should choose bucket sizes that yield ≤ 500 rows.
+  const bucketSec = req.query["bucket"] ? Number(req.query["bucket"]) : 0;
+
+  if (bucketSec > 0) {
+    // Downsampled range query via DISTINCT ON time bucket.
+    // db.execute() with a raw sql template returns a pg.QueryResult; access rows via .rows.
+    type ReadingRow = { ts: Date; params: unknown };
+    const result = await db.execute(sql`
+      SELECT DISTINCT ON (floor(extract(epoch from ts) / ${bucketSec})::bigint)
+        ts, params
+      FROM device_readings
+      WHERE device_id = ${deviceId}
+        AND ts >= ${fromParam}
+        AND ts <= ${toParam}
+      ORDER BY floor(extract(epoch from ts) / ${bucketSec})::bigint, ts ASC
+    `);
+    const bucketedRows = (result as unknown as { rows: ReadingRow[] }).rows ?? [];
+    res.json(bucketedRows.map((r) => ({ ts: r.ts, params: r.params })));
+  } else {
+    // Full-resolution range query (up to 2 000 rows; suitable for 1H at 30s cadence → 120 rows)
+    const readings = await db
+      .select()
+      .from(deviceReadingsTable)
+      .where(and(
+        eq(deviceReadingsTable.deviceId, deviceId),
+        gte(deviceReadingsTable.ts, fromParam),
+        lte(deviceReadingsTable.ts, toParam),
+      ))
+      .orderBy(deviceReadingsTable.ts)
+      .limit(2000);
+    res.json(readings.map((r) => ({ ts: r.ts, params: r.params })));
+  }
 });
 
 // ── GET /devices/:id/sniff-fields ─────────────────────────────────────────────

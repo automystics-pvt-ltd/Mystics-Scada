@@ -101,6 +101,23 @@ async function processBatch(): Promise<void> {
         .set({ lastSeenAt: ts, updatedAt: now })
         .where(eq(devicesTable.id, row.deviceId));
 
+      // Apply same 35-day/100k retention policy as all other ingestion paths
+      await db.execute(sql`
+        DELETE FROM device_readings
+        WHERE device_id = ${row.deviceId}
+          AND ts < NOW() - INTERVAL '35 days'
+      `);
+      await db.execute(sql`
+        DELETE FROM device_readings
+        WHERE device_id = ${row.deviceId}
+          AND id NOT IN (
+            SELECT id FROM device_readings
+            WHERE device_id = ${row.deviceId}
+            ORDER BY ts DESC
+            LIMIT 100000
+          )
+      `);
+
       await db
         .update(ingestionRetryQueueTable)
         .set({ status: "done" })
