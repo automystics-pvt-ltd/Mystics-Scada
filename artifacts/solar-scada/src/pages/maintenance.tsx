@@ -8,7 +8,6 @@ import {
   type WorkOrder,
 } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout";
-import { StatCard } from "@/components/ui/scada";
 import { Wrench, Plus, Clock, User, AlertCircle, AlertTriangle, Calendar, X, ChevronDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -16,38 +15,38 @@ import { useState } from "react";
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
 const KANBAN_COLUMNS: { id: WorkOrderStatus; title: string; color: string }[] = [
-  { id: "open",        title: "Open",        color: "border-t-muted-foreground" },
-  { id: "assigned",    title: "Assigned",    color: "border-t-blue-400" },
-  { id: "in_progress", title: "In Progress", color: "border-t-status-warning" },
-  { id: "resolved",    title: "Resolved",    color: "border-t-status-normal" },
-  { id: "verified",    title: "Verified",    color: "border-t-primary" },
+  { id: "open",        title: "PENDING ASSIGNMENT",        color: "bg-muted-foreground/50 border-muted-foreground" },
+  { id: "assigned",    title: "ASSIGNED TO ENG",           color: "bg-blue-500/50 border-blue-500" },
+  { id: "in_progress", title: "ACTIVE RESOLUTION",         color: "bg-status-warning/50 border-status-warning" },
+  { id: "resolved",    title: "RESOLUTION LOGGED",         color: "bg-status-normal/50 border-status-normal" },
+  { id: "verified",    title: "VERIFIED CLEAR",            color: "bg-brand/50 border-brand" },
 ];
 
 const PRIORITY_LEFT: Record<WorkOrderPriority, string> = {
   critical: "border-l-status-fault",
   high:     "border-l-[#e67e22]",
   medium:   "border-l-status-warning",
-  low:      "border-l-border",
+  low:      "border-l-muted-foreground",
 };
 
 const PRIORITY_BADGE: Record<WorkOrderPriority, string> = {
-  critical: "bg-status-fault/15 text-status-fault border-status-fault/30",
-  high:     "bg-[#e67e22]/15 text-[#e67e22] border-[#e67e22]/30",
-  medium:   "bg-status-warning/15 text-status-warning border-status-warning/30",
-  low:      "bg-muted text-muted-foreground border-border",
+  critical: "bg-status-fault/10 text-status-fault border-status-fault shadow-[0_0_10px_rgba(239,68,68,0.3)]",
+  high:     "bg-[#e67e22]/10 text-[#e67e22] border-[#e67e22] shadow-[0_0_10px_rgba(230,126,34,0.3)]",
+  medium:   "bg-status-warning/10 text-status-warning border-status-warning shadow-[0_0_10px_rgba(251,191,36,0.3)]",
+  low:      "bg-black/40 text-muted-foreground border-border/50",
 };
 
 function formatDue(dueDate: Date | string | null): { label: string; overdue: boolean } {
-  if (!dueDate) return { label: "No due date", overdue: false };
+  if (!dueDate) return { label: "NO DEADLINE SET", overdue: false };
   const d = new Date(dueDate as string);
   const now = new Date();
   const diffMs = d.getTime() - now.getTime();
   const diffH  = Math.round(diffMs / 3600000);
   const overdue = diffMs < 0;
-  if (overdue) return { label: `Overdue by ${Math.abs(diffH)}h`, overdue: true };
-  if (diffH < 24) return { label: `Due in ${diffH}h`, overdue: false };
+  if (overdue) return { label: `SLA OVERDUE: ${Math.abs(diffH)}H`, overdue: true };
+  if (diffH < 24) return { label: `SLA TARGET: T-${diffH}H`, overdue: false };
   const diffD = Math.floor(diffH / 24);
-  return { label: `Due in ${diffD}d`, overdue: false };
+  return { label: `SLA TARGET: T-${diffD}D`, overdue: false };
 }
 
 /* ── New Work Order modal ─────────────────────────────────────────────── */
@@ -87,95 +86,107 @@ function NewWorkOrderModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-card border border-card-border rounded-xl w-full max-w-md shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h2 className="font-semibold text-base flex items-center gap-2">
-            <Wrench className="w-4 h-4 text-primary" />
-            New Work Order
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div className="bg-black/90 border border-brand/50 w-full max-w-md shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] rounded-none relative">
+        <div className="absolute top-0 left-0 w-full h-1 bg-brand" />
+        
+        <div className="flex items-center justify-between p-5 border-b border-border/50">
+          <h2 className="font-mono text-base font-bold uppercase tracking-widest text-brand flex items-center gap-3">
+            <Wrench className="w-5 h-5" />
+            INITIALIZE WORK ORDER
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded hover:bg-muted text-muted-foreground transition-colors">
+          <button onClick={onClose} className="text-muted-foreground hover:text-brand transition-colors p-1">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-5">
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Equipment *</label>
+            <label className="block font-mono text-[10px] uppercase tracking-widest text-brand flex items-center gap-2 mb-2">
+              <span className="w-1.5 h-1.5 bg-brand inline-block" /> EQUIPMENT TARGET *
+            </label>
             <input
               required
               value={form.equipment}
               onChange={e => setForm(f => ({ ...f, equipment: e.target.value }))}
-              placeholder="e.g. Inverter 3, Combiner Box 2"
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              placeholder="e.g. INVERTER-03"
+              className="w-full bg-black/40 border border-border/50 rounded-none px-3 py-2 font-mono text-sm focus:outline-none focus:border-brand/50 focus:ring-0 text-foreground uppercase"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Fault Description *</label>
+            <label className="block font-mono text-[10px] uppercase tracking-widest text-brand flex items-center gap-2 mb-2">
+              <span className="w-1.5 h-1.5 bg-brand inline-block" /> FAULT TELEMETRY *
+            </label>
             <textarea
               required
               rows={3}
               value={form.faultDescription}
               onChange={e => setForm(f => ({ ...f, faultDescription: e.target.value }))}
-              placeholder="Describe the issue in detail…"
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+              placeholder="DESCRIBE OBSERVED ANOMALY..."
+              className="w-full bg-black/40 border border-border/50 rounded-none px-3 py-2 font-mono text-sm focus:outline-none focus:border-brand/50 focus:ring-0 resize-none text-foreground uppercase"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Priority</label>
+              <label className="block font-mono text-[10px] uppercase tracking-widest text-brand flex items-center gap-2 mb-2">
+                <span className="w-1.5 h-1.5 bg-brand inline-block" /> PRIORITY LEVEL
+              </label>
               <div className="relative">
                 <select
                   value={form.priority}
                   onChange={e => setForm(f => ({ ...f, priority: e.target.value as WorkOrderPriority }))}
-                  className="w-full appearance-none bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 pr-8"
+                  className="w-full appearance-none bg-black/40 border border-border/50 rounded-none px-3 py-2 font-mono text-sm focus:outline-none focus:border-brand/50 focus:ring-0 pr-8 text-foreground uppercase"
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="critical">Critical</option>
+                  <option value="low">LOW</option>
+                  <option value="medium">MEDIUM</option>
+                  <option value="high">HIGH</option>
+                  <option value="critical">CRITICAL</option>
                 </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand pointer-events-none" />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Due Date</label>
+              <label className="block font-mono text-[10px] uppercase tracking-widest text-brand flex items-center gap-2 mb-2">
+                <span className="w-1.5 h-1.5 bg-brand inline-block" /> SLA DEADLINE
+              </label>
               <input
                 type="datetime-local"
                 value={form.dueDate}
                 onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full bg-black/40 border border-border/50 rounded-none px-3 py-2 font-mono text-[10px] uppercase focus:outline-none focus:border-brand/50 focus:ring-0 text-brand"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Assign To</label>
+            <label className="block font-mono text-[10px] uppercase tracking-widest text-brand flex items-center gap-2 mb-2">
+              <span className="w-1.5 h-1.5 bg-brand inline-block" /> ASSIGN ENGINEER
+            </label>
             <input
               value={form.assignedTo}
               onChange={e => setForm(f => ({ ...f, assignedTo: e.target.value }))}
-              placeholder="Technician name (optional)"
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              placeholder="OPERATOR IDENTIFIER (OPTIONAL)"
+              className="w-full bg-black/40 border border-border/50 rounded-none px-3 py-2 font-mono text-sm focus:outline-none focus:border-brand/50 focus:ring-0 text-foreground uppercase"
             />
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-4 border-t border-border/50">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+              className="flex-1 px-4 py-2 border border-border/50 bg-black/40 font-mono text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:bg-white/5 transition-colors"
             >
-              Cancel
+              ABORT
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
+              className="flex-1 px-4 py-2 border border-brand bg-brand/10 font-mono text-[10px] uppercase tracking-widest font-bold text-brand hover:bg-brand/20 transition-colors shadow-[0_0_10px_rgba(0,255,170,0.2)] disabled:opacity-50"
             >
-              {submitting ? "Creating…" : "Create Work Order"}
+              {submitting ? "INITIALIZING..." : "EXECUTE INITIATION"}
             </button>
           </div>
         </form>
@@ -190,54 +201,56 @@ function WOCard({ wo, onMove, isLast }: { wo: WorkOrder; onMove: (id: string, s:
   const due = formatDue(wo.dueDate);
 
   return (
-    <div className={`bg-card border border-card-border border-l-4 ${PRIORITY_LEFT[wo.priority]} rounded-lg p-4 shadow-sm hover:shadow-md hover:border-r-primary/30 transition-all`}>
+    <div className={`border border-border/50 bg-black/60 border-l-[3px] ${PRIORITY_LEFT[wo.priority]} p-4 relative group hover:border-r-brand/50 transition-all`}>
       {/* Header row */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <span className="text-[10px] font-mono text-muted-foreground">#{wo.id.substring(0, 6).toUpperCase()}</span>
-        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border uppercase ${PRIORITY_BADGE[wo.priority]}`}>
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">WO-{wo.id.substring(0, 6).toUpperCase()}</span>
+        <span className={`px-2 py-0.5 font-mono text-[8px] uppercase tracking-widest font-bold border ${PRIORITY_BADGE[wo.priority]}`}>
           {wo.priority}
         </span>
       </div>
 
       {/* Title */}
-      <h4 className="text-sm font-semibold mb-0.5 leading-tight line-clamp-2">{wo.faultDescription}</h4>
-      <p className="text-xs text-muted-foreground mb-3">{wo.plantName} · {wo.equipment}</p>
+      <h4 className="font-mono text-xs font-bold mb-1 leading-snug text-foreground line-clamp-2 uppercase">{wo.faultDescription}</h4>
+      <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-4 bg-white/5 inline-block px-2 py-0.5 border border-border/50">
+        {wo.plantName} // {wo.equipment}
+      </p>
 
       {/* SLA breach */}
       {wo.slaBreached && (
-        <div className="flex items-center gap-1.5 text-[10px] text-status-fault bg-status-fault/10 border border-status-fault/20 rounded px-2 py-1 mb-3">
+        <div className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest font-bold text-status-fault bg-status-fault/10 border border-status-fault/30 px-2 py-1 mb-3 animate-pulse">
           <AlertCircle className="w-3 h-3 flex-shrink-0" />
-          <span className="font-bold uppercase tracking-wide">SLA Breached</span>
+          SLA PROTOCOL BREACHED
         </div>
       )}
 
       {/* Due date */}
       {wo.dueDate && (
-        <div className={`flex items-center gap-1.5 text-xs mb-3 ${due.overdue ? "text-status-fault" : "text-muted-foreground"}`}>
+        <div className={`flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest mb-3 ${due.overdue ? "text-status-fault font-bold" : "text-brand"}`}>
           <Calendar className="w-3 h-3 flex-shrink-0" />
-          <span className={due.overdue ? "font-semibold" : ""}>{due.label}</span>
+          {due.label}
         </div>
       )}
 
       {/* Root cause snippet */}
       {wo.rootCause && (
-        <div className="text-[11px] bg-muted/50 rounded px-2 py-1.5 border border-border/50 text-muted-foreground mb-3 line-clamp-2">
-          <span className="font-semibold text-foreground/70">Root cause: </span>{wo.rootCause}
+        <div className="border-l-2 border-brand/50 pl-2 mb-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground line-clamp-2 bg-black/40 p-1.5">
+          <span className="font-bold text-brand">RCA: </span>{wo.rootCause}
         </div>
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-border">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <div className="flex items-center justify-between pt-3 border-t border-border/50 mt-auto">
+        <div className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
           <User className="w-3 h-3" />
-          <span className={wo.assignedTo ? "" : "italic"}>{wo.assignedTo ?? "Unassigned"}</span>
+          <span className={wo.assignedTo ? "text-foreground font-bold" : "opacity-50"}>{wo.assignedTo ?? "UNASSIGNED"}</span>
         </div>
         {!isLast && (
           <button
             onClick={() => onMove(wo.id, wo.status)}
-            className="text-xs font-medium px-2.5 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+            className="font-mono text-[9px] uppercase tracking-widest font-bold px-2 py-1 border border-brand/50 text-brand bg-brand/5 hover:bg-brand/20 transition-colors opacity-0 group-hover:opacity-100"
           >
-            Advance →
+            ADVANCE &gt;
           </button>
         )}
       </div>
@@ -281,57 +294,81 @@ export default function MaintenanceBoard() {
       {showModal && <NewWorkOrderModal onClose={() => setShowModal(false)} />}
 
       <AppLayout>
-        <div className="flex flex-col h-full space-y-5">
+        <div className="flex flex-col h-[calc(100vh-100px)] space-y-6">
 
           {/* Header */}
-          <div className="flex flex-wrap justify-between items-start gap-3">
+          <div className="border border-border/50 bg-black/40 p-5 relative flex-shrink-0 flex flex-wrap justify-between items-start gap-4">
+            <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
             <div>
-              <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                <Wrench className="w-6 h-6 text-primary" />
-                Maintenance Operations
+              <h1 className="text-xl font-mono font-bold uppercase tracking-widest text-foreground flex items-center gap-3">
+                <Wrench className="w-5 h-5 text-brand" />
+                MAINTENANCE OPERATIONS LOG
               </h1>
-              <p className="text-sm text-muted-foreground mt-1">O&M work order board · drag cards to advance</p>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mt-2 ml-8">
+                O&M WORKFLOW PIPELINE // DRAG TO ADVANCE STATE
+              </p>
             </div>
             <button
               onClick={() => setShowModal(true)}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm transition-colors"
+              className="font-mono text-[10px] uppercase tracking-widest font-bold border border-brand bg-brand/10 text-brand hover:bg-brand/20 px-4 py-2 flex items-center gap-2 transition-colors shadow-[0_0_10px_rgba(0,255,170,0.2)]"
             >
-              <Plus className="w-4 h-4" /> New Work Order
+              <Plus className="w-3.5 h-3.5" /> INITIATE WORK ORDER
             </button>
           </div>
 
           {/* Summary stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <StatCard label="Active Work Orders" value={stats.open}     icon={Clock}         accent="info"    loading={isLoading} />
-            <StatCard label="Critical Priority"  value={stats.critical} icon={AlertCircle}   accent="danger"  loading={isLoading} />
-            <StatCard label="SLA Breached"        value={stats.breached} icon={AlertTriangle} accent="warning" loading={isLoading} />
-            <StatCard label="Verified Complete"   value={stats.done}    icon={Wrench}         accent="success" loading={isLoading} />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 flex-shrink-0">
+            <div className="border border-border/50 bg-black/60 p-4 relative">
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-brand shadow-[0_0_10px_rgba(0,255,170,0.5)]" />
+              <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2"><Clock className="w-3 h-3 text-brand" /> ACTIVE TICKETS</div>
+              <div className="font-mono text-2xl font-bold text-foreground">{isLoading ? "..." : stats.open}</div>
+            </div>
+            <div className="border border-border/50 bg-black/60 p-4 relative">
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-status-fault shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse" />
+              <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2"><AlertCircle className="w-3 h-3 text-status-fault" /> CRITICAL INCIDENTS</div>
+              <div className="font-mono text-2xl font-bold text-status-fault">{isLoading ? "..." : stats.critical}</div>
+            </div>
+            <div className="border border-border/50 bg-black/60 p-4 relative">
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-status-warning shadow-[0_0_10px_rgba(251,191,36,0.5)]" />
+              <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2"><AlertTriangle className="w-3 h-3 text-status-warning" /> SLA BREACHED</div>
+              <div className="font-mono text-2xl font-bold text-status-warning">{isLoading ? "..." : stats.breached}</div>
+            </div>
+            <div className="border border-border/50 bg-black/60 p-4 relative">
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-status-normal shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+              <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2"><Wrench className="w-3 h-3 text-status-normal" /> VERIFIED LOGS</div>
+              <div className="font-mono text-2xl font-bold text-status-normal">{isLoading ? "..." : stats.done}</div>
+            </div>
           </div>
 
           {/* Kanban board */}
-          <div className="flex-1 overflow-x-auto pb-4 min-h-0">
+          <div className="flex-1 overflow-x-auto min-h-0 custom-scrollbar border border-border/50 bg-black/40 p-4">
             <div className="flex gap-4 h-full" style={{ minWidth: `${KANBAN_COLUMNS.length * 320 + 64}px` }}>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="w-72 flex-shrink-0 bg-muted/30 border border-border rounded-xl animate-pulse" />
+                  <div key={i} className="w-[300px] flex-shrink-0 bg-black/60 border border-border/50 animate-pulse" />
                 ))
               ) : KANBAN_COLUMNS.map(col => {
                 const cards = cardsFor(col.id);
                 return (
-                  <div key={col.id} className={`w-72 flex-shrink-0 flex flex-col bg-muted/20 border border-border rounded-xl border-t-4 ${col.color}`}>
+                  <div key={col.id} className="w-[300px] flex-shrink-0 flex flex-col bg-black/60 border border-border/50 relative">
+                    <div className={`absolute top-0 left-0 w-full h-1 ${col.color}`} />
+                    
                     {/* Column header */}
-                    <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-card rounded-t-[10px]">
-                      <h3 className="font-semibold text-sm">{col.title}</h3>
-                      <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-mono font-semibold">
+                    <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between bg-black/80">
+                      <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-foreground flex items-center gap-2">
+                        <span className={`w-1.5 h-1.5 inline-block ${col.color}`} />
+                        {col.title}
+                      </h3>
+                      <span className="font-mono text-[9px] uppercase tracking-widest text-brand bg-brand/10 border border-brand/30 px-2 py-0.5">
                         {cards.length}
                       </span>
                     </div>
 
                     {/* Cards */}
-                    <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                    <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
                       {cards.length === 0 ? (
-                        <div className="flex items-center justify-center h-20 border-2 border-dashed border-border rounded-lg">
-                          <span className="text-xs text-muted-foreground">No {col.title.toLowerCase()} orders</span>
+                        <div className="flex items-center justify-center h-20 border border-dashed border-border/50 bg-black/40">
+                          <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">NO TICKETS IN QUEUE</span>
                         </div>
                       ) : (
                         cards.map(wo => (

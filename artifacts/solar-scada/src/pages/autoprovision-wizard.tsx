@@ -57,21 +57,23 @@ const STEP_LABELS = ["Plant", "Templates", "Devices", "Test", "Go Live"];
 
 function StepIndicator({ current }: { current: number }) {
   return (
-    <div className="flex items-center gap-0 mb-8">
+    <div className="flex items-center gap-2 mb-8 border-b border-border/50 pb-6 overflow-x-auto">
       {STEP_LABELS.map((label, i) => (
-        <div key={label} className="flex items-center">
-          <div className="flex flex-col items-center gap-1">
-            <div className={`flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold border-2 transition-all ${
-              i < current  ? "bg-primary border-primary text-primary-foreground"
-              : i === current ? "border-primary text-primary bg-primary/5"
-              : "border-border text-muted-foreground"
+        <div key={label} className="flex items-center flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center justify-center h-8 w-8 rounded-none border text-[10px] font-mono transition-all ${
+              i < current   ? "bg-brand border-brand text-black shadow-[0_0_10px_rgba(0,255,170,0.3)]"
+              : i === current ? "border-brand text-brand bg-brand/10 shadow-[inset_0_0_10px_rgba(0,255,170,0.2)]"
+              : "border-border/50 text-muted-foreground bg-black/40"
             }`}>
-              {i < current ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
+              {i < current ? <CheckCircle2 className="h-4 w-4" /> : `0${i + 1}`}
             </div>
-            <span className={`text-[10px] whitespace-nowrap ${i === current ? "text-foreground font-medium" : "text-muted-foreground"}`}>{label}</span>
+            <span className={`text-[10px] uppercase tracking-widest font-mono hidden sm:block ${i === current ? "text-brand" : i < current ? "text-foreground/80" : "text-muted-foreground"}`}>
+              {label}
+            </span>
           </div>
           {i < STEP_LABELS.length - 1 && (
-            <div className={`h-0.5 w-8 sm:w-14 mx-1 mb-4 transition-colors ${i < current ? "bg-primary" : "bg-border"}`} />
+            <div className={`h-[1px] w-6 sm:w-10 mx-3 transition-colors ${i < current ? "bg-brand/50" : "bg-border/50"}`} />
           )}
         </div>
       ))}
@@ -83,18 +85,20 @@ function StepIndicator({ current }: { current: number }) {
 
 function InfoBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-2.5 rounded-lg bg-blue-500/8 border border-blue-500/20 px-3.5 py-3 text-sm text-blue-600 dark:text-blue-400">
-      <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
-      <div className="leading-relaxed">{children}</div>
+    <div className="flex gap-3 border border-brand/30 bg-brand/5 p-4 relative">
+      <div className="absolute top-0 left-0 w-1 h-full bg-brand/50" />
+      <Info className="h-4 w-4 text-brand flex-shrink-0 mt-0.5 drop-shadow-[0_0_5px_rgba(0,255,170,0.5)]" />
+      <div className="font-mono text-[10px] uppercase tracking-widest text-brand/90 leading-relaxed leading-[1.6]">{children}</div>
     </div>
   );
 }
 
 function TipBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-2.5 rounded-lg bg-amber-500/8 border border-amber-500/20 px-3.5 py-3 text-sm text-amber-700 dark:text-amber-400">
-      <HelpCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-      <div className="leading-relaxed">{children}</div>
+    <div className="flex gap-3 border border-status-warning/30 bg-status-warning/5 p-4 relative">
+      <div className="absolute top-0 left-0 w-1 h-full bg-status-warning/50" />
+      <HelpCircle className="h-4 w-4 text-status-warning flex-shrink-0 mt-0.5 drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]" />
+      <div className="font-mono text-[10px] uppercase tracking-widest text-status-warning/90 leading-relaxed leading-[1.6]">{children}</div>
     </div>
   );
 }
@@ -111,51 +115,56 @@ function StepPlant({ state, update }: { state: WizardState; update: (p: Partial<
   });
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Step 1 — Identify your plant site</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          A <strong>plant</strong> is a physical solar installation site. Every device you add in this wizard will be linked to it.
+        <h2 className="text-xl font-mono uppercase tracking-widest text-foreground/90 flex items-center gap-3">
+          <Building2 className="h-5 w-5 text-brand" />
+          TARGET ZONE DESIGNATION
+        </h2>
+        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2">
+          SELECT OR INITIALIZE THE PHYSICAL INSTALLATION ZONE FOR THESE DEVICES.
         </p>
       </div>
 
       <InfoBox>
-        Have the following ready before continuing: site name, GPS location or city, installed capacity in MW, and the year the plant was commissioned.
+        REQUIRED PARAMETERS: ZONE DESIGNATION, GEOLOCATION, DC CAPACITY RATING (MW), COMMISSIONING EPOCH.
       </InfoBox>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[
-          { value: "existing", label: "Use existing plant", desc: "Add devices to a plant already in the system", icon: Building2 },
-          { value: "new",      label: "Create new plant",   desc: "Register a brand-new installation site",    icon: Plus },
+          { value: "existing", label: "LINK EXISTING ZONE", desc: "ATTACH TO PRE-REGISTERED PLANT", icon: Building2 },
+          { value: "new",      label: "INITIALIZE NEW ZONE",   desc: "CREATE NEW PHYSICAL INSTALLATION",    icon: Plus },
         ].map((opt) => (
           <button
             key={opt.value}
             onClick={() => update({ plantChoice: opt.value as "existing" | "new" })}
-            className={`rounded-xl border-2 p-4 text-left transition-all ${
+            className={`border p-5 text-left transition-all relative group overflow-hidden ${
               state.plantChoice === opt.value
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-muted-foreground/30"
+                ? "border-brand bg-brand/5 shadow-[0_0_15px_rgba(0,255,170,0.1)]"
+                : "border-border/50 bg-black/40 hover:border-brand/50 hover:bg-brand/5"
             }`}
           >
-            <opt.icon className={`h-5 w-5 mb-2 ${state.plantChoice === opt.value ? "text-primary" : "text-muted-foreground"}`} />
-            <div className="font-medium text-sm">{opt.label}</div>
-            <div className="text-xs text-muted-foreground mt-0.5">{opt.desc}</div>
+            <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${state.plantChoice === opt.value ? "bg-brand" : "bg-border/50 group-hover:bg-brand/50"}`} />
+            <opt.icon className={`h-6 w-6 mb-3 ${state.plantChoice === opt.value ? "text-brand drop-shadow-[0_0_8px_rgba(0,255,170,0.5)]" : "text-muted-foreground"}`} />
+            <div className={`font-mono text-sm uppercase tracking-widest mb-2 ${state.plantChoice === opt.value ? "text-foreground" : "text-foreground/80"}`}>{opt.label}</div>
+            <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider leading-relaxed">{opt.desc}</div>
           </button>
         ))}
       </div>
 
       {state.plantChoice === "existing" && (
-        <div>
-          <Label>Select plant</Label>
+        <div className="border border-border/50 bg-black/40 p-5 relative">
+          <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
+          <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2 block">Target Zone Registry</Label>
           {plants.length === 0 ? (
-            <p className="text-sm text-muted-foreground mt-2">No plants registered yet. Create a new plant first.</p>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-status-warning mt-2">REGISTRY EMPTY. INITIALIZE A NEW ZONE FIRST.</p>
           ) : (
             <Select value={state.existingPlantId} onValueChange={(v) => update({ existingPlantId: v })}>
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Choose a plant…" /></SelectTrigger>
-              <SelectContent>
+              <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 text-brand"><SelectValue placeholder="QUERY REGISTRY..." /></SelectTrigger>
+              <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
                 {plants.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
-                    {p.name}{p.location ? ` — ${p.location}` : ""}
+                    {p.name}{p.location ? ` // ${p.location}` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -165,64 +174,61 @@ function StepPlant({ state, update }: { state: WizardState; update: (p: Partial<
       )}
 
       {state.plantChoice === "new" && (
-        <div className="space-y-4">
+        <div className="space-y-5 border border-border/50 bg-black/40 p-6 relative">
+          <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
           {/* Name + Location */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="sm:col-span-2">
-              <Label>Plant Name <span className="text-red-400">*</span></Label>
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Zone Designation <span className="text-status-fault">*</span></Label>
               <Input
-                className="mt-1"
-                placeholder="e.g. Rajasthan Solar Park I"
+                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-foreground"
+                placeholder="RAJASTHAN SOLAR PARK I"
                 value={state.newPlantName}
                 onChange={(e) => update({ newPlantName: e.target.value })}
               />
-              <p className="text-xs text-muted-foreground mt-1">Use the official site name so it matches your O&amp;M records.</p>
             </div>
             <div className="sm:col-span-2">
-              <Label className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> Location</Label>
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><MapPin className="h-3.5 w-3.5 text-brand" /> Geolocation</Label>
               <Input
-                className="mt-1"
-                placeholder="e.g. Jaisalmer, Rajasthan  or  26.9124° N, 70.9122° E"
+                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-brand/80"
+                placeholder="26.9124 N, 70.9122 E"
                 value={state.newPlantLocation}
                 onChange={(e) => update({ newPlantLocation: e.target.value })}
               />
-              <p className="text-xs text-muted-foreground mt-1">City/state or GPS coordinates — used for display and solar noon calculation.</p>
             </div>
           </div>
 
           {/* Capacity + Tracker + Year */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             <div>
-              <Label className="flex items-center gap-1.5"><Gauge className="h-3.5 w-3.5" /> Capacity (MW) <span className="text-red-400">*</span></Label>
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><Gauge className="h-3.5 w-3.5 text-brand" /> Rating (MW) <span className="text-status-fault">*</span></Label>
               <Input
-                className="mt-1"
+                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-foreground font-bold"
                 type="number"
                 min="0.1"
                 step="0.5"
-                placeholder="e.g. 50"
+                placeholder="50"
                 value={state.newPlantCapacityMw}
                 onChange={(e) => update({ newPlantCapacityMw: e.target.value })}
               />
-              <p className="text-xs text-muted-foreground mt-1">Total DC installed capacity.</p>
             </div>
             <div>
-              <Label className="flex items-center gap-1.5"><Sun className="h-3.5 w-3.5" /> Tracker type <span className="text-red-400">*</span></Label>
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><Sun className="h-3.5 w-3.5 text-brand" /> Tracker Mode <span className="text-status-fault">*</span></Label>
               <Select
                 value={state.newPlantTrackerType}
                 onValueChange={(v) => update({ newPlantTrackerType: v })}
               >
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Select…" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fixed_tilt">Fixed Tilt</SelectItem>
-                  <SelectItem value="single_axis_tracker">Single Axis Tracker</SelectItem>
+                <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 text-foreground"><SelectValue placeholder="SELECT..." /></SelectTrigger>
+                <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
+                  <SelectItem value="fixed_tilt">FIXED TILT</SelectItem>
+                  <SelectItem value="single_axis_tracker">SINGLE AXIS</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">Affects yield simulation.</p>
             </div>
             <div>
-              <Label className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> Commissioned year</Label>
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><Calendar className="h-3.5 w-3.5 text-brand" /> Commission Epoch</Label>
               <Input
-                className="mt-1"
+                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-foreground"
                 type="number"
                 min="2000"
                 max={new Date().getFullYear()}
@@ -235,33 +241,32 @@ function StepPlant({ state, update }: { state: WizardState; update: (p: Partial<
 
           {/* Timezone */}
           <div className="sm:w-1/2">
-            <Label>Timezone (UTC offset)</Label>
+            <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Timezone Vector (UTC)</Label>
             <Select
               value={state.newPlantTimezoneOffset}
               onValueChange={(v) => update({ newPlantTimezoneOffset: v })}
             >
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Select timezone…" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5.5">UTC+5:30 — India (IST)</SelectItem>
-                <SelectItem value="0">UTC+0 — UK / West Africa</SelectItem>
-                <SelectItem value="1">UTC+1 — Central Europe</SelectItem>
-                <SelectItem value="2">UTC+2 — East Europe / South Africa</SelectItem>
-                <SelectItem value="3">UTC+3 — East Africa / Arabia</SelectItem>
-                <SelectItem value="4">UTC+4 — Gulf / UAE</SelectItem>
-                <SelectItem value="6">UTC+6 — Bangladesh</SelectItem>
-                <SelectItem value="7">UTC+7 — Thailand / Vietnam</SelectItem>
-                <SelectItem value="8">UTC+8 — China / Malaysia / Singapore</SelectItem>
-                <SelectItem value="-5">UTC-5 — Eastern US / Colombia</SelectItem>
-                <SelectItem value="-6">UTC-6 — Central US</SelectItem>
-                <SelectItem value="-7">UTC-7 — Mountain US</SelectItem>
-                <SelectItem value="-8">UTC-8 — Pacific US</SelectItem>
+              <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 text-foreground"><SelectValue placeholder="SELECT..." /></SelectTrigger>
+              <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
+                <SelectItem value="5.5">UTC+5:30 // IST</SelectItem>
+                <SelectItem value="0">UTC+0 // GMT/WET</SelectItem>
+                <SelectItem value="1">UTC+1 // CET</SelectItem>
+                <SelectItem value="2">UTC+2 // EET/SAST</SelectItem>
+                <SelectItem value="3">UTC+3 // EAT/AST</SelectItem>
+                <SelectItem value="4">UTC+4 // GST</SelectItem>
+                <SelectItem value="6">UTC+6 // BST</SelectItem>
+                <SelectItem value="7">UTC+7 // ICT</SelectItem>
+                <SelectItem value="8">UTC+8 // CST/SGT</SelectItem>
+                <SelectItem value="-5">UTC-5 // EST</SelectItem>
+                <SelectItem value="-6">UTC-6 // CST</SelectItem>
+                <SelectItem value="-7">UTC-7 // MST</SelectItem>
+                <SelectItem value="-8">UTC-8 // PST</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground mt-1">Used to align solar irradiance and yield calculations to local noon.</p>
           </div>
 
           <TipBox>
-            Inverter count and ratings are estimated automatically from capacity. You can fine-tune these later from the Devices page.
+            HARDWARE TOPOLOGY IS AUTOGENERATED FROM RATING. MANUAL OVERRIDES AVAILABLE IN PHASE 3.
           </TipBox>
         </div>
       )}
@@ -292,41 +297,45 @@ function StepTemplates({ state, update }: { state: WizardState; update: (p: Part
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Step 2 — Select device templates</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Templates define the make/model and communication protocol for each type of equipment on your site. Select every model you have installed.
+        <h2 className="text-xl font-mono uppercase tracking-widest text-foreground/90 flex items-center gap-3">
+          <BookOpen className="h-5 w-5 text-brand" />
+          HARDWARE PROFILE SELECTION
+        </h2>
+        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2">
+          LINK ACQUISITION TEMPLATES FOR TARGET HARDWARE MANUFACTURES.
         </p>
       </div>
 
       <InfoBox>
-        <strong>What is a template?</strong> It's a reusable definition for a device model — manufacturer, model name, and the protocol it uses (Modbus, MQTT, OPC-UA, etc.). In the next step you'll create one device entry per physical unit, based on these templates.
+        TEMPLATES ENCODE REGISTER MAPS AND PROTOCOL DIRECTIVES. MULTIPLE TEMPLATES MAY BE MIXED WITHIN A SINGLE TARGET ZONE TO ACCOMMODATE HETEROGENEOUS HARDWARE DEPLOYMENTS.
       </InfoBox>
 
-      <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
+      <div className="space-y-5 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
         {Object.entries(byProtocol).map(([proto, group]) => (
-          <div key={proto}>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-1">{proto}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div key={proto} className="border border-border/50 bg-black/40 p-4">
+            <p className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-foreground/50 mb-4 border-b border-border/50 pb-2">{proto}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {group.map((t) => {
                 const selected = state.selectedTemplateIds.includes(t.id);
                 return (
                   <button
                     key={t.id}
                     onClick={() => toggle(t.id)}
-                    className={`rounded-lg border-2 p-3 text-left transition-all flex items-start gap-3 ${
-                      selected ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
+                    className={`border p-3 text-left transition-all flex items-start gap-4 relative group ${
+                      selected ? "border-brand bg-brand/5" : "border-border/50 bg-black/60 hover:border-brand/30 hover:bg-brand/5"
                     }`}
                   >
-                    <div className={`mt-0.5 h-4 w-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                      selected ? "border-primary bg-primary" : "border-muted-foreground/40"
+                    <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${selected ? "bg-brand shadow-[0_0_10px_rgba(0,255,170,0.5)]" : "bg-transparent group-hover:bg-brand/30"}`} />
+                    <div className={`mt-0.5 h-4 w-4 border flex items-center justify-center flex-shrink-0 transition-colors ${
+                      selected ? "border-brand bg-brand/20 text-brand shadow-[0_0_5px_rgba(0,255,170,0.5)]" : "border-border/50 text-transparent"
                     }`}>
-                      {selected && <CheckCircle2 className="h-2.5 w-2.5 text-primary-foreground" />}
+                      <CheckCircle2 className="h-3 w-3" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium">{t.manufacturer}</div>
-                      <div className="text-xs text-muted-foreground">{t.model}</div>
+                      <div className={`font-mono text-xs uppercase tracking-widest font-bold ${selected ? "text-foreground" : "text-foreground/80"}`}>{t.manufacturer}</div>
+                      <div className={`font-mono text-[9px] uppercase tracking-widest mt-1 ${selected ? "text-brand" : "text-muted-foreground"}`}>{t.model}</div>
                     </div>
                   </button>
                 );
@@ -337,13 +346,13 @@ function StepTemplates({ state, update }: { state: WizardState; update: (p: Part
       </div>
 
       {state.selectedTemplateIds.length > 0 && (
-        <div className="rounded-lg bg-primary/5 border border-primary/20 px-3.5 py-2.5 text-sm text-primary font-medium">
-          ✓ {state.selectedTemplateIds.length} template{state.selectedTemplateIds.length !== 1 ? "s" : ""} selected — continue to add individual device units
+        <div className="border border-status-normal/30 bg-status-normal/5 px-4 py-3 font-mono text-[10px] uppercase tracking-widest text-status-normal flex items-center gap-3">
+          <CheckCircle2 className="h-4 w-4" /> {state.selectedTemplateIds.length} PROFILES LOADED TO BUFFER. PROCEED TO INSTANTIATION.
         </div>
       )}
 
       <TipBox>
-        Don't see your device model? You can add custom templates from <strong>Settings → Device Templates</strong> after completing this wizard.
+        PROPRIETARY HARDWARE NOT LISTED? CUSTOM TEMPLATES CAN BE AUTHORED VIA CONFIGURATION &rarr; TEMPLATES POST-DEPLOYMENT.
       </TipBox>
     </div>
   );
@@ -380,37 +389,40 @@ function StepDevices({ state, update, templates }: {
   };
 
   const PROTO_HELP: Record<string, string> = {
-    modbus_tcp: "Provide the PLC/inverter's LAN IP and Modbus TCP port (default 502).",
-    modbus:     "Provide the PLC/inverter's LAN IP and Modbus TCP port (default 502).",
-    mqtt:       "Point to your MQTT broker URL and the topic this device publishes to.",
-    http:       "Provide the device's REST API base URL and port.",
-    opcua:      "Provide the OPC-UA server endpoint IP and port (default 4840).",
-    bacnet:     "Provide the BACnet/IP device address and unique device instance number.",
-    websocket:  "Provide the full WebSocket URL the device streams data on.",
+    modbus_tcp: "ENTER PLC/INVERTER LAN IP AND MODBUS TCP PORT (DEF: 502).",
+    modbus:     "ENTER PLC/INVERTER LAN IP AND MODBUS TCP PORT (DEF: 502).",
+    mqtt:       "DEFINE BROKER URL AND TOPIC PUBLICATION VECTOR.",
+    http:       "DEFINE TARGET REST API URL AND PORT.",
+    opcua:      "DEFINE OPC-UA SERVER ENDPOINT IP AND PORT (DEF: 4840).",
+    bacnet:     "DEFINE BACNET/IP ADDRESS AND UNIQUE DEVICE INSTANCE NUMBER.",
+    websocket:  "DEFINE FULL WSS STREAM TARGET URL.",
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Step 3 — Register individual devices</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Add one entry per <em>physical unit</em>. Give each a unique name and its network address so the SCADA driver can connect to it.
+        <h2 className="text-xl font-mono uppercase tracking-widest text-foreground/90 flex items-center gap-3">
+          <Cpu className="h-5 w-5 text-brand" />
+          HARDWARE INSTANTIATION
+        </h2>
+        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2">
+          PROVISION INDIVIDUAL UNITS. ASSIGN NETWORK VECTORS FOR TELEMETRY DRIVERS.
         </p>
       </div>
 
       <InfoBox>
-        Have your site network diagram or IP allocation sheet open. You'll need the IP address (and port) for each inverter, PLC, meter, or weather station.
+        NETWORK ADDRESSABILITY REQUIRES STRICT ACCURACY. VERIFY IP ALLOCATIONS PER WIRING DIAGRAM.
       </InfoBox>
 
       {/* Add buttons per template */}
-      <div>
-        <p className="text-xs font-medium text-muted-foreground mb-2">Click a button to add a device of that type:</p>
-        <div className="flex flex-wrap gap-2">
+      <div className="border border-border/50 bg-black/40 p-4">
+        <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-brand mb-3">INSTANTIATE FROM PROFILES:</p>
+        <div className="flex flex-wrap gap-3">
           {state.selectedTemplateIds.map((tid) => {
             const tmpl = templates.find((t) => t.id === tid);
             if (!tmpl) return null;
             return (
-              <Button key={tid} variant="outline" size="sm" className="gap-1.5" onClick={() => addDevice(tid)}>
+              <Button key={tid} variant="outline" size="sm" className="gap-2 rounded-none border-brand/50 text-brand bg-brand/5 hover:bg-brand/20 font-mono text-[10px] uppercase tracking-widest" onClick={() => addDevice(tid)}>
                 <Plus className="h-3.5 w-3.5" /> {tmpl.manufacturer} {tmpl.model}
               </Button>
             );
@@ -419,119 +431,120 @@ function StepDevices({ state, update, templates }: {
       </div>
 
       {state.devices.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border p-8 text-center">
-          <Cpu className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-40" />
-          <p className="text-sm text-muted-foreground">No devices added yet. Click a button above to register your first unit.</p>
+        <div className="border border-dashed border-border/50 p-12 text-center bg-black/20">
+          <Cpu className="h-8 w-8 text-brand/30 mx-auto mb-4 animate-pulse" />
+          <p className="text-sm font-mono uppercase tracking-widest text-foreground/80">NO UNITS INSTANTIATED</p>
+          <p className="text-[10px] font-mono text-muted-foreground mt-2 uppercase tracking-widest">CLICK A PROFILE ABOVE TO BEGIN INSTANTIATION.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {state.devices.map((dev, i) => {
             const tmpl = templates.find((t) => t.id === dev.templateId);
             const proto = dev.protocol.toLowerCase();
             const helpText = PROTO_HELP[proto] ?? "";
             return (
-              <div key={i} className="rounded-lg border border-border p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <div key={i} className="border border-border/50 bg-black/40 relative group">
+                <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-brand transition-colors" />
+                <div className="flex items-center justify-between border-b border-border/50 bg-black/60 px-5 py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs uppercase tracking-widest font-bold text-foreground/90">
                       {tmpl?.manufacturer} {tmpl?.model}
                     </span>
-                    <span className="ml-2 text-[10px] rounded px-1.5 py-0.5 bg-muted text-muted-foreground">#{i + 1}</span>
+                    <span className="font-mono text-[9px] bg-brand/10 text-brand border border-brand/20 px-2 py-0.5">UNIT_ID {String(i + 1).padStart(2, '0')}</span>
                   </div>
-                  <button onClick={() => removeDevice(i)} className="text-muted-foreground hover:text-red-400 transition-colors p-1">
-                    <Trash2 className="h-3.5 w-3.5" />
+                  <button onClick={() => removeDevice(i)} className="text-muted-foreground hover:text-status-fault hover:bg-status-fault/10 p-2 transition-colors">
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
 
-                {helpText && (
-                  <p className="text-xs text-muted-foreground border-l-2 border-primary/30 pl-2">{helpText}</p>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="sm:col-span-2">
-                    <Label>Device Name <span className="text-red-400">*</span></Label>
-                    <Input
-                      className="mt-1"
-                      placeholder={`e.g. ${tmpl?.manufacturer ?? "Device"}-INV-01`}
-                      value={dev.name}
-                      onChange={(e) => updateDevice(i, { name: e.target.value })}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">Use a name that matches your wiring diagram labels.</p>
-                  </div>
-
-                  {(proto === "modbus_tcp" || proto === "modbus" || proto === "http" || proto === "opcua" || proto === "bacnet") && (
-                    <>
-                      <div>
-                        <Label>IP Address</Label>
-                        <Input
-                          className="mt-1"
-                          placeholder="192.168.1.10"
-                          value={dev.ipAddress ?? ""}
-                          onChange={(e) => updateDevice(i, { ipAddress: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <Label>Port</Label>
-                        <Input
-                          className="mt-1"
-                          type="number"
-                          placeholder={proto === "bacnet" ? "47808" : proto === "opcua" ? "4840" : "502"}
-                          value={dev.port ?? ""}
-                          onChange={(e) => updateDevice(i, { port: e.target.value })}
-                        />
-                      </div>
-                    </>
+                <div className="p-5 space-y-4">
+                  {helpText && (
+                    <p className="text-[9px] font-mono text-muted-foreground border-l-2 border-brand/30 pl-3 uppercase tracking-widest">{helpText}</p>
                   )}
 
-                  {proto === "bacnet" && (
-                    <div>
-                      <Label>Device Instance <span className="text-red-400">*</span></Label>
-                      <Input
-                        className="mt-1"
-                        type="number"
-                        placeholder="1001"
-                        value={dev.bacnetDeviceInstance ?? ""}
-                        onChange={(e) => updateDevice(i, { bacnetDeviceInstance: e.target.value })}
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">Unique BACnet object ID for this device.</p>
-                    </div>
-                  )}
-
-                  {proto === "mqtt" && (
-                    <>
-                      <div className="sm:col-span-2">
-                        <Label>Broker URL</Label>
-                        <Input
-                          className="mt-1"
-                          placeholder="mqtt://192.168.1.50:1883"
-                          value={dev.brokerUrl ?? ""}
-                          onChange={(e) => updateDevice(i, { brokerUrl: e.target.value })}
-                        />
-                      </div>
-                      <div className="sm:col-span-2">
-                        <Label>Topic</Label>
-                        <Input
-                          className="mt-1"
-                          placeholder="plant/site/inverter01/data"
-                          value={dev.topic ?? ""}
-                          onChange={(e) => updateDevice(i, { topic: e.target.value })}
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">The MQTT topic this device publishes telemetry to.</p>
-                      </div>
-                    </>
-                  )}
-
-                  {proto === "websocket" && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div className="sm:col-span-2">
-                      <Label>WebSocket URL</Label>
+                      <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Logical Identifier <span className="text-status-fault">*</span></Label>
                       <Input
-                        className="mt-1"
-                        placeholder="ws://192.168.1.30:8080/data"
-                        value={dev.url ?? ""}
-                        onChange={(e) => updateDevice(i, { url: e.target.value })}
+                        className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-foreground uppercase"
+                        placeholder={`${tmpl?.manufacturer ?? "DEVICE"}_INV_${String(i + 1).padStart(2, '0')}`}
+                        value={dev.name}
+                        onChange={(e) => updateDevice(i, { name: e.target.value })}
                       />
                     </div>
-                  )}
+
+                    {(proto === "modbus_tcp" || proto === "modbus" || proto === "http" || proto === "opcua" || proto === "bacnet") && (
+                      <>
+                        <div>
+                          <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Network IP</Label>
+                          <Input
+                            className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-brand"
+                            placeholder="192.168.1.10"
+                            value={dev.ipAddress ?? ""}
+                            onChange={(e) => updateDevice(i, { ipAddress: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">TCP Port</Label>
+                          <Input
+                            className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
+                            type="number"
+                            placeholder={proto === "bacnet" ? "47808" : proto === "opcua" ? "4840" : "502"}
+                            value={dev.port ?? ""}
+                            onChange={(e) => updateDevice(i, { port: e.target.value })}
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {proto === "bacnet" && (
+                      <div>
+                        <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Device Instance ID <span className="text-status-fault">*</span></Label>
+                        <Input
+                          className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-brand"
+                          type="number"
+                          placeholder="1001"
+                          value={dev.bacnetDeviceInstance ?? ""}
+                          onChange={(e) => updateDevice(i, { bacnetDeviceInstance: e.target.value })}
+                        />
+                      </div>
+                    )}
+
+                    {proto === "mqtt" && (
+                      <>
+                        <div className="sm:col-span-2">
+                          <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Broker Route</Label>
+                          <Input
+                            className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-foreground"
+                            placeholder="mqtt://192.168.1.50:1883"
+                            value={dev.brokerUrl ?? ""}
+                            onChange={(e) => updateDevice(i, { brokerUrl: e.target.value })}
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Publication Topic</Label>
+                          <Input
+                            className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-brand"
+                            placeholder="plant/site/inverter01/data"
+                            value={dev.topic ?? ""}
+                            onChange={(e) => updateDevice(i, { topic: e.target.value })}
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {proto === "websocket" && (
+                      <div className="sm:col-span-2">
+                        <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Target WebSocket URL</Label>
+                        <Input
+                          className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-brand"
+                          placeholder="ws://192.168.1.30:8080/data"
+                          value={dev.url ?? ""}
+                          onChange={(e) => updateDevice(i, { url: e.target.value })}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -541,7 +554,7 @@ function StepDevices({ state, update, templates }: {
 
       {state.devices.length > 0 && (
         <TipBox>
-          All {state.devices.length} device{state.devices.length !== 1 ? "s" : ""} will be registered in the next step and their connections tested immediately. Devices that fail the test will retry automatically — you won't lose them.
+          BUFFER CONTAINS {state.devices.length} INSTANTIATION{state.devices.length !== 1 ? "S" : ""}. PROCEED TO PHASE 4 FOR DIAGNOSTIC VERIFICATION BEFORE COMMIT.
         </TipBox>
       )}
     </div>

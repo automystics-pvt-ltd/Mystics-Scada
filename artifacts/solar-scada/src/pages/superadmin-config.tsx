@@ -121,13 +121,13 @@ export default function SuperAdminConfig() {
         <div className="space-y-6">
 
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between border-b border-border/50 pb-4 relative"><div className="absolute bottom-0 left-0 w-1/4 h-[1px] bg-accent-brand shadow-[0_0_15px_rgba(0,195,255,0.8)]" />
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Settings className="h-6 w-6 text-primary" />
+              <h1 className="font-mono text-2xl font-bold flex items-center gap-3 text-foreground uppercase tracking-widest">
+                <Settings className="h-6 w-6 text-accent-brand" />
                 System Configuration
               </h1>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-1">
                 Platform-wide security, email, and operational settings
               </p>
             </div>
@@ -138,14 +138,14 @@ export default function SuperAdminConfig() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 border-b border-border">
+          <div className="flex gap-1 border-b border-border/50">
             {TABS.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex items-center gap-1.5 px-4 py-2 font-mono text-[9px] uppercase tracking-widest font-bold text-foreground border-b-2 transition-colors ${
                   tab === t.id
-                    ? "border-primary text-primary"
+                    ? "border-accent-brand text-accent-brand"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -158,7 +158,7 @@ export default function SuperAdminConfig() {
           {isLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-14 bg-muted animate-pulse rounded-xl" />
+                <div key={i} className="h-14 bg-white/10 animate-pulse rounded-none-none" />
               ))}
             </div>
           ) : (
@@ -166,9 +166,9 @@ export default function SuperAdminConfig() {
               {/* ── Security Policy ── */}
               {tab === "security" && sec && (
                 <div className="space-y-4">
-                  <div className="border border-border rounded-xl p-5 bg-card space-y-5">
-                    <h2 className="text-sm font-semibold flex items-center gap-2">
-                      <Lock className="h-4 w-4 text-primary" /> Session &amp; Authentication
+                  <div className="border border-border/50 rounded-none-none p-5 bg-black/40 space-y-5">
+                    <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
+                      <Lock className="h-4 w-4 text-accent-brand" /> Session &amp; Authentication
                     </h2>
 
                     {[
@@ -181,25 +181,25 @@ export default function SuperAdminConfig() {
                     ].map(({ label, key, min, max, desc }) => (
                       <div key={key}>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-sm font-medium">{label}</label>
+                          <label className="font-mono text-[9px] uppercase tracking-widest font-bold text-foreground">{label}</label>
                           <div className="flex items-center gap-2">
                             <Input
                               type="number"
                               min={min} max={max}
                               value={sec[key] as number}
                               onChange={(e) => updateSecurity(key, parseInt(e.target.value) || min)}
-                              className="w-20 h-7 text-sm text-right font-mono"
+                              className="w-20 h-7 font-mono text-[9px] uppercase tracking-widest text-right font-mono"
                             />
                           </div>
                         </div>
-                        <p className="text-xs text-muted-foreground">{desc}</p>
+                        <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground">{desc}</p>
                       </div>
                     ))}
                   </div>
 
-                  <div className="border border-border rounded-xl p-5 bg-card space-y-4">
-                    <h2 className="text-sm font-semibold flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-primary" /> Advanced Security
+                  <div className="border border-border/50 rounded-none-none p-5 bg-black/40 space-y-4">
+                    <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-accent-brand" /> Advanced Security
                     </h2>
 
                     {[
@@ -210,16 +210,16 @@ export default function SuperAdminConfig() {
                     ].map(({ label, key, desc }) => (
                       <div key={key} className="flex items-center justify-between gap-4">
                         <div>
-                          <p className="text-sm font-medium">{label}</p>
-                          <p className="text-xs text-muted-foreground">{desc}</p>
+                          <p className="font-mono text-[9px] uppercase tracking-widest font-bold text-foreground">{label}</p>
+                          <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground">{desc}</p>
                         </div>
                         <button
                           onClick={() => updateSecurity(key, !sec[key])}
-                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0 ${
-                            sec[key] ? "bg-primary" : "bg-muted"
+                          className={`relative inline-flex h-5 w-9 items-center rounded-none-none transition-colors flex-shrink-0 ${
+                            sec[key] ? "bg-accent-brand" : "bg-white/10"
                           }`}
                         >
-                          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                          <span className={`inline-block h-3.5 w-3.5 transform rounded-none-none bg-white transition-transform ${
                             sec[key] ? "translate-x-4" : "translate-x-1"
                           }`} />
                         </button>
@@ -233,10 +233,10 @@ export default function SuperAdminConfig() {
               {tab === "smtp" && (
                 <div className="space-y-4">
                   {/* Status card */}
-                  <div className="border border-border rounded-xl p-5 bg-card">
+                  <div className="border border-border/50 rounded-none-none p-5 bg-black/40">
                     <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-sm font-semibold flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-primary" /> SMTP Configuration
+                      <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-accent-brand" /> SMTP Configuration
                       </h2>
                       <Badge
                         variant="outline"
@@ -257,9 +257,9 @@ export default function SuperAdminConfig() {
                         { label: "From",     value: smtp?.from },
                         { label: "User",     value: showSmtpUser ? smtp?.user : smtp?.user ? "••••••••" : null },
                       ].map(({ label, value }) => (
-                        <div key={label} className="bg-muted/30 rounded-lg px-3 py-2">
+                        <div key={label} className="bg-black/40 rounded-none-none px-3 py-2">
                           <p className="text-[10px] text-muted-foreground mb-0.5">{label}</p>
-                          <p className="text-sm font-mono truncate">{value ?? <span className="text-muted-foreground italic">not set</span>}</p>
+                          <p className="font-mono text-[9px] uppercase tracking-widest font-mono truncate">{value ?? <span className="text-muted-foreground italic">not set</span>}</p>
                         </div>
                       ))}
                     </div>
@@ -273,15 +273,15 @@ export default function SuperAdminConfig() {
                     </div>
                   </div>
 
-                  <div className="border border-border rounded-xl p-5 bg-card space-y-3">
-                    <h2 className="text-sm font-semibold">Send Test Email</h2>
-                    <p className="text-xs text-muted-foreground">
+                  <div className="border border-border/50 rounded-none-none p-5 bg-black/40 space-y-3">
+                    <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground">Send Test Email</h2>
+                    <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground">
                       Verifies end-to-end SMTP delivery. Sends a test message to the specified address.
                     </p>
                     <TestEmailSender smtpEnabled={smtp?.enabled ?? false} />
                   </div>
 
-                  <div className="flex items-start gap-2 px-4 py-3 rounded-lg bg-blue-500/5 border border-blue-500/20 text-xs text-blue-400">
+                  <div className="flex items-start gap-2 px-4 py-3 rounded-none-none bg-blue-500/5 border border-blue-500/20 text-xs text-blue-400">
                     <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                     SMTP credentials are set via environment variables (SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM)
                     and cannot be edited through this UI. Update them in your server's .env file.
@@ -291,9 +291,9 @@ export default function SuperAdminConfig() {
 
               {/* ── Rate Limits ── */}
               {tab === "rate-limits" && rl && (
-                <div className="border border-border rounded-xl p-5 bg-card space-y-5">
-                  <h2 className="text-sm font-semibold flex items-center gap-2">
-                    <Gauge className="h-4 w-4 text-primary" /> API Rate Limiting
+                <div className="border border-border/50 rounded-none-none p-5 bg-black/40 space-y-5">
+                  <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
+                    <Gauge className="h-4 w-4 text-accent-brand" /> API Rate Limiting
                   </h2>
 
                   {[
@@ -306,20 +306,20 @@ export default function SuperAdminConfig() {
                   ].map(({ label, key, min, max, desc }) => (
                     <div key={key}>
                       <div className="flex items-center justify-between mb-1">
-                        <label className="text-sm font-medium">{label}</label>
+                        <label className="font-mono text-[9px] uppercase tracking-widest font-bold text-foreground">{label}</label>
                         <Input
                           type="number"
                           min={min} max={max}
                           value={rl[key]}
                           onChange={(e) => updateRl(key, parseInt(e.target.value) || min)}
-                          className="w-24 h-7 text-sm text-right font-mono"
+                          className="w-24 h-7 font-mono text-[9px] uppercase tracking-widest text-right font-mono"
                         />
                       </div>
-                      <p className="text-xs text-muted-foreground">{desc}</p>
+                      <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground">{desc}</p>
                     </div>
                   ))}
 
-                  <div className="flex items-start gap-2 px-4 py-3 rounded-lg bg-status-warning/5 border border-status-warning/20 text-xs text-status-warning">
+                  <div className="flex items-start gap-2 px-4 py-3 rounded-none-none bg-status-warning/5 border border-status-warning/20 text-xs text-status-warning">
                     <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                     Rate limit enforcement requires a Redis-backed middleware. These values are stored as
                     platform configuration and will be applied when rate limiting middleware is activated.
@@ -330,16 +330,16 @@ export default function SuperAdminConfig() {
               {/* ── IP Whitelist ── */}
               {tab === "ip-whitelist" && (
                 <div className="space-y-4">
-                  <div className="border border-border rounded-xl p-5 bg-card space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-sm font-semibold flex items-center gap-2">
-                        <Network className="h-4 w-4 text-primary" /> IP Whitelist
+                  <div className="border border-border/50 rounded-none-none p-5 bg-black/40 space-y-4">
+                    <div className="flex items-center justify-between border-b border-border/50 pb-4 relative"><div className="absolute bottom-0 left-0 w-1/4 h-[1px] bg-accent-brand shadow-[0_0_15px_rgba(0,195,255,0.8)]" />
+                      <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
+                        <Network className="h-4 w-4 text-accent-brand" /> IP Whitelist
                       </h2>
                       <Badge variant="outline" className="text-[10px]">
                         {ipList.length} {ipList.length === 1 ? "entry" : "entries"}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground">
                       When non-empty, only requests from whitelisted IPs can access the platform.
                       Leave empty to allow all IPs.
                     </p>
@@ -350,7 +350,7 @@ export default function SuperAdminConfig() {
                         value={newIp}
                         onChange={(e) => setNewIp(e.target.value)}
                         placeholder="192.168.1.0/24 or 203.0.113.1"
-                        className="text-sm font-mono"
+                        className="font-mono text-[9px] uppercase tracking-widest font-mono"
                         onKeyDown={(e) => e.key === "Enter" && addIp()}
                       />
                       <Button size="sm" onClick={addIp} className="gap-1.5 flex-shrink-0">
@@ -360,17 +360,17 @@ export default function SuperAdminConfig() {
 
                     {/* IP list */}
                     {ipList.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground text-sm border border-dashed border-border rounded-lg">
+                      <div className="text-center py-8 text-muted-foreground font-mono text-[9px] uppercase tracking-widest border border-dashed border-border/50 rounded-none-none">
                         <Network className="h-8 w-8 mx-auto mb-2 opacity-20" />
                         No IP restrictions — all addresses are allowed
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {ipList.map((ip) => (
-                          <div key={ip} className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/30 border border-border/50">
+                          <div key={ip} className="flex items-center justify-between px-3 py-2 rounded-none-none bg-black/40 border border-border/50">
                             <div className="flex items-center gap-2">
                               <CheckCircle2 className="h-3.5 w-3.5 text-status-normal" />
-                              <span className="text-sm font-mono">{ip}</span>
+                              <span className="font-mono text-[9px] uppercase tracking-widest font-mono">{ip}</span>
                             </div>
                             <Button
                               variant="ghost" size="icon"
@@ -386,7 +386,7 @@ export default function SuperAdminConfig() {
                   </div>
 
                   {ipList.length > 0 && (
-                    <div className="flex items-start gap-2 px-4 py-3 rounded-lg bg-status-warning/5 border border-status-warning/20 text-xs text-status-warning">
+                    <div className="flex items-start gap-2 px-4 py-3 rounded-none-none bg-status-warning/5 border border-status-warning/20 text-xs text-status-warning">
                       <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                       Ensure your current IP is in the whitelist before saving to avoid locking yourself out.
                     </div>
@@ -436,7 +436,7 @@ function TestEmailSender({ smtpEnabled }: { smtpEnabled: boolean }) {
         onChange={(e) => setEmail(e.target.value)}
         placeholder="recipient@example.com"
         disabled={!smtpEnabled}
-        className="text-sm"
+        className="font-mono text-[9px] uppercase tracking-widest"
         onKeyDown={(e) => e.key === "Enter" && void sendTest()}
       />
       <Button

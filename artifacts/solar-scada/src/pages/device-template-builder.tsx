@@ -121,21 +121,21 @@ function FieldEditor({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{f.key ? "Edit Field" : "Add Field"}</DialogTitle>
+      <DialogContent className="max-w-2xl rounded-none border-border/50 bg-background/95 backdrop-blur-xl">
+        <DialogHeader className="border-b border-border/50 pb-4">
+          <DialogTitle className="font-mono uppercase tracking-widest text-brand">{f.key ? "MODIFY DATA POINT" : "ALLOCATE DATA POINT"}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="space-y-6 py-4">
           {/* Preset quick-fill */}
           <div>
-            <Label className="text-xs text-muted-foreground">Quick-fill from common parameters</Label>
-            <div className="flex flex-wrap gap-1.5 mt-1.5">
+            <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2 block">Quick-Fill Taxonomy</Label>
+            <div className="flex flex-wrap gap-2">
               {COMMON_PARAMS.slice(0, 8).map((p) => (
                 <button
                   key={p.key}
                   onClick={() => applyPreset(p)}
-                  className="text-[10px] px-2 py-1 rounded border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                  className="font-mono text-[10px] uppercase tracking-widest px-2 py-1 bg-black/40 border border-border/50 hover:border-brand/50 hover:text-brand hover:bg-brand/5 transition-colors"
                 >
                   {p.label}
                 </button>
@@ -143,31 +143,31 @@ function FieldEditor({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
-              <Label>Parameter Key <span className="text-red-400">*</span></Label>
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Telemetry Key <span className="text-status-fault">*</span></Label>
               <Input
-                className="mt-1 font-mono text-sm"
+                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
                 placeholder="ac_power_w"
                 value={f.key}
                 onChange={(e) => setF((v) => ({ ...v, key: e.target.value.toLowerCase().replace(/\s+/g, "_") }))}
               />
-              <p className="text-[10px] text-muted-foreground mt-0.5">snake_case identifier</p>
+              <p className="font-mono text-[9px] uppercase tracking-widest text-brand/70 mt-1">SNAKE_CASE_ID</p>
             </div>
             <div>
-              <Label>Display Label <span className="text-red-400">*</span></Label>
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Display Designation <span className="text-status-fault">*</span></Label>
               <Input
-                className="mt-1"
+                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 uppercase"
                 placeholder="AC Power"
                 value={f.label}
                 onChange={(e) => setF((v) => ({ ...v, label: e.target.value }))}
               />
             </div>
             <div>
-              <Label>Engineering Unit</Label>
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Engineering Unit</Label>
               <Input
-                className="mt-1"
-                placeholder="W, kWh, V, °C…"
+                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
+                placeholder="W, KWH, V, °C..."
                 value={f.unit}
                 onChange={(e) => setF((v) => ({ ...v, unit: e.target.value }))}
               />
@@ -175,9 +175,9 @@ function FieldEditor({
             {isModbus ? (
               <>
                 <div>
-                  <Label>Register Address <span className="text-red-400">*</span></Label>
+                  <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Register Address <span className="text-status-fault">*</span></Label>
                   <Input
-                    className="mt-1"
+                    className="rounded-none font-mono text-sm border-border/50 bg-black/40 text-status-warning focus-visible:border-brand/50"
                     type="number"
                     placeholder="30001"
                     value={f.address ?? ""}
@@ -185,26 +185,26 @@ function FieldEditor({
                   />
                 </div>
                 <div>
-                  <Label>Register Length</Label>
+                  <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Register Extent</Label>
                   <Select
                     value={String(f.length ?? 1)}
                     onValueChange={(v) => setF((prev) => ({ ...prev, length: Number(v) }))}
                   >
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 register (16-bit)</SelectItem>
-                      <SelectItem value="2">2 registers (32-bit)</SelectItem>
+                    <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
+                      <SelectItem value="1">1 REG (16-BIT)</SelectItem>
+                      <SelectItem value="2">2 REG (32-BIT)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Data Type</Label>
+                  <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Primitive Type</Label>
                   <Select
                     value={f.dataType ?? "UINT16"}
                     onValueChange={(v) => setF((prev) => ({ ...prev, dataType: v as FieldDef["dataType"] }))}
                   >
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 uppercase tracking-widest"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
                       {DATA_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -213,19 +213,19 @@ function FieldEditor({
             ) : isOpcua ? (
               <>
                 <div className="col-span-2">
-                  <Label>Node ID <span className="text-red-400">*</span></Label>
+                  <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Node ID <span className="text-status-fault">*</span></Label>
                   <Input
-                    className="mt-1 font-mono text-sm"
+                    className="rounded-none font-mono text-sm border-border/50 bg-black/40 text-brand focus-visible:border-brand/50"
                     placeholder="ns=2;i=1002"
                     value={f.nodeId ?? ""}
                     onChange={(e) => setF((v) => ({ ...v, nodeId: e.target.value }))}
                   />
-                  <p className="text-[10px] text-muted-foreground mt-0.5">OPC-UA NodeId of the variable to read</p>
+                  <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-1">TARGET OPC-UA NODE_ID</p>
                 </div>
                 <div>
-                  <Label>Sampling Interval (ms)</Label>
+                  <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Poll Rate (ms)</Label>
                   <Input
-                    className="mt-1"
+                    className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
                     type="number"
                     placeholder="1000"
                     value={f.samplingIntervalMs ?? ""}
@@ -236,21 +236,21 @@ function FieldEditor({
             ) : isBacnet ? (
               <>
                 <div>
-                  <Label>Object Type <span className="text-red-400">*</span></Label>
+                  <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Object Class <span className="text-status-fault">*</span></Label>
                   <Select
                     value={f.objectType ?? "analogInput"}
                     onValueChange={(v) => setF((prev) => ({ ...prev, objectType: v }))}
                   >
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 uppercase tracking-widest"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
                       {BACNET_OBJECT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Object Instance <span className="text-red-400">*</span></Label>
+                  <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Instance Index <span className="text-status-fault">*</span></Label>
                   <Input
-                    className="mt-1"
+                    className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
                     type="number"
                     placeholder="0"
                     value={f.objectInstance ?? ""}
@@ -258,13 +258,13 @@ function FieldEditor({
                   />
                 </div>
                 <div>
-                  <Label>Property</Label>
+                  <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Target Property</Label>
                   <Select
                     value={f.propertyId ?? "presentValue"}
                     onValueChange={(v) => setF((prev) => ({ ...prev, propertyId: v }))}
                   >
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 uppercase tracking-widest"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
                       {BACNET_PROPERTIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -272,20 +272,20 @@ function FieldEditor({
               </>
             ) : (
               <div className="col-span-2">
-                <Label>JSONPath / Field Key <span className="text-red-400">*</span></Label>
+                <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">JSON Selector <span className="text-status-fault">*</span></Label>
                 <Input
-                  className="mt-1 font-mono text-sm"
+                  className="rounded-none font-mono text-sm border-border/50 bg-black/40 text-brand focus-visible:border-brand/50"
                   placeholder="$.data.power or data.power"
                   value={f.jsonPath ?? ""}
                   onChange={(e) => setF((v) => ({ ...v, jsonPath: e.target.value }))}
                 />
-                <p className="text-[10px] text-muted-foreground mt-0.5">Path to this value in the response JSON</p>
+                <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-1">PAYLOAD EXTRACTION PATH</p>
               </div>
             )}
             <div>
-              <Label>Scale Factor (×)</Label>
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Multiplier Scale (×)</Label>
               <Input
-                className="mt-1"
+                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
                 type="number"
                 step="0.001"
                 placeholder="1"
@@ -294,9 +294,9 @@ function FieldEditor({
               />
             </div>
             <div>
-              <Label>Offset (+)</Label>
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Linear Offset (+)</Label>
               <Input
-                className="mt-1"
+                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
                 type="number"
                 step="0.001"
                 placeholder="0"
@@ -305,21 +305,21 @@ function FieldEditor({
               />
             </div>
             <div>
-              <Label>Alarm: High threshold</Label>
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block text-status-warning">HI-ALARM THRESHOLD</Label>
               <Input
-                className="mt-1"
+                className="rounded-none font-mono text-sm border-status-warning/30 bg-status-warning/5 focus-visible:border-status-warning/60 text-status-warning"
                 type="number"
-                placeholder="optional"
+                placeholder="OPTIONAL"
                 value={f.alarmHigh ?? ""}
                 onChange={(e) => setF((v) => ({ ...v, alarmHigh: e.target.value ? Number(e.target.value) : undefined }))}
               />
             </div>
             <div>
-              <Label>Alarm: Low threshold</Label>
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block text-status-fault">LO-ALARM THRESHOLD</Label>
               <Input
-                className="mt-1"
+                className="rounded-none font-mono text-sm border-status-fault/30 bg-status-fault/5 focus-visible:border-status-fault/60 text-status-fault"
                 type="number"
-                placeholder="optional"
+                placeholder="OPTIONAL"
                 value={f.alarmLow ?? ""}
                 onChange={(e) => setF((v) => ({ ...v, alarmLow: e.target.value ? Number(e.target.value) : undefined }))}
               />
@@ -327,13 +327,14 @@ function FieldEditor({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <DialogFooter className="gap-3 border-t border-border/50 pt-4">
+          <Button variant="outline" className="rounded-none font-mono text-[10px] uppercase tracking-widest border-border/50 hover:bg-white/5" onClick={onClose}>ABORT</Button>
           <Button
+            className="rounded-none bg-brand hover:bg-brand/80 text-black font-mono text-[10px] uppercase tracking-widest"
             onClick={() => { if (f.key && f.label) { onSave(f); onClose(); } }}
             disabled={!f.key || !f.label}
           >
-            {f.key ? "Save Field" : "Add Field"}
+            {f.key ? "COMMIT MODIFICATION" : "COMMIT ALLOCATION"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -441,171 +442,178 @@ export default function DeviceTemplateBuilderPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6 py-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/device-templates")}>
-            <ArrowLeft className="h-4 w-4" />
+        <div className="flex items-center gap-4 border-b border-border/50 pb-6">
+          <Button variant="ghost" size="icon" className="rounded-none hover:bg-brand/10 hover:text-brand" onClick={() => navigate("/device-templates")}>
+            <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">
-              {isEdit ? "Edit Template" : "Create Device Template"}
+            <h1 className="text-2xl font-mono uppercase tracking-widest text-foreground/90 flex items-center gap-3">
+              <Cpu className="h-5 w-5 text-brand" />
+              {isEdit ? "MODIFY PROFILE" : "AUTHOR PROFILE"}
             </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {isEdit ? "Update fields and configuration" : "Define registers, fields, and scaling for a new device type"}
+            <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-1">
+              {isEdit ? "ALTER DATA MAP & EXTRACTION PARAMS" : "INITIALIZE REGISTRY BINDINGS FOR NEW HARDWARE"}
             </p>
           </div>
         </div>
 
         {/* Template metadata */}
-        <div className="rounded-lg border border-border bg-card p-5 space-y-4">
-          <h2 className="text-sm font-semibold">Device Identity</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="border border-border/50 bg-card/40 backdrop-blur-md p-6 relative group">
+          <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-brand transition-colors" />
+          <h2 className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-foreground/50 mb-5">Hardware Identity</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
-              <Label>Manufacturer <span className="text-red-400">*</span></Label>
-              <Input className="mt-1" placeholder="Huawei, Sungrow, Custom…" value={manufacturer}
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Manufacturer <span className="text-status-fault">*</span></Label>
+              <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 uppercase" placeholder="HUAWEI, SUNGROW..." value={manufacturer}
                 onChange={(e) => setManufacturer(e.target.value)} />
             </div>
             <div>
-              <Label>Model / Series <span className="text-red-400">*</span></Label>
-              <Input className="mt-1" placeholder="SUN2000-50KTL, Custom Inverter…" value={model}
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Model Designation <span className="text-status-fault">*</span></Label>
+              <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 uppercase" placeholder="SUN2000-50KTL..." value={model}
                 onChange={(e) => setModel(e.target.value)} />
             </div>
             <div>
-              <Label>Protocol <span className="text-red-400">*</span></Label>
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Data Link Protocol <span className="text-status-fault">*</span></Label>
               <Select value={protocol} onValueChange={(v) => setProtocol(v as Protocol)}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 uppercase tracking-widest"><SelectValue /></SelectTrigger>
+                <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
                   {PROTOCOLS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Default Poll Interval (seconds)</Label>
-              <Input className="mt-1" type="number" min={5} max={3600} value={pollInterval}
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Acquisition Cycle (Sec)</Label>
+              <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50" type="number" min={5} max={3600} value={pollInterval}
                 onChange={(e) => setPollInterval(Number(e.target.value) || 30)} />
             </div>
             <div className="col-span-1 sm:col-span-2">
-              <Label>Firmware Version Parameter Key <span className="text-muted-foreground font-normal">(optional)</span></Label>
-              <Input className="mt-1 font-mono text-sm" placeholder="firmware_version"
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Firmware Target Key <span className="opacity-50">(OPTIONAL)</span></Label>
+              <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50" placeholder="firmware_version"
                 value={fwParam} onChange={(e) => setFwParam(e.target.value)} />
-              <p className="text-[10px] text-muted-foreground mt-0.5">
-                The field key whose value holds the firmware version string
+              <p className="font-mono text-[9px] uppercase tracking-widest text-brand/70 mt-1">
+                TELEMETRY KEY BOUND TO FIRMWARE SIGNATURE
               </p>
             </div>
           </div>
         </div>
 
         {/* Field map */}
-        <div className="rounded-lg border border-border bg-card p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold">
-                {isModbus ? "Register Map" : "Field Map"}
-                <span className="ml-2 text-xs font-normal text-muted-foreground">{fields.length} field{fields.length !== 1 ? "s" : ""}</span>
-              </h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {isModbus
-                  ? "Define each Modbus register — address, data type, scaling factor, and engineering unit."
-                  : "Define each JSON field to extract from the response — path, scaling, and unit."}
-              </p>
+        <div className="border border-border/50 bg-card/40 backdrop-blur-md relative group">
+          <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-brand transition-colors" />
+          <div className="p-6 pb-0">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-foreground/50 flex items-center gap-3">
+                  {isModbus ? "Register Allocation Map" : "Payload Extraction Map"}
+                  <Badge variant="outline" className="rounded-none border-brand/40 text-brand bg-brand/5 text-[9px]">{fields.length} ALLOCATED</Badge>
+                </h2>
+                <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground mt-2">
+                  {isModbus
+                    ? "BIND REGISTERS TO TELEMETRY KEYS WITH APPROPRIATE PRIMITIVES AND SCALE VECTORS."
+                    : "DEFINE JSON SELECTORS TO EXTRACT TELEMETRY POINTS FROM RESPONSE PAYLOAD."}
+                </p>
+              </div>
+              <Button size="sm" className="gap-2 rounded-none bg-brand hover:bg-brand/80 text-black font-mono text-[10px] uppercase tracking-widest" onClick={() => setAddingNew(true)}>
+                <Plus className="h-3.5 w-3.5" /> ALLOCATE POINT
+              </Button>
             </div>
-            <Button size="sm" className="gap-2" onClick={() => setAddingNew(true)}>
-              <Plus className="h-3.5 w-3.5" /> Add Field
-            </Button>
           </div>
 
-          {fields.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border p-8 text-center">
-              <Cpu className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-40" />
-              <p className="text-sm text-muted-foreground">No fields yet</p>
-              <p className="text-xs text-muted-foreground mt-1">Click "Add Field" to define your first parameter.</p>
-            </div>
-          ) : (
-            <div className="rounded-lg border border-border overflow-x-auto">
-              <table className="w-full text-xs min-w-[560px]">
-                <thead>
-                  <tr className="bg-muted/30 border-b border-border">
-                    <th className="w-6 px-2 py-2" />
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Parameter</th>
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Unit</th>
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">{isModbus ? "Address" : "Path"}</th>
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">{isModbus ? "Type" : "Scale"}</th>
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Alarms</th>
-                    <th className="w-24 px-2 py-2" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {fields.map((f, idx) => (
-                    <tr
-                      key={idx}
-                      className="border-b border-border/50 last:border-0 hover:bg-muted/10 cursor-pointer"
-                      onClick={() => setEditingIdx(idx)}
-                    >
-                      <td className="px-2 py-2 text-muted-foreground">
-                        <GripVertical className="h-3.5 w-3.5" />
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="font-medium text-foreground">{f.label}</div>
-                        <div className="text-muted-foreground font-mono text-[10px]">{f.key}</div>
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">{f.unit || "—"}</td>
-                      <td className="px-3 py-2 font-mono">
-                        {isModbus
-                          ? <span className="text-amber-400">{f.address ?? "—"}{f.length && f.length > 1 ? `+${f.length - 1}` : ""}</span>
-                          : <span className="text-blue-400 truncate max-w-24 block">{f.jsonPath ?? "—"}</span>
-                        }
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {isModbus ? (f.dataType ?? "UINT16") : (f.multiplier && f.multiplier !== 1 ? `×${f.multiplier}` : "—")}
-                      </td>
-                      <td className="px-3 py-2">
-                        {(f.alarmHigh != null || f.alarmLow != null) ? (
-                          <span className="text-amber-400">
-                            {f.alarmLow != null ? `↓${f.alarmLow}` : ""}
-                            {f.alarmHigh != null ? ` ↑${f.alarmHigh}` : ""}
-                          </span>
-                        ) : <span className="text-muted-foreground">—</span>}
-                      </td>
-                      <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-1 justify-end">
-                          <button onClick={(e) => { e.stopPropagation(); moveField(idx, -1); }}
-                            className="p-1 hover:text-foreground text-muted-foreground" disabled={idx === 0}>
-                            <ChevronUp className="h-3 w-3" />
-                          </button>
-                          <button onClick={(e) => { e.stopPropagation(); moveField(idx, 1); }}
-                            className="p-1 hover:text-foreground text-muted-foreground" disabled={idx === fields.length - 1}>
-                            <ChevronDown className="h-3 w-3" />
-                          </button>
-                          <button onClick={(e) => { e.stopPropagation(); removeField(idx); }}
-                            className="p-1 hover:text-red-400 text-muted-foreground">
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </td>
+          <div className="p-6">
+            {fields.length === 0 ? (
+              <div className="border border-dashed border-border/50 p-12 text-center bg-black/20">
+                <Cpu className="h-8 w-8 text-brand mx-auto mb-4 opacity-40 animate-pulse" />
+                <p className="text-sm font-mono uppercase tracking-widest text-foreground/80">NO ALLOCATIONS</p>
+                <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2">INITIALIZE YOUR FIRST DATA POINT</p>
+              </div>
+            ) : (
+              <div className="border border-border/50 bg-black/40 overflow-x-auto">
+                <table className="w-full text-xs font-mono min-w-[700px]">
+                  <thead>
+                    <tr className="bg-muted/10 border-b border-border/50">
+                      <th className="w-8 px-3 py-3" />
+                      <th className="text-left px-3 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">Parameter / Key</th>
+                      <th className="text-left px-3 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">Unit</th>
+                      <th className="text-left px-3 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">{isModbus ? "Address" : "Selector"}</th>
+                      <th className="text-left px-3 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">{isModbus ? "Primitive" : "Scale"}</th>
+                      <th className="text-left px-3 py-3 text-[10px] uppercase tracking-widest text-muted-foreground">Alarms (L/H)</th>
+                      <th className="w-24 px-3 py-3" />
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {fields.map((f, idx) => (
+                      <tr
+                        key={idx}
+                        className="border-b border-border/20 last:border-0 hover:bg-brand/5 transition-colors cursor-pointer"
+                        onClick={() => setEditingIdx(idx)}
+                      >
+                        <td className="px-3 py-3 text-muted-foreground/30">
+                          <GripVertical className="h-4 w-4" />
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="text-foreground/90 uppercase tracking-wider">{f.label}</div>
+                          <div className="text-brand text-[9px] mt-0.5">{f.key}</div>
+                        </td>
+                        <td className="px-3 py-3 text-muted-foreground">{f.unit || "—"}</td>
+                        <td className="px-3 py-3">
+                          {isModbus
+                            ? <span className="text-status-warning">{f.address ?? "—"}{f.length && f.length > 1 ? `+${f.length - 1}` : ""}</span>
+                            : <span className="text-brand/80 truncate max-w-[120px] block">{f.jsonPath ?? "—"}</span>
+                          }
+                        </td>
+                        <td className="px-3 py-3 text-muted-foreground uppercase">
+                          {isModbus ? (f.dataType ?? "UINT16") : (f.multiplier && f.multiplier !== 1 ? <span className="text-brand">×{f.multiplier}</span> : "—")}
+                        </td>
+                        <td className="px-3 py-3">
+                          {(f.alarmHigh != null || f.alarmLow != null) ? (
+                            <div className="flex items-center gap-2">
+                              {f.alarmLow != null ? <span className="text-status-fault text-[10px]">↓{f.alarmLow}</span> : null}
+                              {f.alarmHigh != null ? <span className="text-status-warning text-[10px]">↑{f.alarmHigh}</span> : null}
+                            </div>
+                          ) : <span className="text-muted-foreground/30">—</span>}
+                        </td>
+                        <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-1 justify-end opacity-50 hover:opacity-100 transition-opacity">
+                            <button onClick={(e) => { e.stopPropagation(); moveField(idx, -1); }}
+                              className="p-1.5 hover:text-brand hover:bg-brand/10 transition-colors disabled:opacity-30" disabled={idx === 0}>
+                              <ChevronUp className="h-3 w-3" />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); moveField(idx, 1); }}
+                              className="p-1.5 hover:text-brand hover:bg-brand/10 transition-colors disabled:opacity-30" disabled={idx === fields.length - 1}>
+                              <ChevronDown className="h-3 w-3" />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); removeField(idx); }}
+                              className="p-1.5 hover:text-status-fault hover:bg-status-fault/10 transition-colors ml-2">
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Save bar */}
-        <div className="flex items-center justify-between rounded-lg border border-border bg-card px-5 py-3">
-          <div className="text-sm text-muted-foreground">
-            {fields.length} field{fields.length !== 1 ? "s" : ""} defined
-            {fields.length > 0 && <span className="ml-2 text-green-400 flex items-center gap-1 inline-flex"><CheckCircle2 className="h-3.5 w-3.5" /> ready</span>}
+        <div className="flex items-center justify-between border-t border-border/50 pt-6">
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground flex items-center gap-3">
+            <span>{fields.length} ALLOCATED</span>
+            {fields.length > 0 && <span className="text-brand flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5" /> VALID</span>}
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => navigate("/device-templates")}>Cancel</Button>
+          <div className="flex items-center gap-4">
+            <Button variant="outline" className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest hover:bg-white/5" onClick={() => navigate("/device-templates")}>ABORT</Button>
             <Button
-              className="gap-2"
+              className="gap-2 rounded-none bg-brand hover:bg-brand/80 text-black font-mono text-[10px] uppercase tracking-widest shadow-[0_0_15px_rgba(0,255,170,0.3)]"
               onClick={() => saveMutation.mutate()}
               disabled={!canSave}
             >
               <Save className="h-3.5 w-3.5" />
-              {saveMutation.isPending ? "Saving…" : isEdit ? "Save Changes" : "Create Template"}
+              {saveMutation.isPending ? "WRITING TO REGISTRY..." : isEdit ? "COMMIT PROFILE" : "AUTHORIZE PROFILE"}
             </Button>
           </div>
         </div>

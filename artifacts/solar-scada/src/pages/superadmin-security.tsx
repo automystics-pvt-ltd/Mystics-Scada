@@ -23,14 +23,14 @@ interface SecurityData {
 }
 
 const ACTION_META: Record<string, { label: string; icon: typeof Shield; color: string }> = {
-  login:                  { label: "Login",             icon: LogIn,      color: "text-status-normal" },
-  login_failed:           { label: "Login Failed",      icon: UserX,      color: "text-status-fault" },
-  password_changed:       { label: "Password Changed",  icon: Lock,       color: "text-status-warning" },
-  user_created:           { label: "User Created",      icon: UserCheck,  color: "text-blue-400" },
-  user_deleted:           { label: "User Deleted",      icon: UserX,      color: "text-status-fault" },
-  role_changed:           { label: "Role Changed",      icon: Shield,     color: "text-status-warning" },
-  superadmin_login:       { label: "SA Login",          icon: ShieldAlert, color: "text-purple-400" },
-  impersonation_started:  { label: "Impersonation",     icon: ShieldAlert, color: "text-status-warning" },
+  login:                  { label: "LOGIN",             icon: LogIn,      color: "text-status-normal border-status-normal bg-status-normal/10" },
+  login_failed:           { label: "LOGIN FAILED",      icon: UserX,      color: "text-status-fault border-status-fault bg-status-fault/10" },
+  password_changed:       { label: "PASSWORD CHANGED",  icon: Lock,       color: "text-status-warning border-status-warning bg-status-warning/10" },
+  user_created:           { label: "USER CREATED",      icon: UserCheck,  color: "text-blue-400 border-blue-500 bg-blue-500/10" },
+  user_deleted:           { label: "USER DELETED",      icon: UserX,      color: "text-status-fault border-status-fault bg-status-fault/10" },
+  role_changed:           { label: "ROLE CHANGED",      icon: Shield,     color: "text-status-warning border-status-warning bg-status-warning/10" },
+  superadmin_login:       { label: "SA LOGIN",          icon: ShieldAlert, color: "text-purple-400 border-purple-500 bg-purple-500/10" },
+  impersonation_started:  { label: "IMPERSONATION",     icon: ShieldAlert, color: "text-status-warning border-status-warning bg-status-warning/10" },
 };
 
 export default function SuperAdminSecurity() {
@@ -47,30 +47,35 @@ export default function SuperAdminSecurity() {
     <SuperAdminGuard>
       <SuperAdminLayout>
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between border-b border-border/50 pb-4 relative">
+            <div className="absolute bottom-0 left-0 w-1/4 h-[1px] bg-accent-brand shadow-[0_0_15px_rgba(0,195,255,0.8)]" />
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2"><Shield className="h-6 w-6 text-primary" />Security</h1>
-              <p className="text-sm text-muted-foreground mt-1">Security-relevant events across all organisations · Last 200 events</p>
+              <h1 className="font-mono text-2xl font-bold flex items-center gap-3 text-foreground uppercase tracking-widest">
+                <Shield className="h-6 w-6 text-accent-brand" />
+                SECURITY LOG
+              </h1>
+              <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mt-2">SECURITY-RELEVANT EVENTS ACROSS ALL ORGANISATIONS // LAST 200 EVENTS</p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => void refetch()} className="gap-1.5">
-              <RefreshCw className="h-3.5 w-3.5" /> Refresh
+            <Button variant="outline" size="sm" onClick={() => void refetch()} className="font-mono text-[9px] uppercase tracking-widest border-accent-brand/30 text-accent-brand hover:bg-accent-brand/10 rounded-none gap-2">
+              <RefreshCw className="h-3.5 w-3.5" /> REFRESH
             </Button>
           </div>
 
           {/* Summary cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { label: "Failed Logins (24h)",     value: summary?.failedLogins24h    ?? 0, color: summary?.failedLogins24h    ? "text-status-fault"    : "text-status-normal", icon: AlertTriangle },
-              { label: "Active Users (24h)",       value: summary?.activeUsers24h      ?? 0, color: "text-status-normal",                                                        icon: UserCheck },
-              { label: "Super Admin Actions (24h)",value: summary?.superAdminActions24h ?? 0, color: summary?.superAdminActions24h ? "text-status-warning" : "text-muted-foreground", icon: ShieldAlert },
+              { label: "FAILED LOGINS (24H)",     value: summary?.failedLogins24h    ?? 0, color: summary?.failedLogins24h    ? "text-status-fault"    : "text-status-normal", icon: AlertTriangle },
+              { label: "ACTIVE USERS (24H)",       value: summary?.activeUsers24h      ?? 0, color: "text-accent-brand",                                                        icon: UserCheck },
+              { label: "SUPER ADMIN ACTIONS (24H)",value: summary?.superAdminActions24h ?? 0, color: summary?.superAdminActions24h ? "text-status-warning" : "text-muted-foreground", icon: ShieldAlert },
             ].map(({ label, value, color, icon: Icon }) => (
-              <div key={label} className="border border-border rounded-xl p-4 bg-card">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-muted-foreground">{label}</p>
+              <div key={label} className="border border-border/50 bg-black/40 p-4 relative group transition-colors hover:border-accent-brand/50">
+                <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-accent-brand transition-colors" />
+                <div className="flex items-center justify-between mb-3 pl-2">
+                  <p className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{label}</p>
                   <Icon className={`h-4 w-4 ${color}`} />
                 </div>
-                {isLoading ? <div className="h-8 bg-muted animate-pulse rounded w-16" /> : (
-                  <p className={`text-3xl font-bold font-mono ${color}`}>{value}</p>
+                {isLoading ? <div className="h-8 bg-white/5 animate-pulse w-16 ml-2" /> : (
+                  <p className={`text-3xl font-bold font-mono pl-2 ${color}`}>{value}</p>
                 )}
               </div>
             ))}
@@ -78,78 +83,88 @@ export default function SuperAdminSecurity() {
 
           {/* Threat gauge — simple visual */}
           {summary && (
-            <div className={`border rounded-xl p-4 flex items-center gap-4 ${
-              summary.failedLogins24h > 10 ? "border-status-fault/30 bg-status-fault/5" :
-              summary.failedLogins24h > 3  ? "border-status-warning/30 bg-status-warning/5" :
-              "border-border bg-card"
+            <div className={`border p-4 flex items-center gap-5 relative overflow-hidden ${
+              summary.failedLogins24h > 10 ? "border-status-fault/50 bg-status-fault/10 shadow-[0_0_15px_rgba(239,68,68,0.15)]" :
+              summary.failedLogins24h > 3  ? "border-status-warning/50 bg-status-warning/10" :
+              "border-status-normal/30 bg-status-normal/5"
             }`}>
-              <Shield className={`h-8 w-8 flex-shrink-0 ${
-                summary.failedLogins24h > 10 ? "text-status-fault" :
-                summary.failedLogins24h > 3  ? "text-status-warning" : "text-status-normal"
+              <div className={`absolute top-0 left-0 w-1 h-full ${
+                summary.failedLogins24h > 10 ? "bg-status-fault shadow-[0_0_10px_rgba(239,68,68,0.8)]" :
+                summary.failedLogins24h > 3  ? "bg-status-warning shadow-[0_0_10px_rgba(245,158,11,0.8)]" :
+                "bg-status-normal"
+              }`} />
+              <Shield className={`h-8 w-8 flex-shrink-0 ml-2 ${
+                summary.failedLogins24h > 10 ? "text-status-fault drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" :
+                summary.failedLogins24h > 3  ? "text-status-warning drop-shadow-[0_0_8px_rgba(245,158,11,0.8)]" : "text-status-normal drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]"
               }`} />
               <div>
-                <p className="font-semibold text-sm">
-                  {summary.failedLogins24h > 10 ? "⚠ Elevated threat level — multiple failed logins detected" :
-                   summary.failedLogins24h > 3  ? "Moderate activity — some failed logins in the last 24h" :
-                   "✓ Security posture looks normal"}
+                <p className="font-mono text-sm font-bold uppercase tracking-widest text-foreground">
+                  {summary.failedLogins24h > 10 ? "⚠ ELEVATED THREAT LEVEL — MULTIPLE FAILED LOGINS DETECTED" :
+                   summary.failedLogins24h > 3  ? "MODERATE ACTIVITY — SOME FAILED LOGINS IN THE LAST 24H" :
+                   "✓ SECURITY POSTURE LOOKS NORMAL"}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {summary.total} total security events in history · {summary.failedLogins24h} failed logins in last 24h
+                <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-1">
+                  {summary.total} TOTAL SECURITY EVENTS IN HISTORY // {summary.failedLogins24h} FAILED LOGINS IN LAST 24H
                 </p>
               </div>
             </div>
           )}
 
           {/* Event stream */}
-          <div className="border border-border rounded-xl overflow-hidden">
-            <div className="bg-muted/30 px-4 py-3 border-b border-border flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Security Event Stream</h2>
-              <span className="text-xs text-muted-foreground">{events.length} events</span>
+          <div className="border border-border/50 bg-black/40">
+            <div className="px-4 py-3 border-b border-border/50 bg-black/60 flex items-center justify-between">
+              <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground">EVENT STREAM</h2>
+              <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{events.length} EVENTS</span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
-                <thead className="bg-muted/30">
+              <table className="w-full text-left">
+                <thead className="bg-black/60 border-b border-border/50">
                   <tr>
-                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Time</th>
-                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Event</th>
-                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Actor</th>
-                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Org</th>
-                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Details</th>
+                    <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">TIME</th>
+                    <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">EVENT</th>
+                    <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">ACTOR</th>
+                    <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">ORG</th>
+                    <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">DETAILS</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border/30">
                   {isLoading ? (
                     Array.from({ length: 8 }).map((_, i) => (
-                      <tr key={i} className="border-t border-border/50">
+                      <tr key={i} className="hover:bg-transparent">
                         {Array.from({ length: 5 }).map((_, j) => (
-                          <td key={j} className="px-4 py-3"><div className="h-4 bg-muted animate-pulse rounded w-20" /></td>
+                          <td key={j} className="px-4 py-3"><div className="h-4 bg-white/5 animate-pulse w-20" /></td>
                         ))}
                       </tr>
                     ))
                   ) : events.length === 0 ? (
-                    <tr><td colSpan={5} className="text-center py-12 text-muted-foreground">No security events found</td></tr>
+                    <tr><td colSpan={5} className="text-center py-12 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">NO SECURITY EVENTS FOUND</td></tr>
                   ) : events.map(ev => {
                     const meta = ACTION_META[ev.action];
                     const Icon = meta?.icon ?? Shield;
                     return (
-                      <tr key={ev.id} className={`border-t border-border/50 hover:bg-muted/20 ${ev.action === "login_failed" ? "bg-status-fault/3" : ""}`}>
-                        <td className="px-4 py-2.5 text-xs font-mono text-muted-foreground whitespace-nowrap">
-                          {new Date(ev.createdAt).toLocaleDateString()} {new Date(ev.createdAt).toLocaleTimeString()}
+                      <tr key={ev.id} className={`hover:bg-white/5 transition-colors ${ev.action === "login_failed" ? "bg-status-fault/5 border-l-2 border-l-status-fault" : "border-l-2 border-l-transparent"}`}>
+                        <td className="px-4 py-3">
+                          <div className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                            {new Date(ev.createdAt).toISOString().slice(0,10)}
+                          </div>
+                          <div className="font-mono text-[8px] text-muted-foreground/60 uppercase tracking-widest mt-0.5">
+                            {new Date(ev.createdAt).toISOString().slice(11,19)} UTC
+                          </div>
                         </td>
-                        <td className="px-4 py-2.5">
-                          <div className="flex items-center gap-1.5">
-                            <Icon className={`h-3.5 w-3.5 ${meta?.color ?? "text-muted-foreground"}`} />
-                            <Badge variant="outline" className={`text-[10px] font-mono ${meta?.color ?? ""}`}>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <Icon className={`h-4 w-4 ${meta?.color ? meta.color.split(" ")[0] : "text-muted-foreground"}`} />
+                            <Badge variant="outline" className={`font-mono text-[8px] font-bold uppercase tracking-widest rounded-none border px-1.5 py-0.5 ${meta?.color ?? "bg-black/40 text-muted-foreground border-border/50"}`}>
                               {meta?.label ?? ev.action}
                             </Badge>
                           </div>
                         </td>
-                        <td className="px-4 py-2.5">
-                          <p className="text-sm">{ev.actorName ?? "System"}</p>
-                          <p className="text-[10px] text-muted-foreground">{ev.actorEmail ?? ev.userId ?? "—"}</p>
+                        <td className="px-4 py-3">
+                          <p className="font-mono text-[10px] font-bold text-foreground uppercase tracking-widest">{ev.actorName ?? "SYSTEM"}</p>
+                          <p className="font-mono text-[8px] text-muted-foreground uppercase tracking-widest mt-0.5">{ev.actorEmail ?? ev.userId ?? "—"}</p>
                         </td>
-                        <td className="px-4 py-2.5 text-[10px] font-mono text-muted-foreground/60 max-w-[100px] truncate">{ev.orgId}</td>
-                        <td className="px-4 py-2.5 text-[10px] font-mono text-muted-foreground/50 max-w-[200px] truncate">
+                        <td className="px-4 py-3 font-mono text-[8px] font-bold text-accent-brand uppercase tracking-widest truncate max-w-[100px]">{ev.orgId}</td>
+                        <td className="px-4 py-3 font-mono text-[8px] text-muted-foreground/60 uppercase tracking-widest max-w-[200px] truncate">
                           {ev.metadata ? JSON.stringify(ev.metadata).slice(0, 60) : ev.resourceId ?? "—"}
                         </td>
                       </tr>

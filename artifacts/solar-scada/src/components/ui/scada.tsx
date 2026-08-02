@@ -22,26 +22,26 @@ export function HealthBadge({ status, className }: { status: HealthState; classN
   switch (status) {
     case "normal":
       return (
-        <div className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-status-normal/10 text-status-normal border border-status-normal/20", className)}>
-          <span className="w-1.5 h-1.5 rounded-full bg-status-normal mr-1.5" /> Normal
+        <div className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-status-normal/15 text-status-normal border border-status-normal/30 uppercase tracking-widest", className)}>
+          <span className="w-1.5 h-1.5 rounded-full bg-status-normal animate-pulse-subtle shadow-[0_0_5px_hsl(var(--status-normal))]" /> OK
         </div>
       );
     case "warning":
       return (
-        <div className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-status-warning/10 text-status-warning border border-status-warning/20", className)}>
-          <span className="w-1.5 h-1.5 rounded-full bg-status-warning mr-1.5" /> Warning
+        <div className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-status-warning/15 text-status-warning border border-status-warning/30 uppercase tracking-widest", className)}>
+          <span className="w-1.5 h-1.5 rounded-full bg-status-warning" /> WARN
         </div>
       );
     case "fault":
       return (
-        <div className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-status-fault/10 text-status-fault border border-status-fault/20", className)}>
-          <span className="w-1.5 h-1.5 rounded-full bg-status-fault mr-1.5" /> Fault
+        <div className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-status-fault/15 text-status-fault border border-status-fault/30 uppercase tracking-widest", className)}>
+          <span className="w-1.5 h-1.5 rounded-full bg-status-fault animate-ping-once shadow-[0_0_5px_hsl(var(--status-fault))]" /> FAULT
         </div>
       );
     case "offline":
       return (
-        <div className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-status-offline/10 text-status-offline border border-status-offline/20", className)}>
-          <span className="w-1.5 h-1.5 rounded-full bg-status-offline mr-1.5" /> Offline
+        <div className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-status-offline/15 text-status-offline border border-status-offline/30 uppercase tracking-widest", className)}>
+          <span className="w-1.5 h-1.5 rounded-full bg-status-offline" /> OFFLINE
         </div>
       );
     default:
@@ -52,13 +52,13 @@ export function HealthBadge({ status, className }: { status: HealthState; classN
 export function SeverityBadge({ severity, className }: { severity: AlertSeverity; className?: string }) {
   switch (severity) {
     case "critical":
-      return <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-fault/15 text-status-fault border border-status-fault/30", className)}>● Critical</span>;
+      return <span className={cn("inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-status-fault/15 text-status-fault border border-status-fault/30 uppercase tracking-wider", className)}>Critical</span>;
     case "major":
-      return <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#e67e22]/15 text-[#e67e22] border border-[#e67e22]/30", className)}>● Major</span>;
+      return <span className={cn("inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-[#e67e22]/15 text-[#e67e22] border border-[#e67e22]/30 uppercase tracking-wider", className)}>Major</span>;
     case "minor":
-      return <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-warning/15 text-status-warning border border-status-warning/30", className)}>● Minor</span>;
+      return <span className={cn("inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-status-warning/15 text-status-warning border border-status-warning/30 uppercase tracking-wider", className)}>Minor</span>;
     case "informational":
-      return <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30", className)}>● Info</span>;
+      return <span className={cn("inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30 uppercase tracking-wider", className)}>Info</span>;
     default:
       return null;
   }
@@ -92,15 +92,15 @@ export function LiveValue({
     return <span className={cn("text-muted-foreground font-mono", className)}>-- <span className="text-xs">{unit}</span></span>;
 
   return (
-    <div className={cn("inline-flex items-baseline font-mono", className)}>
+    <div className={cn("inline-flex items-baseline gap-1 font-mono", className)}>
       <span className={cn(
-        "font-semibold tracking-tight text-foreground transition-colors",
+        "font-bold tracking-tight text-foreground transition-colors",
         flashing && "animate-data-flash",
         valueClassName,
       )}>
         {value.toLocaleString(undefined, { minimumFractionDigits: precision, maximumFractionDigits: precision })}
       </span>
-      <span className="ml-1 text-xs text-muted-foreground font-sans">{unit}</span>
+      <span className="text-xs font-semibold text-muted-foreground font-sans">{unit}</span>
     </div>
   );
 }
@@ -132,7 +132,7 @@ function buildSparklinePath(
 export function Sparkline({
   data,
   dataKey = "v",
-  color = "hsl(var(--primary))",
+  color = "hsl(var(--accent-brand))",
   className,
 }: {
   data: Record<string, number>[];
@@ -145,17 +145,20 @@ export function Sparkline({
   const gradId = `sg-${dataKey}-${color.replace(/[^a-z0-9]/gi, "")}`;
   const { line, area } = buildSparklinePath(values);
   return (
-    <div className={cn("w-full h-12", className)}>
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+    <div className={cn("w-full h-12 relative overflow-hidden", className)}>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full absolute inset-0">
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%"  stopColor={color} stopOpacity={0.25} />
+            <stop offset="5%"  stopColor={color} stopOpacity={0.3} />
             <stop offset="95%" stopColor={color} stopOpacity={0} />
           </linearGradient>
         </defs>
         <path d={area} fill={`url(#${gradId})`} />
-        <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={line} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
+      {values.length > 0 && (
+         <div className="absolute right-0 w-2 h-2 rounded-full bg-current shadow-[0_0_8px_currentColor] animate-pulse-subtle" style={{ color, top: `${(1 - (values[values.length - 1] - Math.min(...values)) / (Math.max(...values) - Math.min(...values) || 1)) * 90}%`, transform: 'translate(50%, -50%)' }} />
+      )}
     </div>
   );
 }
@@ -163,10 +166,10 @@ export function Sparkline({
 /* ── Generation ring (radial SVG progress) ───────────────────────────── */
 
 export function GenerationRing({
-  pct, label, sublabel, size = 96,
-  color = "hsl(var(--status-normal))",
-  trackColor = "hsl(var(--muted))",
-  strokeWidth = 8,
+  pct, label, sublabel, size = 120,
+  color = "hsl(var(--accent-brand))",
+  trackColor = "hsl(var(--muted)/0.4)",
+  strokeWidth = 10,
   className,
 }: {
   pct: number; label: string; sublabel?: string;
@@ -180,21 +183,19 @@ export function GenerationRing({
   const center = size / 2;
 
   return (
-    <div className={cn("flex flex-col items-center", className)}>
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="rotate-[-90deg]">
-          <circle cx={center} cy={center} r={r} fill="none" stroke={trackColor} strokeWidth={strokeWidth} />
-          <circle cx={center} cy={center} r={r} fill="none" stroke={color} strokeWidth={strokeWidth}
-            strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round"
-            style={{ transition: "stroke-dashoffset 0.6s ease" }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-sm font-bold font-mono">{clamped.toFixed(0)}%</span>
-        </div>
+    <div className={cn("flex flex-col items-center justify-center relative", className)} style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="rotate-[-90deg] filter drop-shadow-[0_0_8px_rgba(0,0,0,0.5)]">
+        <circle cx={center} cy={center} r={r} fill="none" stroke={trackColor} strokeWidth={strokeWidth} />
+        <circle cx={center} cy={center} r={r} fill="none" stroke={color} strokeWidth={strokeWidth}
+          strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1)" }}
+          className="drop-shadow-[0_0_6px_currentColor]"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        {sublabel && <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">{sublabel}</span>}
+        <span className="text-xl font-bold font-mono tracking-tighter text-foreground drop-shadow-md leading-none">{label}</span>
       </div>
-      <span className="text-xs font-semibold text-foreground mt-1">{label}</span>
-      {sublabel && <span className="text-[10px] text-muted-foreground">{sublabel}</span>}
     </div>
   );
 }
@@ -206,34 +207,40 @@ export function StatCard({
   accent = "default", loading = false, className,
 }: {
   label: string; value: string | number | undefined;
-  icon?: React.ElementType; accent?: "default" | "danger" | "warning" | "success" | "info";
+  icon?: React.ElementType; accent?: "default" | "danger" | "warning" | "success" | "info" | "brand";
   loading?: boolean; className?: string;
 }) {
   const accentCls = {
-    default: "border-card-border",
-    danger:  "border-status-fault/40 bg-status-fault/5",
-    warning: "border-status-warning/40 bg-status-warning/5",
-    success: "border-status-normal/40 bg-status-normal/5",
-    info:    "border-blue-500/30 bg-blue-500/5",
+    default: "border-card-border bg-card",
+    danger:  "border-status-fault/30 bg-status-fault/5 shadow-[0_0_15px_hsl(var(--status-fault)/0.05)]",
+    warning: "border-[#e67e22]/30 bg-[#e67e22]/5 shadow-[0_0_15px_rgba(230,126,34,0.05)]",
+    success: "border-status-normal/30 bg-status-normal/5 shadow-[0_0_15px_hsl(var(--status-normal)/0.05)]",
+    info:    "border-blue-500/30 bg-blue-500/5 shadow-[0_0_15px_rgba(59,130,246,0.05)]",
+    brand:   "border-accent-brand/30 bg-accent-brand/5 shadow-[0_0_15px_rgba(20,205,230,0.05)]",
   }[accent];
 
   const iconCls = {
     default: "text-muted-foreground",
     danger:  "text-status-fault",
-    warning: "text-status-warning",
+    warning: "text-[#e67e22]",
     success: "text-status-normal",
     info:    "text-blue-400",
+    brand:   "text-accent-brand",
   }[accent];
 
   return (
-    <div className={cn("bg-card border rounded-lg px-4 py-3 flex items-center gap-3", accentCls, className)}>
-      {Icon && <Icon className={cn("w-5 h-5 flex-shrink-0", iconCls)} />}
+    <div className={cn("rounded-xl px-5 py-4 flex items-center gap-4 border transition-all duration-300 hover:scale-[1.02]", accentCls, className)}>
+      {Icon && (
+        <div className={cn("p-3 rounded-lg bg-background/50 border border-border/50", iconCls)}>
+          <Icon className="w-5 h-5 flex-shrink-0" />
+        </div>
+      )}
       <div className="min-w-0">
-        <div className="text-[11px] font-medium text-muted-foreground tracking-normal truncate capitalize">{label}</div>
+        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest truncate">{label}</div>
         {loading ? (
-          <div className="h-6 w-10 bg-muted animate-pulse rounded mt-1" />
+          <div className="h-7 w-16 bg-muted/40 animate-shimmer rounded mt-1" />
         ) : (
-          <div className="text-3xl font-bold font-mono leading-none mt-1">{value ?? "--"}</div>
+          <div className="text-2xl font-bold font-mono leading-none mt-1.5 text-foreground">{value ?? "--"}</div>
         )}
       </div>
     </div>
@@ -269,41 +276,41 @@ export function KpiCard({
 
   return (
     <div className={cn(
-      "bg-card border border-card-border rounded-lg p-4 flex flex-col overflow-hidden transition-colors duration-300",
-      flashing ? "border-accent-brand shadow-[0_0_15px_rgba(20,205,230,0.1)]" : "",
+      "bg-card/40 backdrop-blur-md border border-card-border rounded-xl p-5 flex flex-col overflow-hidden transition-all duration-300 relative group hover:bg-card/60 hover:border-border/80 hover:shadow-lg",
+      flashing ? "border-accent-brand shadow-[0_0_20px_rgba(20,205,230,0.15)] bg-accent-brand/5" : "",
       className,
     )}>
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[11px] font-medium text-muted-foreground tracking-normal capitalize">{title}</span>
+      {/* Top subtle highlight */}
+      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-border/50 to-transparent group-hover:via-accent-brand/50 transition-colors" />
+
+      <div className="flex items-center justify-between mb-4 relative z-10">
+        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">{title}</span>
         {Icon && (
-          <div className="w-6 h-6 rounded flex items-center justify-center bg-muted/50 border border-border/50">
-            <Icon className="h-3.5 w-3.5 text-muted-foreground/70" />
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-background/50 border border-border/50 group-hover:bg-accent-brand/10 group-hover:border-accent-brand/30 transition-colors">
+            <Icon className="h-4 w-4 text-muted-foreground group-hover:text-accent-brand transition-colors" />
           </div>
         )}
       </div>
 
-      {loading ? (
-        <div className="h-8 w-24 bg-muted animate-pulse rounded mt-1" />
-      ) : (
-        <LiveValue value={value} unit={unit} precision={precision} valueClassName="text-3xl font-bold leading-none tracking-tight" flash />
-      )}
+      <div className="relative z-10">
+        {loading ? (
+          <div className="h-10 w-24 bg-muted/40 animate-shimmer rounded" />
+        ) : (
+          <LiveValue value={value} unit={unit} precision={precision} valueClassName="text-3xl font-bold leading-none tracking-tighter" flash />
+        )}
 
-      {trend && !loading && (
-        <div className="mt-1.5 flex items-center gap-1 text-xs">
-          {trendPositive
-            ? <TrendingUp  className="w-3 h-3 text-status-normal" />
-            : trend.value === 0
-              ? <Minus       className="w-3 h-3 text-muted-foreground" />
-              : <TrendingDown className="w-3 h-3 text-status-fault" />}
-          <span className={cn("font-medium", trendPositive ? "text-status-normal" : "text-status-fault")}>
-            {trend.value > 0 ? "+" : ""}{trend.value}%
-          </span>
-          <span className="text-muted-foreground">{trend.label}</span>
-        </div>
-      )}
+        {trend && !loading && (
+          <div className="mt-3 flex items-center gap-1.5 text-xs font-medium">
+            <span className={cn("font-mono px-1.5 py-0.5 rounded text-[10px]", trendPositive ? "bg-status-normal/10 text-status-normal" : "bg-status-fault/10 text-status-fault")}>
+              {trend.value > 0 ? "+" : ""}{trend.value}%
+            </span>
+            <span className="text-muted-foreground tracking-wide">{trend.label}</span>
+          </div>
+        )}
+      </div>
 
       {sparkline && !loading && (
-        <div className="mt-2 -mx-1">
+        <div className="mt-4 -mx-2 -mb-2 relative z-0 opacity-60 group-hover:opacity-100 transition-opacity">
           <Sparkline data={sparkline} dataKey="v" />
         </div>
       )}
@@ -366,50 +373,64 @@ export function DrillDownCard({
   href: string;
   loading?: boolean;
 }) {
-  const color = sparklineColor ?? (healthScore != null ? healthScoreColor(healthScore) : "hsl(var(--primary))");
+  const color = sparklineColor ?? (healthScore != null ? healthScoreColor(healthScore) : "hsl(var(--accent-brand))");
 
   if (loading) {
-    return <div className="bg-card border border-card-border rounded-xl p-5 h-44 animate-pulse" />;
+    return <div className="bg-card/40 border border-card-border rounded-xl p-5 h-48 animate-shimmer" />;
   }
 
   return (
     <Link href={href}>
-      <div className="bg-card border border-card-border rounded-xl p-4 hover:border-accent-brand/40 cursor-pointer group transition-all duration-300 hover:shadow-lg hover:shadow-black/20">
-        <div className="flex items-start justify-between mb-3">
+      <div className="bg-card/40 backdrop-blur-md border border-card-border rounded-xl p-5 hover:border-accent-brand/40 hover:bg-accent-brand/5 cursor-pointer group transition-all duration-300 hover:shadow-xl hover:shadow-black/20 flex flex-col h-full relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-1 h-full bg-border group-hover:bg-accent-brand transition-colors" />
+
+        <div className="flex items-start justify-between mb-4 pl-2">
           <div>
-            <div className="font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">{title}</div>
-            {subtitle && <div className="text-xs text-muted-foreground mt-0.5">{subtitle}</div>}
+            <div className="font-semibold text-foreground group-hover:text-accent-brand transition-colors leading-tight tracking-wide">{title}</div>
+            {subtitle && <div className="text-[10px] text-muted-foreground mt-1 uppercase tracking-widest">{subtitle}</div>}
           </div>
           {status && <HealthBadge status={status} className="flex-shrink-0 ml-2" />}
         </div>
-        <div className="flex items-center gap-4">
+
+        <div className="flex items-center gap-5 pl-2">
           {healthScore != null && (
-            <HealthScoreGauge score={healthScore} size={64} strokeWidth={5} showLabel={false} />
+            <HealthScoreGauge score={healthScore} size={72} strokeWidth={6} showLabel={false} />
           )}
-          <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-1.5 min-w-0">
+          <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-3 min-w-0">
             {kpis.slice(0, 4).map((kpi) => (
               <div key={kpi.label} className="min-w-0">
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wider truncate">{kpi.label}</div>
-                <div className="font-mono text-sm font-medium truncate">{kpi.value}</div>
+                <div className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest truncate">{kpi.label}</div>
+                <div className="font-mono text-sm font-medium truncate mt-0.5 text-foreground">{kpi.value}</div>
               </div>
             ))}
           </div>
         </div>
-        {alertCount != null && alertCount > 0 && (
-          <div className="mt-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-status-fault/15 text-status-fault">
-            {alertCount} alert{alertCount > 1 ? "s" : ""}
+
+        <div className="flex-1" />
+
+        <div className="mt-4 flex items-center justify-between pl-2">
+          <div className="flex items-center gap-2">
+            {alertCount != null && alertCount > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[20px] h-[20px] px-1.5 rounded text-[10px] font-bold bg-status-fault/20 text-status-fault border border-status-fault/30">
+                {alertCount}
+              </span>
+            )}
+            {alertCount === 0 && (
+              <span className="text-[10px] text-status-normal font-medium flex items-center gap-1 bg-status-normal/10 px-1.5 py-0.5 rounded border border-status-normal/20 uppercase tracking-widest">
+                <CheckCircle2 className="w-3 h-3" /> Clear
+              </span>
+            )}
           </div>
-        )}
-        {sparklineData && sparklineData.length > 0 && (
-          <div className="mt-2 -mx-1 opacity-50 group-hover:opacity-100 transition-opacity">
-            <Sparkline data={sparklineData} dataKey="v" color={color} className="h-8" />
-          </div>
-        )}
-        <div className="mt-1.5 flex justify-end">
-          <span className="text-xs text-primary flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-            View detail <ArrowRight className="w-3 h-3" />
+          <span className="text-[11px] text-accent-brand flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all font-bold uppercase tracking-wider -translate-x-2 group-hover:translate-x-0">
+            Command <ArrowRight className="w-3.5 h-3.5" />
           </span>
         </div>
+
+        {sparklineData && sparklineData.length > 0 && (
+          <div className="absolute bottom-0 left-0 w-full h-16 opacity-30 group-hover:opacity-60 transition-opacity pointer-events-none">
+            <Sparkline data={sparklineData} dataKey="v" color={color} className="h-full translate-y-2" />
+          </div>
+        )}
       </div>
     </Link>
   );

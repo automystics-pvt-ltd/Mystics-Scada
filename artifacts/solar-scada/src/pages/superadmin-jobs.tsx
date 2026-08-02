@@ -46,18 +46,18 @@ const JOB_ICONS: Record<string, typeof Zap> = {
 };
 
 const JOB_COLORS: Record<string, string> = {
-  "retry-worker":      "text-blue-400",
-  "ftp-scheduler":     "text-purple-400",
-  "offline-detection": "text-status-warning",
+  "retry-worker":      "text-blue-400 drop-shadow-[0_0_5px_rgba(96,165,250,0.6)]",
+  "ftp-scheduler":     "text-purple-400 drop-shadow-[0_0_5px_rgba(192,132,252,0.6)]",
+  "offline-detection": "text-status-warning drop-shadow-[0_0_5px_rgba(245,158,11,0.6)]",
 };
 
 function lastRunLabel(job: JobState): string {
   const raw = job.lastRunAt ?? job.lastTickAt ?? job.lastSweepAt ?? null;
-  if (!raw) return "Never";
+  if (!raw) return "NEVER";
   const diff = Date.now() - new Date(raw).getTime();
-  if (diff < 60_000) return `${Math.round(diff / 1000)}s ago`;
-  if (diff < 3_600_000) return `${Math.round(diff / 60_000)}m ago`;
-  return new Date(raw).toLocaleTimeString();
+  if (diff < 60_000) return `${Math.round(diff / 1000)}S AGO`;
+  if (diff < 3_600_000) return `${Math.round(diff / 60_000)}M AGO`;
+  return new Date(raw).toLocaleTimeString().toUpperCase();
 }
 
 function runCount(job: JobState): number {
@@ -66,17 +66,17 @@ function runCount(job: JobState): number {
 
 function intervalLabel(job: JobState): string {
   const ms = job.pollIntervalMs ?? job.tickIntervalMs ?? job.sweepIntervalMs ?? 0;
-  if (ms >= 60_000) return `${ms / 60_000}m`;
-  return `${ms / 1000}s`;
+  if (ms >= 60_000) return `${ms / 60_000}M`;
+  return `${ms / 1000}S`;
 }
 
 function extraStat(job: JobState): { label: string; value: string | number } | null {
   if (job.id === "retry-worker" && job.lastBatchSize !== undefined)
-    return { label: "Last batch", value: job.lastBatchSize };
+    return { label: "LAST BATCH", value: job.lastBatchSize };
   if (job.id === "ftp-scheduler" && job.sourcesProcessed !== undefined)
-    return { label: "Sources processed", value: job.sourcesProcessed };
+    return { label: "SOURCES PROCESSED", value: job.sourcesProcessed };
   if (job.id === "offline-detection" && job.totalOfflineTransitions !== undefined)
-    return { label: "Offline transitions", value: job.totalOfflineTransitions };
+    return { label: "OFFLINE TRANSITIONS", value: job.totalOfflineTransitions };
   return null;
 }
 
@@ -121,35 +121,37 @@ export default function SuperAdminJobs() {
         <div className="space-y-6">
 
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between border-b border-border/50 pb-4 relative">
+            <div className="absolute bottom-0 left-0 w-1/4 h-[1px] bg-accent-brand shadow-[0_0_15px_rgba(0,195,255,0.8)]" />
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Timer className="h-6 w-6 text-primary" />
-                Background Jobs
+              <h1 className="font-mono text-2xl font-bold flex items-center gap-3 text-foreground uppercase tracking-widest">
+                <Timer className="h-6 w-6 text-accent-brand" />
+                BACKGROUND JOBS
               </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Monitor and manually trigger background workers
+              <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mt-2">
+                MONITOR AND MANUALLY TRIGGER BACKGROUND WORKERS
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => void refetch()} className="gap-1.5">
-              <RefreshCw className="h-3.5 w-3.5" /> Refresh
+            <Button variant="outline" size="sm" onClick={() => void refetch()} className="font-mono text-[9px] uppercase tracking-widest border-accent-brand/30 text-accent-brand hover:bg-accent-brand/10 rounded-none gap-2">
+              <RefreshCw className="h-3.5 w-3.5" /> REFRESH
             </Button>
           </div>
 
           {/* Summary KPIs */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Total Workers",    value: jobs.length,  icon: BarChart2,    color: "text-muted-foreground" },
-              { label: "Running",          value: allRunning,   icon: CheckCircle2, color: "text-status-normal" },
-              { label: "Workers w/ Errors",value: withErrors,   icon: ServerCrash,  color: withErrors ? "text-status-fault" : "text-muted-foreground" },
+              { label: "TOTAL WORKERS",    value: jobs.length,  icon: BarChart2,    color: "text-muted-foreground" },
+              { label: "RUNNING",          value: allRunning,   icon: CheckCircle2, color: "text-status-normal" },
+              { label: "WORKERS W/ ERRORS",value: withErrors,   icon: ServerCrash,  color: withErrors ? "text-status-fault" : "text-muted-foreground" },
             ].map(({ label, value, icon: Icon, color }) => (
-              <div key={label} className="border border-border rounded-xl p-4 bg-card">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-muted-foreground">{label}</p>
+              <div key={label} className="border border-border/50 bg-black/40 p-4 relative group hover:border-accent-brand/30 transition-colors">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-border/30 group-hover:bg-accent-brand/50 transition-colors" />
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{label}</p>
                   <Icon className={`h-4 w-4 ${color}`} />
                 </div>
                 {isLoading
-                  ? <div className="h-8 bg-muted animate-pulse rounded w-16" />
+                  ? <div className="h-8 bg-white/5 animate-pulse w-16" />
                   : <p className={`text-3xl font-bold font-mono ${color}`}>{value}</p>}
               </div>
             ))}
@@ -159,7 +161,7 @@ export default function SuperAdminJobs() {
           <div className="space-y-4">
             {isLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="border border-border rounded-xl p-5 bg-card animate-pulse h-36" />
+                <div key={i} className="border border-border/50 bg-black/40 animate-pulse h-36" />
               ))
             ) : jobs.map((job) => {
               const Icon = JOB_ICONS[job.id] ?? Activity;
@@ -168,66 +170,67 @@ export default function SuperAdminJobs() {
               const isBusy = triggering[job.id];
 
               return (
-                <div key={job.id} className="border border-border rounded-xl p-5 bg-card">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3 flex-1 min-w-0">
-                      <div className={`p-2 rounded-lg bg-muted/50 ${color}`}>
-                        <Icon className="h-5 w-5" />
+                <div key={job.id} className="border border-border/50 bg-black/40 p-5 relative overflow-hidden group hover:border-border transition-colors">
+                  <div className={`absolute top-0 left-0 w-1 h-full ${job.running ? "bg-status-normal shadow-[0_0_10px_rgba(34,197,94,0.8)]" : "bg-border/50"}`} />
+                  <div className="flex items-start justify-between gap-5 ml-2">
+                    <div className="flex items-start gap-4 flex-1 min-w-0">
+                      <div className={`p-2 border border-border/30 bg-black/60 ${color}`}>
+                        <Icon className="h-6 w-6" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-sm font-semibold">{job.name}</h3>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <h3 className="font-mono text-sm font-bold uppercase tracking-widest text-foreground">{job.name}</h3>
                           <Badge
                             variant="outline"
-                            className={`text-[10px] px-1.5 py-0 ${
+                            className={`font-mono text-[8px] font-bold uppercase tracking-widest rounded-none border px-1.5 py-0.5 ${
                               job.running
-                                ? "border-status-normal/30 text-status-normal bg-status-normal/5"
+                                ? "border-status-normal/50 text-status-normal bg-status-normal/10"
                                 : "border-muted-foreground/30 text-muted-foreground"
                             }`}
                           >
                             {job.running ? "● RUNNING" : "○ STOPPED"}
                           </Badge>
                           {job.lastError && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-status-fault/30 text-status-fault bg-status-fault/5">
+                            <Badge variant="outline" className="font-mono text-[8px] font-bold uppercase tracking-widest rounded-none px-1.5 py-0.5 border-status-fault/50 text-status-fault bg-status-fault/10">
                               ⚠ ERROR
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{job.description}</p>
+                        <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-1.5">{job.description}</p>
 
                         {/* Metrics row */}
-                        <div className="flex flex-wrap gap-4 mt-3">
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            <span>Last run: <span className="text-foreground font-mono">{lastRunLabel(job)}</span></span>
+                        <div className="flex flex-wrap gap-5 mt-4">
+                          <div className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                            <Clock className="h-3.5 w-3.5" />
+                            <span>LAST RUN: <span className="text-foreground font-bold">{lastRunLabel(job)}</span></span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <CheckCircle2 className="h-3 w-3" />
-                            <span>Completed: <span className="text-foreground font-mono">{runCount(job)}</span></span>
+                          <div className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            <span>COMPLETED: <span className="text-foreground font-bold">{runCount(job)}</span></span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Timer className="h-3 w-3" />
-                            <span>Interval: <span className="text-foreground font-mono">{intervalLabel(job)}</span></span>
+                          <div className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                            <Timer className="h-3.5 w-3.5" />
+                            <span>INTERVAL: <span className="text-foreground font-bold">{intervalLabel(job)}</span></span>
                           </div>
                           {extra && (
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <BarChart2 className="h-3 w-3" />
-                              <span>{extra.label}: <span className="text-foreground font-mono">{extra.value}</span></span>
+                            <div className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                              <BarChart2 className="h-3.5 w-3.5" />
+                              <span>{extra.label}: <span className="text-foreground font-bold">{extra.value}</span></span>
                             </div>
                           )}
                           {job.startedAt && (
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <Activity className="h-3 w-3" />
-                              <span>Started: <span className="text-foreground font-mono">{new Date(job.startedAt).toLocaleTimeString()}</span></span>
+                            <div className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                              <Activity className="h-3.5 w-3.5" />
+                              <span>STARTED: <span className="text-foreground font-bold">{new Date(job.startedAt).toLocaleTimeString().toUpperCase()}</span></span>
                             </div>
                           )}
                         </div>
 
                         {/* Last error */}
                         {job.lastError && (
-                          <div className="mt-3 flex items-start gap-2 px-3 py-2 rounded-lg bg-status-fault/5 border border-status-fault/20">
-                            <AlertTriangle className="h-3.5 w-3.5 text-status-fault flex-shrink-0 mt-0.5" />
-                            <p className="text-xs text-status-fault font-mono break-all">{job.lastError}</p>
+                          <div className="mt-4 flex items-start gap-3 p-3 bg-status-fault/10 border border-status-fault/30">
+                            <AlertTriangle className="h-4 w-4 text-status-fault flex-shrink-0" />
+                            <p className="font-mono text-[10px] text-status-fault font-bold uppercase tracking-widest break-all leading-relaxed">{job.lastError}</p>
                           </div>
                         )}
                       </div>
@@ -235,15 +238,14 @@ export default function SuperAdminJobs() {
 
                     {/* Trigger button */}
                     <Button
-                      size="sm"
                       variant="outline"
-                      className="gap-1.5 flex-shrink-0"
+                      className={`gap-2 flex-shrink-0 font-mono text-[9px] uppercase tracking-widest font-bold rounded-none border-border/50 text-muted-foreground transition-colors ${isBusy ? "" : "hover:border-accent-brand hover:text-accent-brand hover:bg-accent-brand/10"}`}
                       disabled={isBusy}
                       onClick={() => triggerMut.mutate(job.id)}
                     >
                       {isBusy
-                        ? <><RefreshCw className="h-3.5 w-3.5 animate-spin" /> Running…</>
-                        : <><Play className="h-3.5 w-3.5" /> Trigger Now</>}
+                        ? <><RefreshCw className="h-3.5 w-3.5 animate-spin" /> RUNNING...</>
+                        : <><Play className="h-3.5 w-3.5" /> TRIGGER NOW</>}
                     </Button>
                   </div>
                 </div>
@@ -252,11 +254,11 @@ export default function SuperAdminJobs() {
           </div>
 
           {/* Info note */}
-          <div className="flex items-start gap-2 px-4 py-3 rounded-lg bg-blue-500/5 border border-blue-500/20 text-xs text-blue-400">
-            <Zap className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-            <span>
-              Triggering a job starts one immediate cycle without affecting the normal schedule.
-              Workers automatically recover from transient errors on the next cycle.
+          <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/30">
+            <Zap className="h-4 w-4 flex-shrink-0 text-blue-400 drop-shadow-[0_0_5px_rgba(96,165,250,0.6)] mt-0.5" />
+            <span className="font-mono text-[9px] uppercase tracking-widest text-blue-400 leading-relaxed font-bold">
+              TRIGGERING A JOB STARTS ONE IMMEDIATE CYCLE WITHOUT AFFECTING THE NORMAL SCHEDULE.<br/>
+              WORKERS AUTOMATICALLY RECOVER FROM TRANSIENT ERRORS ON THE NEXT CYCLE.
             </span>
           </div>
 

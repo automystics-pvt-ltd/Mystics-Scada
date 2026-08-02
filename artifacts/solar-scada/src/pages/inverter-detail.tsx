@@ -21,11 +21,11 @@ import { useState, useMemo } from "react";
 const BASE = import.meta.env.BASE_URL as string;
 
 // ── Status config ─────────────────────────────────────────────────────────────
-const STATUS_CFG: Record<InverterStatus, { label: string; color: string; bg: string; border: string; dot: string }> = {
-  running:   { label: "Grid-connected operation", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30", dot: "bg-emerald-400" },
-  standby:   { label: "Standby",                  color: "text-amber-400",   bg: "bg-amber-500/10",   border: "border-amber-500/30",   dot: "bg-amber-400" },
-  fault:     { label: "Fault",                     color: "text-red-400",     bg: "bg-red-500/10",     border: "border-red-500/30",     dot: "bg-red-400" },
-  comm_lost: { label: "Communication lost",        color: "text-slate-400",   bg: "bg-slate-500/10",   border: "border-slate-500/30",   dot: "bg-slate-400" },
+const STATUS_CFG: Record<InverterStatus, { label: string; color: string; bg: string; border: string; dot: string; shadow: string }> = {
+  running:   { label: "Grid-connected operation", color: "text-status-normal", bg: "bg-status-normal/10", border: "border-status-normal/30", dot: "bg-status-normal", shadow: "shadow-[0_0_15px_hsl(var(--status-normal)/0.15)]" },
+  standby:   { label: "Standby",                  color: "text-status-warning",   bg: "bg-status-warning/10",   border: "border-status-warning/30",   dot: "bg-status-warning", shadow: "shadow-[0_0_15px_hsl(var(--status-warning)/0.15)]" },
+  fault:     { label: "Fault",                     color: "text-status-fault",     bg: "bg-status-fault/10",     border: "border-status-fault/30",     dot: "bg-status-fault", shadow: "shadow-[0_0_15px_hsl(var(--status-fault)/0.15)]" },
+  comm_lost: { label: "Communication lost",        color: "text-muted-foreground",   bg: "bg-muted/50",   border: "border-border/50",   dot: "bg-muted-foreground", shadow: "" },
 };
 
 // ── Severity → alarm type ─────────────────────────────────────────────────────
@@ -38,18 +38,18 @@ function alarmType(severity: string): AlarmTypeName {
 function AlarmTypeBadge({ severity }: { severity: string }) {
   const t = alarmType(severity);
   if (t === "Fault") return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/15 text-red-400 border border-red-500/20">
-      <TriangleAlert className="w-2.5 h-2.5" /> Fault
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest bg-status-fault/15 text-status-fault border border-status-fault/30 shadow-[0_0_10px_hsl(var(--status-fault)/0.1)]">
+      <TriangleAlert className="w-3 h-3" /> Fault
     </span>
   );
   if (t === "Alarm") return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/20">
-      <Bell className="w-2.5 h-2.5" /> Alarm
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest bg-[#e67e22]/15 text-[#e67e22] border border-[#e67e22]/30 shadow-[0_0_10px_rgba(230,126,34,0.1)]">
+      <Bell className="w-3 h-3" /> Alarm
     </span>
   );
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/15 text-blue-400 border border-blue-500/20">
-      <Info className="w-2.5 h-2.5" /> Info
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest bg-accent-brand/15 text-accent-brand border border-accent-brand/30 shadow-[0_0_10px_hsl(var(--accent-brand)/0.1)]">
+      <Info className="w-3 h-3" /> Info
     </span>
   );
 }
@@ -290,20 +290,20 @@ function ParamCell({
   highlight?: boolean; trend?: "up" | "down" | "flat" | "live"; loading?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-1 px-4 py-3.5 border-b border-r border-border/40 last:border-r-0">
-      <span className="text-[10px] text-muted-foreground leading-tight truncate">{label}</span>
+    <div className="flex flex-col gap-1.5 px-5 py-4 border-b border-r border-border/40 last:border-r-0 bg-card/20 hover:bg-card/40 transition-colors">
+      <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-tight truncate">{label}</span>
       <div className="flex items-baseline gap-1.5 min-h-[1.5rem]">
         {loading ? (
-          <div className="h-5 w-20 bg-muted/40 rounded animate-pulse" />
+          <div className="h-6 w-20 bg-muted/40 rounded animate-shimmer" />
         ) : (
           <>
-            <span className={`text-sm font-semibold tabular-nums ${highlight ? "text-emerald-400" : "text-foreground"}`}>
+            <span className={`text-lg font-mono font-bold tabular-nums tracking-tighter ${highlight ? "text-status-normal shadow-[0_0_10px_hsl(var(--status-normal)/0.2)]" : "text-foreground"}`}>
               {value ?? "--"}
             </span>
-            {unit && <span className="text-xs text-muted-foreground">{unit}</span>}
-            {trend === "up"   && <TrendingUp   className="w-3 h-3 flex-shrink-0 text-emerald-400" />}
-            {trend === "down" && <TrendingDown  className="w-3 h-3 flex-shrink-0 text-red-400" />}
-            {trend === "live" && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />}
+            {unit && <span className="text-[10px] font-semibold text-muted-foreground font-sans">{unit}</span>}
+            {trend === "up"   && <TrendingUp   className="w-3.5 h-3.5 flex-shrink-0 text-status-normal ml-1" />}
+            {trend === "down" && <TrendingDown  className="w-3.5 h-3.5 flex-shrink-0 text-status-fault ml-1" />}
+            {trend === "live" && <span className="inline-block w-2 h-2 rounded-full bg-status-normal shadow-[0_0_5px_hsl(var(--status-normal))] animate-pulse flex-shrink-0 ml-1" />}
           </>
         )}
       </div>
@@ -316,11 +316,11 @@ function SectionHeader({ title, collapsible = false, open = true, onToggle }: {
 }) {
   return (
     <button
-      className={`w-full flex items-center justify-between px-4 py-2.5 bg-muted/20 border-b border-border/40 ${collapsible ? "cursor-pointer hover:bg-muted/30 transition-colors" : "cursor-default"}`}
+      className={`w-full flex items-center justify-between px-5 py-3 bg-muted/10 border-b border-border/50 ${collapsible ? "cursor-pointer hover:bg-muted/30 transition-colors" : "cursor-default"}`}
       onClick={collapsible ? onToggle : undefined}
     >
-      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</span>
-      {collapsible && (open ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />)}
+      <span className="text-[10px] font-bold text-foreground uppercase tracking-widest">{title}</span>
+      {collapsible && (open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />)}
     </button>
   );
 }
@@ -331,11 +331,11 @@ function Tab({ active, onClick, icon: Icon, children }: {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1.5 px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-all -mb-px ${
-        active ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+      className={`flex items-center gap-2 px-5 py-3 text-xs font-bold uppercase tracking-wider whitespace-nowrap border-b-2 transition-all -mb-px ${
+        active ? "border-accent-brand text-accent-brand bg-accent-brand/5" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/30"
       }`}
     >
-      <Icon className="w-3.5 h-3.5" />
+      <Icon className="w-4 h-4" />
       {children}
     </button>
   );
@@ -461,48 +461,48 @@ export default function InverterDetail() {
       <div className="flex flex-col space-y-0 min-h-0">
 
         {/* ── Breadcrumb ──────────────────────────────────────────────── */}
-        <div className="flex items-center gap-2 mb-4">
-          <Link href="/"><button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"><ArrowLeft className="w-3 h-3" /> Portfolio</button></Link>
+        <div className="flex items-center gap-2 mb-6">
+          <Link href="/"><button className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"><ArrowLeft className="w-3.5 h-3.5" /> Portfolio</button></Link>
           <ChevronRight className="w-3 h-3 text-muted-foreground/40" />
-          <Link href={`${BASE}plants/${plantId}`}><span className="text-xs text-muted-foreground hover:text-foreground cursor-pointer">{plant?.name ?? "Plant"}</span></Link>
+          <Link href={`${BASE}plants/${plantId}`}><span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground cursor-pointer transition-colors">{plant?.name ?? "Plant"}</span></Link>
           <ChevronRight className="w-3 h-3 text-muted-foreground/40" />
-          <Link href={`${BASE}plants/${plantId}/inverters`}><span className="text-xs text-muted-foreground hover:text-foreground cursor-pointer">Device</span></Link>
+          <Link href={`${BASE}plants/${plantId}/inverters`}><span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground cursor-pointer transition-colors">Inverters</span></Link>
           <ChevronRight className="w-3 h-3 text-muted-foreground/40" />
-          <span className="text-xs text-foreground font-medium">{inv?.name ?? "Inverter"}</span>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-foreground">{inv?.name ?? "Device"}</span>
         </div>
 
         {/* ── Device header ────────────────────────────────────────────── */}
-        <div className="flex flex-wrap items-start gap-4 mb-5">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${statusCfg.bg} ${statusCfg.border}`}>
-              <Zap className={`w-5 h-5 ${statusCfg.color}`} />
+        <div className="flex flex-wrap items-start gap-4 mb-6 animate-fade-up">
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${statusCfg.bg} ${statusCfg.border} ${statusCfg.shadow}`}>
+              <Zap className={`w-6 h-6 ${statusCfg.color}`} />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground tracking-tight">{inv?.name ?? "Inverter"}</h1>
-              <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+              <h1 className="text-3xl font-bold text-foreground tracking-tight">{inv?.name ?? "Inverter"}</h1>
+              <div className="flex items-center gap-2 mt-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 {plant?.name && <span>Plant: <span className="text-foreground">{plant.name}</span></span>}
                 <span className="text-border">·</span>
                 <span>Device model: <span className="text-foreground font-mono">TRB246</span></span>
               </div>
             </div>
           </div>
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot} ${inv?.status === "running" ? "animate-pulse" : ""}`} />
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-[10px] font-bold uppercase tracking-widest ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border} ${statusCfg.shadow}`}>
+            <span className={`w-2 h-2 rounded-full ${statusCfg.dot} ${inv?.status === "running" ? "animate-pulse" : ""}`} />
             {statusCfg.label}
           </div>
-          <div className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
-            Auto-refresh every 5s
+          <div className="ml-auto flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-accent-brand bg-accent-brand/10 px-3 py-1.5 rounded-lg border border-accent-brand/20">
+            <Radio className="w-3.5 h-3.5 animate-pulse" />
+            LIVE SYNC
           </div>
         </div>
 
         {/* ── Tabs ─────────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-0 border-b border-border/50 mb-0 overflow-x-auto">
+        <div className="flex items-center gap-2 border-b border-border/50 mb-6 overflow-x-auto animate-fade-up" style={{ animationDelay: '50ms' }}>
           <Tab active={activeTab === "general"} onClick={() => setActiveTab("general")} icon={Info}>General information</Tab>
           <Tab active={activeTab === "fault"}   onClick={() => setActiveTab("fault")}   icon={AlertTriangle}>
             Fault
             {rawAlerts.length > 0 && activeTab !== "fault" && (
-              <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500/20 text-red-400 text-[9px] font-bold">
+              <span className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-status-fault/20 text-status-fault text-[10px] font-bold border border-status-fault/30">
                 {rawAlerts.length > 99 ? "99+" : rawAlerts.length}
               </span>
             )}
@@ -513,19 +513,19 @@ export default function InverterDetail() {
 
         {/* ══════════════ GENERAL INFORMATION tab ══════════════════════ */}
         {activeTab === "general" && (
-          <div className="bg-card border border-border/60 rounded-b-xl rounded-tr-xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/10">
-              <h3 className="text-xs font-semibold text-foreground">Measuring point parameter</h3>
-              <div className="flex items-center gap-3">
-                <span className="text-[10px] text-muted-foreground">Data update time: {updateTime}</span>
-                <button onClick={handleRefresh} className="p-1 rounded hover:bg-muted/40 transition-colors text-muted-foreground hover:text-foreground" title="Refresh data">
-                  <RefreshCw className="w-3.5 h-3.5" />
+          <div className="bg-card/40 backdrop-blur-md border border-card-border rounded-b-xl rounded-tr-xl overflow-hidden shadow-sm animate-fade-up" style={{ animationDelay: '100ms' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/10">
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">Measuring point parameter</h3>
+              <div className="flex items-center gap-4">
+                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest bg-card border border-border/50 px-3 py-1.5 rounded-lg shadow-sm">Data update time: <span className="text-foreground font-mono">{updateTime}</span></span>
+                <button onClick={handleRefresh} className="p-2 rounded-lg bg-card border border-border/50 hover:bg-muted/40 transition-colors text-muted-foreground hover:text-foreground shadow-sm" title="Refresh data">
+                  <RefreshCw className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
             <SectionHeader title="Overview" />
-            <div className="grid grid-cols-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 bg-card/20">
               <ParamCell label="Daily generation"       value={daily.value}              unit={daily.unit}  loading={isLoading} trend="live" highlight />
               <ParamCell label="Total active power"     value={fmt1(inv?.acPowerKw)}     unit="kW"          loading={isLoading} trend="live" highlight />
               <ParamCell label="Total DC power"         value={fmt1(inv?.dcPowerKw)}     unit="kW"          loading={isLoading} trend="live" />
@@ -545,7 +545,7 @@ export default function InverterDetail() {
 
             <SectionHeader title="MPPT / DC information" collapsible open={mpptOpen} onToggle={() => setMpptOpen(v => !v)} />
             {mpptOpen && (
-              <div className="grid grid-cols-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 bg-card/20 border-b border-border/50">
                 <ParamCell label="DC voltage"   value={fmt1(inv?.dcVoltageV)}    unit="V"  loading={isLoading} trend="live" />
                 <ParamCell label="DC current"   value={fmt1(inv?.dcCurrentA)}    unit="A"  loading={isLoading} trend="live" />
                 <ParamCell label="DC power"     value={fmt1(inv?.dcPowerKw)}     unit="kW" loading={isLoading} trend="live" highlight />
@@ -555,14 +555,14 @@ export default function InverterDetail() {
               </div>
             )}
 
-            <div className="flex items-center justify-between px-4 py-4 border-t border-border/40 bg-muted/5">
+            <div className="flex items-center justify-between px-5 py-5 border-t border-border/40 bg-muted/10">
               <Link href={`${BASE}plants/${plantId}/inverters/${inverterId}/strings`}>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-primary/30 bg-primary/5 text-primary text-xs font-medium hover:bg-primary/10 hover:border-primary/50 transition-all">
-                  <Layers className="w-3.5 h-3.5" /> String Diagnostics <ArrowRight className="w-3.5 h-3.5" />
+                <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-accent-brand/30 bg-accent-brand/10 text-accent-brand text-[10px] font-bold uppercase tracking-widest hover:bg-accent-brand/20 hover:border-accent-brand/50 transition-all shadow-sm">
+                  <Layers className="w-4 h-4" /> String Diagnostics <ArrowRight className="w-4 h-4" />
                 </button>
               </Link>
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border/60 text-muted-foreground text-xs font-medium hover:bg-muted/30 hover:text-foreground transition-all">
-                <Wrench className="w-3.5 h-3.5" /> Repair / Maintenance
+              <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border/60 bg-card shadow-sm text-muted-foreground text-[10px] font-bold uppercase tracking-widest hover:bg-muted/30 hover:text-foreground transition-all">
+                <Wrench className="w-4 h-4" /> Repair / Maintenance
               </button>
             </div>
           </div>
@@ -570,17 +570,17 @@ export default function InverterDetail() {
 
         {/* ══════════════ FAULT tab ════════════════════════════════════ */}
         {activeTab === "fault" && (
-          <div className="bg-card border border-border/60 rounded-b-xl rounded-tr-xl overflow-hidden">
+          <div className="bg-card/40 backdrop-blur-md border border-card-border rounded-b-xl rounded-tr-xl overflow-hidden shadow-sm animate-fade-up" style={{ animationDelay: '100ms' }}>
 
             {/* ── Filter bar ───────────────────────────────────────── */}
-            <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-border/40 bg-muted/5">
+            <div className="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-border/50 bg-muted/10">
               {/* Pending / Resolved toggle */}
-              <div className="flex items-center rounded-lg border border-border/60 overflow-hidden text-xs font-medium">
+              <div className="flex items-center rounded-lg border border-border/50 overflow-hidden text-[10px] font-bold uppercase tracking-widest bg-card shadow-sm">
                 <button
                   onClick={() => handleFaultStatusChange("pending")}
-                  className={`px-4 py-2 transition-all ${
+                  className={`px-5 py-2.5 transition-all ${
                     faultStatus === "pending"
-                      ? "bg-foreground text-background"
+                      ? "bg-accent-brand/10 text-accent-brand"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                   }`}
                 >
@@ -588,9 +588,9 @@ export default function InverterDetail() {
                 </button>
                 <button
                   onClick={() => handleFaultStatusChange("resolved")}
-                  className={`px-4 py-2 transition-all border-l border-border/60 ${
+                  className={`px-5 py-2.5 transition-all border-l border-border/50 ${
                     faultStatus === "resolved"
-                      ? "bg-foreground text-background"
+                      ? "bg-accent-brand/10 text-accent-brand"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                   }`}
                 >
@@ -602,7 +602,7 @@ export default function InverterDetail() {
               <select
                 value={faultMonth}
                 onChange={e => { setFaultMonth(e.target.value); setFaultPage(1); }}
-                className="h-8 px-3 rounded-lg border border-border/60 bg-muted/20 text-xs text-foreground focus:outline-none focus:border-primary/50 hover:border-border transition-colors"
+                className="h-10 px-4 rounded-lg border border-border/50 bg-card text-[10px] font-bold uppercase tracking-widest text-foreground focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 hover:border-border transition-colors shadow-sm"
               >
                 {monthOptions.map(o => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -612,36 +612,36 @@ export default function InverterDetail() {
               {/* Alarm name search */}
               <input
                 type="text"
-                placeholder="Alarm name"
+                placeholder="ALARM NAME"
                 value={alarmInput}
                 onChange={e => setAlarmInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleFaultSearch()}
-                className="h-8 px-3 rounded-lg border border-border/60 bg-muted/20 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 hover:border-border transition-colors w-36"
+                className="h-10 px-4 rounded-lg border border-border/50 bg-card text-[10px] font-bold uppercase tracking-widest text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 hover:border-border transition-colors w-48 shadow-sm"
               />
 
               {/* Fault code search */}
               <input
                 type="text"
-                placeholder="Fault code"
+                placeholder="FAULT CODE"
                 value={codeInput}
                 onChange={e => setCodeInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleFaultSearch()}
-                className="h-8 px-3 rounded-lg border border-border/60 bg-muted/20 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 hover:border-border transition-colors w-28"
+                className="h-10 px-4 rounded-lg border border-border/50 bg-card text-[10px] font-bold uppercase tracking-widest text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 hover:border-border transition-colors w-32 shadow-sm"
               />
 
               {/* Search button */}
               <button
                 onClick={handleFaultSearch}
-                className="h-8 flex items-center gap-1.5 px-4 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+                className="h-10 flex items-center gap-2 px-5 rounded-lg bg-accent-brand text-background text-[10px] font-bold uppercase tracking-widest hover:bg-accent-brand/90 transition-colors shadow-[0_0_15px_hsl(var(--accent-brand)/0.3)]"
               >
-                <Search className="w-3 h-3" /> Search
+                <Search className="w-3.5 h-3.5" /> Search
               </button>
 
               {/* Clear */}
               {(alarmSearch || codeSearch) && (
                 <button
                   onClick={() => { setAlarmInput(""); setCodeInput(""); setAlarmSearch(""); setCodeSearch(""); setFaultPage(1); }}
-                  className="h-8 px-3 rounded-lg border border-border/60 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+                  className="h-10 px-4 rounded-lg border border-border/50 bg-card shadow-sm text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
                 >
                   Clear
                 </button>
@@ -654,7 +654,7 @@ export default function InverterDetail() {
                 <thead>
                   <tr className="border-b border-border/50 bg-muted/10">
                     {["Alarm name", "Alarm type", "Fault code", "Device name", "Device model", "Reporter", "Occurrence time", "Recovery time", "Action"].map(col => (
-                      <th key={col} className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                      <th key={col} className="px-5 py-3.5 text-left text-[9px] font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
                         {col}
                       </th>
                     ))}
@@ -663,24 +663,24 @@ export default function InverterDetail() {
                 <tbody>
                   {alertsLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
-                      <tr key={i} className="border-b border-border/30">
+                      <tr key={i} className="border-b border-border/30 bg-card/20">
                         {Array.from({ length: 9 }).map((_, j) => (
-                          <td key={j} className="px-4 py-3">
-                            <div className="h-4 bg-muted/30 rounded animate-pulse" style={{ width: `${40 + (j * 13) % 50}%` }} />
+                          <td key={j} className="px-5 py-4">
+                            <div className="h-4 bg-muted/30 rounded animate-shimmer" style={{ width: `${40 + (j * 13) % 50}%` }} />
                           </td>
                         ))}
                       </tr>
                     ))
                   ) : pagedAlerts.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="text-center py-16 text-muted-foreground">
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="w-12 h-12 rounded-2xl bg-muted/20 border border-border/40 flex items-center justify-center">
-                            <AlertTriangle className="w-5 h-5 text-muted-foreground/40" />
+                      <td colSpan={9} className="text-center py-20 text-muted-foreground bg-card/20">
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="w-16 h-16 rounded-2xl bg-muted/30 border border-border/40 flex items-center justify-center border-dashed">
+                            <AlertTriangle className="w-6 h-6 text-muted-foreground/40" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-foreground mb-0.5">No records found</p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-sm font-bold text-foreground mb-1 uppercase tracking-wider">No records found</p>
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
                               No {faultStatus === "pending" ? "pending" : "resolved"} fault records for{" "}
                               {monthOptions.find(o => o.value === faultMonth)?.label ?? faultMonth}
                             </p>
@@ -692,46 +692,46 @@ export default function InverterDetail() {
                     pagedAlerts.map((alert: any, idx: number) => (
                       <tr
                         key={alert.id ?? idx}
-                        className="border-b border-border/30 hover:bg-muted/10 transition-colors group"
+                        className="border-b border-border/30 hover:bg-muted/30 transition-colors group bg-card/20"
                       >
-                        <td className="px-4 py-3 font-medium text-foreground max-w-[200px]">
-                          <span className="block truncate" title={alert.title}>{alert.title}</span>
+                        <td className="px-5 py-4 font-bold text-foreground max-w-[200px] truncate group-hover:text-accent-brand transition-colors" title={alert.title}>
+                          {alert.title}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-5 py-4 whitespace-nowrap">
                           <AlarmTypeBadge severity={alert.severity} />
                         </td>
-                        <td className="px-4 py-3 font-mono text-muted-foreground">
+                        <td className="px-5 py-4 font-mono font-bold text-muted-foreground">
                           {faultCodeFor(alert.title, alert.severity)}
                         </td>
-                        <td className="px-4 py-3 text-foreground whitespace-nowrap">
+                        <td className="px-5 py-4 text-foreground whitespace-nowrap font-medium">
                           {alert.deviceName ?? inv?.name ?? "--"}
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground font-mono whitespace-nowrap">
+                        <td className="px-5 py-4 text-muted-foreground font-mono font-bold whitespace-nowrap text-[10px]">
                           TRB246
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                          system
+                        <td className="px-5 py-4 text-muted-foreground whitespace-nowrap text-[10px] font-bold uppercase tracking-widest">
+                          SYSTEM
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap tabular-nums">
+                        <td className="px-5 py-4 text-muted-foreground whitespace-nowrap tabular-nums font-mono">
                           {fmtDateTime(alert.createdAt)}
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap tabular-nums">
+                        <td className="px-5 py-4 text-muted-foreground whitespace-nowrap tabular-nums font-mono">
                           {alert.resolvedAt ? fmtDateTime(alert.resolvedAt) : (
-                            <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${
-                              alert.severity === "critical" || alert.severity === "major" ? "text-red-400" : "text-amber-400"
+                            <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${
+                              alert.severity === "critical" || alert.severity === "major" ? "text-status-fault" : "text-status-warning"
                             }`}>
-                              <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                              Active
+                              <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse shadow-[0_0_5px_currentColor]" />
+                              ACTIVE
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-5 py-4">
                           <button
                             title="View fault details"
                             onClick={() => setSelectedFault(alert)}
-                            className="p-1.5 rounded-lg border border-border/50 text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/5 opacity-0 group-hover:opacity-100 transition-all"
+                            className="p-2 rounded-lg border border-border/50 bg-card text-muted-foreground hover:text-accent-brand hover:border-accent-brand/40 hover:bg-accent-brand/10 opacity-0 group-hover:opacity-100 transition-all shadow-sm"
                           >
-                            <FileText className="w-3.5 h-3.5" />
+                            <FileText className="w-4 h-4" />
                           </button>
                         </td>
                       </tr>
@@ -743,27 +743,27 @@ export default function InverterDetail() {
 
             {/* ── Pagination ───────────────────────────────────────── */}
             {!alertsLoading && totalFaults > 0 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-border/40 bg-muted/5">
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span>Total <span className="text-foreground font-medium">{totalFaults}</span></span>
-                  <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between px-5 py-4 border-t border-border/50 bg-muted/10">
+                <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  <span>Total <span className="text-foreground font-mono bg-card px-2 py-1 rounded border border-border/50">{totalFaults}</span></span>
+                  <div className="flex items-center gap-2">
                     <select
                       value={faultPageSize}
                       onChange={e => { setFaultPageSize(Number(e.target.value)); setFaultPage(1); }}
-                      className="h-7 px-2 rounded border border-border/60 bg-muted/20 text-xs text-foreground focus:outline-none"
+                      className="h-8 px-2 rounded-lg border border-border/50 bg-card text-[10px] font-bold uppercase tracking-widest text-foreground focus:outline-none focus:border-accent-brand/50 hover:border-border transition-colors shadow-sm"
                     >
                       {[10, 20, 50].map(n => <option key={n} value={n}>{n}/page</option>)}
                     </select>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => setFaultPage(p => Math.max(1, p - 1))}
                     disabled={faultPage === 1}
-                    className="w-7 h-7 flex items-center justify-center rounded border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all bg-card shadow-sm"
                   >
-                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <ChevronLeft className="w-4 h-4" />
                   </button>
 
                   {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -778,10 +778,10 @@ export default function InverterDetail() {
                       <button
                         key={p}
                         onClick={() => setFaultPage(p)}
-                        className={`w-7 h-7 flex items-center justify-center rounded border text-xs font-medium transition-all ${
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg border text-[10px] font-bold transition-all shadow-sm ${
                           p === faultPage
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                            ? "bg-accent-brand text-background border-accent-brand"
+                            : "border-border/50 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/30"
                         }`}
                       >
                         {p}
@@ -792,13 +792,13 @@ export default function InverterDetail() {
                   <button
                     onClick={() => setFaultPage(p => Math.min(totalPages, p + 1))}
                     disabled={faultPage === totalPages}
-                    className="w-7 h-7 flex items-center justify-center rounded border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all bg-card shadow-sm"
                   >
-                    <ChevronRight className="w-3.5 h-3.5" />
+                    <ChevronRight className="w-4 h-4" />
                   </button>
 
-                  <div className="flex items-center gap-1.5 ml-2 text-xs text-muted-foreground">
-                    Go to
+                  <div className="flex items-center gap-2 ml-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    GO TO
                     <input
                       type="number"
                       min={1}
@@ -808,7 +808,7 @@ export default function InverterDetail() {
                         const v = Number(e.target.value);
                         if (v >= 1 && v <= totalPages) setFaultPage(v);
                       }}
-                      className="w-12 h-7 px-2 rounded border border-border/60 bg-muted/20 text-xs text-center text-foreground focus:outline-none focus:border-primary/50"
+                      className="w-14 h-8 px-2 rounded-lg border border-border/50 bg-card text-[10px] font-bold text-center text-foreground focus:outline-none focus:border-accent-brand/50 shadow-sm"
                     />
                   </div>
                 </div>
@@ -819,61 +819,56 @@ export default function InverterDetail() {
 
         {/* ══════════════ CURVE tab ════════════════════════════════════ */}
         {activeTab === "curve" && (
-          <div className="bg-card border border-border/60 rounded-b-xl rounded-tr-xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/10">
-              <h3 className="text-xs font-semibold">Power Generation Trend</h3>
-              <div className="flex items-center bg-muted/30 rounded-lg border border-border/50 p-0.5 gap-0.5">
+          <div className="bg-card/40 backdrop-blur-md border border-card-border rounded-b-xl rounded-tr-xl overflow-hidden shadow-sm animate-fade-up" style={{ animationDelay: '100ms' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 bg-muted/10">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-foreground">Power Generation Trend</h3>
+              <div className="flex items-center bg-card rounded-lg border border-border/50 p-1 shadow-sm gap-1">
                 {(["hour", "day", "week", "month"] as const).map((r) => (
                   <button
                     key={r}
                     onClick={() => setRange(r)}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                      range === r ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                    className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all ${
+                      range === r ? "bg-accent-brand/10 shadow-sm text-accent-brand" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                     }`}
                   >
-                    {r.toUpperCase()}
+                    {r}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-4 border-b border-border/40">
+            <div className="grid grid-cols-4 border-b border-border/50 bg-card/20">
               {[
-                { label: "AC Power",    value: `${fmt1(inv?.acPowerKw)} kW`,    color: "text-emerald-400" },
-                { label: "DC Power",    value: `${fmt1(inv?.dcPowerKw)} kW`,    color: "text-amber-400" },
-                { label: "Efficiency",  value: `${fmt1(inv?.efficiencyPct)}%`,   color: "text-primary" },
+                { label: "AC Power",    value: `${fmt1(inv?.acPowerKw)} kW`,    color: "text-status-normal" },
+                { label: "DC Power",    value: `${fmt1(inv?.dcPowerKw)} kW`,    color: "text-status-warning" },
+                { label: "Efficiency",  value: `${fmt1(inv?.efficiencyPct)}%`,   color: "text-accent-brand" },
                 { label: "Temperature", value: `${fmt1(inv?.temperatureC)} °C`,  color: "text-foreground" },
               ].map(({ label, value, color }) => (
-                <div key={label} className="flex flex-col items-center py-3 border-r border-border/40 last:border-r-0">
-                  <span className="text-[10px] text-muted-foreground mb-1">{label}</span>
-                  <span className={`text-sm font-semibold tabular-nums ${color}`}>{value}</span>
+                <div key={label} className="flex flex-col items-center py-4 border-r border-border/50 last:border-r-0">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">{label}</span>
+                  <span className={`text-lg font-mono font-bold tabular-nums tracking-tighter ${color}`}>{value}</span>
                 </div>
               ))}
             </div>
-            <div className="px-4 pt-4 pb-5">
+            <div className="px-5 pt-5 pb-6 bg-card/20">
               {trend && trend.length > 0 ? (
                 <>
                   <SvgAreaChart
                     data={(trend as unknown as Record<string, unknown>[])}
                     xKey="timestamp"
                     series={[
-                      { key: "acPowerKw", name: "AC Power", color: "hsl(142 71% 45%)" },
-                      { key: "dcPowerKw", name: "DC Power", color: "hsl(38 92% 50%)", dashed: true },
+                      { key: "acPowerKw", name: "AC Power", color: "hsl(var(--status-normal))" },
+                      { key: "dcPowerKw", name: "DC Power", color: "hsl(var(--status-warning))", dashed: true },
                     ]}
-                    height={280}
+                    height={320}
                     yFmt={(v) => `${v.toFixed(0)} kW`}
-                    xFmt={(t) => {
-                      const d = new Date(t);
-                      if (range === "hour" || range === "day") return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-                      return d.toLocaleDateString([], { month: "short", day: "numeric" });
-                    }}
                   />
-                  <div className="flex gap-5 mt-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1.5"><span className="inline-block w-5 h-0.5 bg-emerald-500 rounded" /> AC Power</span>
-                    <span className="flex items-center gap-1.5"><span className="inline-block w-5 border-t border-dashed border-amber-400" /> DC Power</span>
+                  <div className="flex gap-6 mt-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground justify-center">
+                    <span className="flex items-center gap-2"><span className="inline-block w-4 h-1 bg-status-normal rounded-full shadow-[0_0_5px_hsl(var(--status-normal))]" /> AC Power</span>
+                    <span className="flex items-center gap-2"><span className="inline-block w-4 border-t-2 border-dashed border-status-warning" /> DC Power</span>
                   </div>
                 </>
               ) : (
-                <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">Loading trend data…</div>
+                <div className="h-72 flex items-center justify-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground border border-dashed border-border/50 rounded-xl">Loading trend data…</div>
               )}
             </div>
           </div>
@@ -881,11 +876,11 @@ export default function InverterDetail() {
 
         {/* ══════════════ SETTINGS tab ═════════════════════════════════ */}
         {activeTab === "settings" && (
-          <div className="bg-card border border-border/60 rounded-b-xl rounded-tr-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-border/40 bg-muted/10">
-              <h3 className="text-xs font-semibold">Device Settings</h3>
+          <div className="bg-card/40 backdrop-blur-md border border-card-border rounded-b-xl rounded-tr-xl overflow-hidden shadow-sm animate-fade-up" style={{ animationDelay: '100ms' }}>
+            <div className="px-5 py-4 border-b border-border/50 bg-muted/10">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-foreground">Device Settings</h3>
             </div>
-            <div className="grid grid-cols-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 bg-card/20">
               <ParamCell label="Inverter ID"     value={inv?.id} />
               <ParamCell label="Protocol"        value="MQTT / Modbus TCP" />
               <ParamCell label="Firmware"        value="TRB2M_R_00.07.22.1" />
@@ -893,10 +888,10 @@ export default function InverterDetail() {
               <ParamCell label="Plant"           value={plant?.name} />
               <ParamCell label="Rated capacity"  value={plant?.capacityKw != null ? (plant.capacityKw / 1000).toFixed(2) : "--"} unit="MWp" />
             </div>
-            <div className="px-4 py-4 border-t border-border/40">
+            <div className="px-5 py-5 border-t border-border/50 bg-muted/10 flex justify-end">
               <Link href={`/devices/${inverterId}`}>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border/60 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all">
-                  <Settings className="w-3.5 h-3.5" /> Advanced Device Settings <ArrowRight className="w-3.5 h-3.5" />
+                <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border/60 bg-card shadow-sm text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all">
+                  <Settings className="w-4 h-4" /> Advanced Device Settings <ArrowRight className="w-4 h-4" />
                 </button>
               </Link>
             </div>

@@ -82,58 +82,62 @@ function EditUserDialog({
   const [status, setStatus] = useState(user.status);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-card border border-card-border rounded-lg w-full max-w-md">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-card-border">
-          <h2 className="font-semibold">Edit User — {user.name}</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
-        </div>
-        <div className="px-5 py-4 space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+      <div className="bg-card/95 border border-card-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden relative">
+        <div className="absolute top-0 left-0 w-full h-1 bg-accent-brand" />
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border/50">
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Email</p>
-            <p className="text-sm text-foreground/70">{user.email}</p>
+            <h2 className="text-xl font-bold tracking-tight text-foreground">Edit User</h2>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1 font-mono">{user.name}</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-muted/50"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="px-6 py-5 space-y-5">
+          <div className="bg-muted/30 p-3 rounded-lg border border-border/50">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Email</p>
+            <p className="text-sm font-mono font-bold text-foreground">{user.email}</p>
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Role</label>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Role</label>
             <div className="relative">
               <select
                 value={roleId}
                 onChange={(e) => setRoleId(e.target.value)}
-                className="w-full appearance-none bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary pr-8"
+                className="w-full h-10 appearance-none bg-background/50 border border-border/50 rounded-lg px-4 text-sm font-medium focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all pr-10"
               >
                 <option value="" disabled>Select a role…</option>
                 {roles.map((r) => (
                   <option key={r.id} value={r.id}>{r.name}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Status</label>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Status</label>
             <div className="relative">
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full appearance-none bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary pr-8"
+                className="w-full h-10 appearance-none bg-background/50 border border-border/50 rounded-lg px-4 text-sm font-medium focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all pr-10"
               >
                 <option value="active">Active</option>
                 <option value="invited">Invited</option>
                 <option value="disabled">Disabled</option>
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             </div>
           </div>
           {error && (
-            <p className="text-xs text-status-fault bg-status-fault/10 border border-status-fault/20 rounded-md px-3 py-2">{error}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-status-fault bg-status-fault/10 border border-status-fault/20 rounded-lg px-4 py-3">{error}</p>
           )}
         </div>
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-card-border">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground border border-border rounded-md">Cancel</button>
+        <div className="flex justify-end gap-3 px-6 py-5 border-t border-border/50 bg-muted/10">
+          <button onClick={onClose} className="px-5 py-2.5 rounded-lg border border-border/50 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all">Cancel</button>
           <button
             onClick={() => onSave({ roleId, status })}
             disabled={saving || !roleId}
-            className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+            className="px-5 py-2.5 rounded-lg bg-accent-brand text-background text-[10px] font-bold uppercase tracking-widest hover:bg-accent-brand/90 disabled:opacity-50 transition-all shadow-[0_0_15px_hsl(var(--accent-brand)/0.3)]"
           >
             {saving ? "Saving…" : "Save changes"}
           </button>
@@ -163,44 +167,45 @@ function InviteDialog({
   const [roleId, setRoleId] = useState("");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-card border border-card-border rounded-lg w-full max-w-md">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-card-border">
-          <h2 className="font-semibold">Invite User</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+      <div className="bg-card/95 border border-card-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden relative">
+        <div className="absolute top-0 left-0 w-full h-1 bg-accent-brand" />
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border/50">
+          <h2 className="text-xl font-bold tracking-tight text-foreground">Invite User</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-muted/50"><X className="h-4 w-4" /></button>
         </div>
-        <div className="px-5 py-4 space-y-4">
+        <div className="px-6 py-5 space-y-5">
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Full name</label>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Full name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ananya Rao"
-              className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+              className="w-full h-10 bg-background/50 border border-border/50 rounded-lg px-4 text-sm focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all" />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Email address</label>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Email address</label>
             <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="ananya@example.com"
-              className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+              className="w-full h-10 bg-background/50 border border-border/50 rounded-lg px-4 text-sm font-mono focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all" />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Role</label>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Role</label>
             <div className="relative">
               <select value={roleId} onChange={(e) => setRoleId(e.target.value)}
-                className="w-full appearance-none bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary pr-8">
+                className="w-full h-10 appearance-none bg-background/50 border border-border/50 rounded-lg px-4 text-sm font-medium focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all pr-10">
                 <option value="" disabled>Select a role…</option>
                 {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             </div>
           </div>
           {error && (
-            <p className="text-xs text-status-fault bg-status-fault/10 border border-status-fault/20 rounded-md px-3 py-2">{error}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-status-fault bg-status-fault/10 border border-status-fault/20 rounded-lg px-4 py-3">{error}</p>
           )}
         </div>
-        <div className="flex justify-end gap-2 px-5 py-4 border-t border-card-border">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground border border-border rounded-md">Cancel</button>
+        <div className="flex justify-end gap-3 px-6 py-5 border-t border-border/50 bg-muted/10">
+          <button onClick={onClose} className="px-5 py-2.5 rounded-lg border border-border/50 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all">Cancel</button>
           <button
             onClick={() => onSave({ name: name.trim(), email: email.trim(), roleId })}
             disabled={saving || !name.trim() || !email.trim() || !roleId}
-            className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+            className="px-5 py-2.5 rounded-lg bg-accent-brand text-background text-[10px] font-bold uppercase tracking-widest hover:bg-accent-brand/90 disabled:opacity-50 transition-all shadow-[0_0_15px_hsl(var(--accent-brand)/0.3)]"
           >
             {saving ? "Sending…" : "Send invite"}
           </button>
@@ -244,87 +249,91 @@ export default function AdminUsers() {
   });
 
   function roleColor(role: string) {
-    if (role.toLowerCase().includes("admin")) return "text-status-fault border-status-fault/30 bg-status-fault/10";
-    if (role.toLowerCase().includes("operator")) return "text-primary border-primary/30 bg-primary/10";
-    if (role.toLowerCase().includes("technician") || role.toLowerCase().includes("engineer")) return "text-status-warning border-status-warning/30 bg-status-warning/10";
-    return "text-muted-foreground border-border";
+    if (role.toLowerCase().includes("admin")) return "text-status-fault border-status-fault/30 bg-status-fault/10 shadow-[0_0_10px_hsl(var(--status-fault)/0.15)]";
+    if (role.toLowerCase().includes("operator")) return "text-accent-brand border-accent-brand/40 bg-accent-brand/10 shadow-[0_0_10px_hsl(var(--accent-brand)/0.15)]";
+    if (role.toLowerCase().includes("technician") || role.toLowerCase().includes("engineer")) return "text-status-warning border-status-warning/30 bg-status-warning/10 shadow-[0_0_10px_hsl(var(--status-warning)/0.15)]";
+    return "text-muted-foreground border-border bg-muted/30";
   }
 
   return (
     <AppLayout>
-      <div className="flex flex-col space-y-6 h-full">
-        <div className="flex justify-between items-center">
+      <div className="flex flex-col space-y-6 h-full max-w-7xl mx-auto w-full">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-up">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight flex items-center">
-              <Users className="w-6 h-6 mr-2 text-primary" />
+            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+              <Users className="w-7 h-7 text-accent-brand" />
               User Access Management
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">Role-based access control across the portfolio</p>
+            <p className="text-sm text-muted-foreground mt-2">Role-based access control across the portfolio</p>
           </div>
           <button
             onClick={() => { setDialogError(null); setShowInvite(true); }}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium flex items-center shadow-sm transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-accent-brand/50 bg-accent-brand text-background text-[10px] font-bold uppercase tracking-widest hover:bg-accent-brand/90 transition-all shadow-[0_0_15px_hsl(var(--accent-brand)/0.3)] shrink-0"
           >
-            <UserPlus className="w-4 h-4 mr-2" /> Invite User
+            <UserPlus className="w-3.5 h-3.5" /> Invite User
           </button>
         </div>
 
-        <div className="bg-card border border-card-border rounded-lg overflow-hidden flex-1">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wider border-b border-card-border">
-              <tr>
-                <th className="px-4 py-3 font-medium">User</th>
-                <th className="px-4 py-3 font-medium">Role</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Plant Access</th>
-                <th className="px-4 py-3 font-medium">Last Login</th>
-                <th className="px-4 py-3 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-card-border">
-              {isLoading ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground animate-pulse">Loading users…</td></tr>
-              ) : users?.map((user) => (
-                <tr key={user.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-xs text-muted-foreground">{user.email}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded border flex w-fit items-center gap-1 ${roleColor(user.role)}`}>
-                      <Shield className="w-3 h-3" />
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {user.status === "active" ? (
-                      <span className="text-xs text-status-normal font-medium flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Active</span>
-                    ) : user.status === "disabled" ? (
-                      <span className="text-xs text-status-fault font-medium flex items-center gap-1"><XCircle className="w-3 h-3" /> Disabled</span>
-                    ) : (
-                      <span className="text-xs text-status-warning font-medium">Invited</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-xs font-mono bg-background border border-border px-1.5 py-0.5 rounded">
-                      {user.plantIds.length > 0 ? `${user.plantIds.length} Plants` : "All Plants"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">
-                    {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : "Never"}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => { setDialogError(null); setEditingUser(user); }}
-                      className="text-xs font-medium text-primary hover:underline"
-                    >
-                      Edit
-                    </button>
-                  </td>
+        <div className="bg-card/40 backdrop-blur-md border border-card-border rounded-xl shadow-sm flex-1 min-h-0 flex flex-col animate-fade-up" style={{ animationDelay: '100ms' }}>
+          <div className="overflow-x-auto flex-1">
+            <table className="w-full text-sm text-left whitespace-nowrap">
+              <thead className="bg-muted/10 border-b border-border/50 sticky top-0 backdrop-blur-md z-10">
+                <tr>
+                  <th className="px-6 py-4 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">User</th>
+                  <th className="px-6 py-4 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Role</th>
+                  <th className="px-6 py-4 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-4 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Plant Access</th>
+                  <th className="px-6 py-4 text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Last Login</th>
+                  <th className="px-6 py-4 text-right"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {isLoading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={i} className="bg-card/20"><td colSpan={6} className="px-6 py-5"><div className="h-5 bg-muted/30 rounded animate-shimmer" /></td></tr>
+                  ))
+                ) : users?.map((user) => (
+                  <tr key={user.id} className="hover:bg-muted/30 transition-colors bg-card/20 group">
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-foreground group-hover:text-accent-brand transition-colors">{user.name}</div>
+                      <div className="text-[10px] font-mono text-muted-foreground mt-0.5">{user.email}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded border flex w-fit items-center gap-1.5 ${roleColor(user.role)}`}>
+                        <Shield className="w-3 h-3" />
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {user.status === "active" ? (
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-status-normal flex items-center gap-1.5 bg-status-normal/10 px-2 py-0.5 rounded w-max border border-status-normal/20"><CheckCircle2 className="w-3 h-3" /> Active</span>
+                      ) : user.status === "disabled" ? (
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-status-fault flex items-center gap-1.5 bg-status-fault/10 px-2 py-0.5 rounded w-max border border-status-fault/20"><XCircle className="w-3 h-3" /> Disabled</span>
+                      ) : (
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-accent-brand flex items-center gap-1.5 bg-accent-brand/10 px-2 py-0.5 rounded w-max border border-accent-brand/20">Invited</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-[10px] font-bold uppercase tracking-widest font-mono bg-muted/50 border border-border/50 px-2.5 py-1 rounded text-muted-foreground">
+                        {user.plantIds.length > 0 ? `${user.plantIds.length} Plants` : "All Plants"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground text-[10px] font-bold font-mono uppercase tracking-widest">
+                      {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : "NEVER"}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => { setDialogError(null); setEditingUser(user); }}
+                        className="px-4 py-2 rounded-lg border border-border/50 bg-card text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-accent-brand hover:border-accent-brand/50 hover:bg-accent-brand/10 transition-all opacity-0 group-hover:opacity-100 shadow-sm"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

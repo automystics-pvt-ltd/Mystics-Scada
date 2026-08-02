@@ -19,7 +19,7 @@ export default function StringDiagnostics() {
     <AppLayout>
       <div className="flex flex-col space-y-6">
         <div>
-          <div className="flex items-center mb-2 text-sm text-muted-foreground">
+          <div className="flex items-center mb-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
             <Link href="/" className="hover:text-foreground transition-colors">Portfolio</Link>
             <span className="mx-2">/</span>
             <Link href={`/plants/${plantId}`} className="hover:text-foreground transition-colors">Plant</Link>
@@ -32,10 +32,10 @@ export default function StringDiagnostics() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold tracking-tight flex items-center">
-                <Layers className="w-6 h-6 mr-2 text-primary" />
+                <Layers className="w-6 h-6 mr-2 text-accent-brand" />
                 String Diagnostics
               </h1>
-              <p className="text-sm text-muted-foreground mt-1">Real-time comparison against peer median</p>
+              <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-1">Real-time comparison against peer median</p>
             </div>
           </div>
         </div>
@@ -43,29 +43,29 @@ export default function StringDiagnostics() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {isLoading ? (
             Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-card border border-border rounded-lg p-4 h-32 animate-pulse" />
+              <div key={i} className="bg-black/40 border border-border/50 rounded-none-none p-4 h-32 animate-pulse" />
             ))
           ) : strings?.map(str => (
             <div 
               key={str.id} 
-              className={`bg-card rounded-lg p-4 border relative overflow-hidden transition-all ${
+              className={`bg-black/40 rounded-none-none p-4 border relative overflow-hidden transition-all ${
                 str.isDeviating 
                   ? 'border-status-fault shadow-[0_0_10px_rgba(239,68,68,0.15)]' 
                   : str.status === 'off' 
                     ? 'border-border/50 opacity-60' 
-                    : 'border-card-border hover:border-primary/50'
+                    : 'border-card-border hover:border-accent-brand/50'
               }`}
             >
               {str.isDeviating && (
-                <div className="absolute top-0 right-0 bg-status-fault text-white px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded-bl-lg flex items-center">
+                <div className="absolute top-0 right-0 bg-status-fault text-white px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded-none-bl-lg flex items-center">
                   <AlertTriangle className="w-3 h-3 mr-1" /> Deviating
                 </div>
               )}
               
               <div className="flex justify-between items-center mb-4">
                 <span className="font-semibold text-lg">{str.label}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full border ${
-                  str.status === 'on' ? 'bg-status-normal/10 text-status-normal border-status-normal/20' : 'bg-muted text-muted-foreground border-border'
+                <span className={`font-mono text-[8px] uppercase tracking-widest px-2 py-0.5 rounded-none-none border ${
+                  str.status === 'on' ? 'bg-status-normal/10 text-status-normal border-status-normal/20' : 'bg-white/10 text-muted-foreground border-border/50'
                 }`}>
                   {str.status.toUpperCase()}
                 </span>
@@ -73,7 +73,7 @@ export default function StringDiagnostics() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-xs text-muted-foreground block mb-1">Current</span>
+                  <span className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground block mb-1">Current</span>
                   <LiveValue 
                     value={str.currentA} 
                     unit="A" 
@@ -88,7 +88,7 @@ export default function StringDiagnostics() {
                   )}
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground block mb-1">Voltage</span>
+                  <span className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground block mb-1">Voltage</span>
                   <LiveValue value={str.voltageV} unit="V" precision={1} />
                 </div>
               </div>

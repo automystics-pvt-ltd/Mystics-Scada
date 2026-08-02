@@ -3,10 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Building2, Edit2, Save, X } from "lucide-react";
 import { AppLayout } from "@/components/layout";
 import { OrgNav } from "@/components/org-nav";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 
@@ -24,14 +20,14 @@ interface OrgProfile {
 }
 
 const TIER_LABELS: Record<string, { label: string; cls: string }> = {
-  starter:      { label: "Starter",      cls: "text-muted-foreground border-border" },
-  professional: { label: "Professional", cls: "text-blue-400 border-blue-500/40" },
-  enterprise:   { label: "Enterprise",   cls: "text-primary border-primary/40" },
+  starter:      { label: "Starter",      cls: "text-muted-foreground border-border/50" },
+  professional: { label: "Professional", cls: "text-accent-brand border-accent-brand/40 shadow-[0_0_10px_hsl(var(--accent-brand)/0.1)]" },
+  enterprise:   { label: "Enterprise",   cls: "text-status-warning border-status-warning/40 shadow-[0_0_10px_hsl(var(--status-warning)/0.1)]" },
 };
 
 const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
-  active:    { label: "Active",    cls: "text-status-normal border-status-normal/40" },
-  suspended: { label: "Suspended", cls: "text-status-fault border-status-fault/40" },
+  active:    { label: "Active",    cls: "text-status-normal border-status-normal/40 shadow-[0_0_10px_hsl(var(--status-normal)/0.1)]" },
+  suspended: { label: "Suspended", cls: "text-status-fault border-status-fault/40 shadow-[0_0_10px_hsl(var(--status-fault)/0.1)]" },
 };
 
 function OrgInitials({ name, logoUrl }: { name: string; logoUrl?: string | null }) {
@@ -47,14 +43,14 @@ function OrgInitials({ name, logoUrl }: { name: string; logoUrl?: string | null 
       <img
         src={logoUrl}
         alt={name}
-        className="w-16 h-16 rounded-xl object-cover border border-border"
+        className="w-16 h-16 rounded-xl object-cover border border-border/50 shadow-sm"
         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
     );
   }
   return (
-    <div className="w-16 h-16 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center">
-      <span className="text-2xl font-bold text-primary">{initials}</span>
+    <div className="w-16 h-16 rounded-xl bg-accent-brand/10 border border-accent-brand/20 flex items-center justify-center shadow-[0_0_15px_hsl(var(--accent-brand)/0.15)]">
+      <span className="text-xl font-bold font-mono text-accent-brand">{initials}</span>
     </div>
   );
 }
@@ -115,13 +111,13 @@ export default function OrgProfilePage() {
 
   return (
     <AppLayout>
-      <div className="max-w-3xl">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Building2 className="h-6 w-6 text-primary" />
+      <div className="max-w-4xl mx-auto flex flex-col space-y-6 h-full">
+        <div className="animate-fade-up">
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <Building2 className="h-7 w-7 text-accent-brand" />
             Organisation Settings
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="text-sm text-muted-foreground mt-2">
             Manage your org profile, users, notifications, and activity log
           </p>
         </div>
@@ -129,97 +125,98 @@ export default function OrgProfilePage() {
         <OrgNav />
 
         {isLoading ? (
-          <div className="text-muted-foreground text-sm py-8">Loading profile…</div>
+          <div className="h-32 bg-card/40 border border-card-border rounded-xl animate-shimmer" />
         ) : org ? (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-fade-up" style={{ animationDelay: '100ms' }}>
             {/* Header card */}
-            <div className="rounded-lg border border-border bg-card p-6">
+            <div className="rounded-xl border border-card-border bg-card/40 backdrop-blur-md p-8 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-accent-brand" />
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-5">
                   <OrgInitials name={org.name} logoUrl={org.logoUrl} />
                   <div>
-                    <h2 className="text-xl font-semibold">{org.name}</h2>
-                    <p className="text-sm text-muted-foreground font-mono">@{org.slug}</p>
-                    <div className="flex gap-2 mt-1.5">
+                    <h2 className="text-2xl font-bold text-foreground">{org.name}</h2>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1 font-mono">@{org.slug}</p>
+                    <div className="flex gap-2 mt-3">
                       {TIER_LABELS[org.planTier] && (
-                        <Badge variant="outline" className={`text-xs ${TIER_LABELS[org.planTier]!.cls}`}>
+                        <span className={`px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-widest border bg-card ${TIER_LABELS[org.planTier]!.cls}`}>
                           {TIER_LABELS[org.planTier]!.label}
-                        </Badge>
+                        </span>
                       )}
                       {STATUS_LABELS[org.status] && (
-                        <Badge variant="outline" className={`text-xs ${STATUS_LABELS[org.status]!.cls}`}>
+                        <span className={`px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-widest border bg-card ${STATUS_LABELS[org.status]!.cls}`}>
                           {STATUS_LABELS[org.status]!.label}
-                        </Badge>
+                        </span>
                       )}
                     </div>
                   </div>
                 </div>
                 {canManage && !editing && (
-                  <Button size="sm" variant="outline" onClick={startEdit} className="gap-2">
+                  <button onClick={startEdit} className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border/50 bg-card shadow-sm text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-border transition-all">
                     <Edit2 className="h-3.5 w-3.5" /> Edit Profile
-                  </Button>
+                  </button>
                 )}
               </div>
             </div>
 
             {/* Edit form */}
             {editing && (
-              <div className="rounded-lg border border-border bg-card p-6 space-y-4">
-                <h3 className="text-sm font-semibold">Edit Profile</h3>
-                <div className="space-y-4">
+              <div className="rounded-xl border border-accent-brand/40 bg-accent-brand/5 p-8 space-y-6 shadow-[0_0_20px_hsl(var(--accent-brand)/0.05)]">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-foreground">Edit Profile</h3>
+                <div className="space-y-5">
                   <div>
-                    <Label>Organisation Name</Label>
-                    <Input
-                      className="mt-1"
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Organisation Name</label>
+                    <input
+                      className="w-full max-w-md h-10 px-4 rounded-lg border border-border/50 bg-card text-sm text-foreground focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all shadow-sm"
                       value={form.name}
                       onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                       placeholder="Your organisation name"
                     />
                   </div>
                   <div>
-                    <Label>Logo URL</Label>
-                    <Input
-                      className="mt-1"
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Logo URL</label>
+                    <input
+                      className="w-full max-w-md h-10 px-4 rounded-lg border border-border/50 bg-card text-sm text-foreground focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all shadow-sm font-mono"
                       value={form.logoUrl}
                       onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))}
                       placeholder="https://example.com/logo.png"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Enter a publicly accessible image URL. Leave blank to use the initials fallback.
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-2">
+                      Enter a publicly accessible image URL. Leave blank to use initials.
                     </p>
                   </div>
                   {form.logoUrl && (
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted-foreground">Preview:</span>
+                    <div className="flex items-center gap-4 bg-card/50 p-4 rounded-lg border border-border/50 w-max">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Preview:</span>
                       <OrgInitials name={form.name || org.name} logoUrl={form.logoUrl} />
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2 pt-2">
-                  <Button size="sm" onClick={save} disabled={!form.name || saveMutation.isPending} className="gap-2">
+                <div className="flex gap-3 pt-4 border-t border-accent-brand/20">
+                  <button onClick={save} disabled={!form.name || saveMutation.isPending} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-accent-brand/50 bg-accent-brand text-background text-[10px] font-bold uppercase tracking-widest hover:bg-accent-brand/90 disabled:opacity-50 transition-all shadow-[0_0_15px_hsl(var(--accent-brand)/0.3)]">
                     <Save className="h-3.5 w-3.5" />
                     {saveMutation.isPending ? "Saving…" : "Save Changes"}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => setEditing(false)} className="gap-2">
+                  </button>
+                  <button onClick={() => setEditing(false)} className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border/50 bg-card text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all shadow-sm">
                     <X className="h-3.5 w-3.5" /> Cancel
-                  </Button>
+                  </button>
                 </div>
               </div>
             )}
 
             {/* Details table */}
-            <div className="rounded-lg border border-border overflow-hidden">
+            <div className="rounded-xl border border-card-border bg-card/40 backdrop-blur-md overflow-hidden shadow-sm">
               {[
                 { label: "Organisation ID",  value: org.id, mono: true },
                 { label: "Slug",             value: org.slug, mono: true },
                 { label: "Plan",             value: TIER_LABELS[org.planTier]?.label ?? org.planTier },
                 { label: "Status",           value: STATUS_LABELS[org.status]?.label ?? org.status },
-                { label: "Member since",     value: new Date(org.createdAt).toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" }) },
-                { label: "Last updated",     value: new Date(org.updatedAt).toLocaleString() },
+                { label: "Member since",     value: new Date(org.createdAt).toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" }).toUpperCase(), mono: true },
+                { label: "Last updated",     value: new Date(org.updatedAt).toLocaleString().toUpperCase(), mono: true },
               ].map(({ label, value, mono }) => (
-                <div key={label} className="flex items-center border-b border-border last:border-0 px-4 py-3">
-                  <span className="w-40 text-xs text-muted-foreground flex-shrink-0">{label}</span>
-                  <span className={`text-sm ${mono ? "font-mono text-muted-foreground" : ""}`}>{value}</span>
+                <div key={label} className="flex items-center border-b border-border/50 last:border-0 px-6 py-4 hover:bg-card/40 transition-colors">
+                  <span className="w-48 text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex-shrink-0">{label}</span>
+                  <span className={`text-sm ${mono ? "font-mono font-bold tracking-tight text-foreground" : "font-medium text-foreground"}`}>{value}</span>
                 </div>
               ))}
             </div>

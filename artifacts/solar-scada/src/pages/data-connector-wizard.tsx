@@ -10,6 +10,7 @@ import {
   CheckCircle2, AlertCircle, Plus, Trash2, Loader2,
   Zap, Database, Info, HelpCircle, AlertTriangle,
   Key, Clock, RefreshCw, Tag, Ruler, ArrowDownToLine, Copy, Check,
+  TestTube2,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -107,18 +108,20 @@ const STEP_LABELS = ["Source Type", "Connection", "Test & Preview", "Map Fields"
 
 function InfoBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-2.5 rounded-lg bg-blue-500/8 border border-blue-500/20 px-3.5 py-3 text-sm text-blue-600 dark:text-blue-400">
-      <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
-      <div className="leading-relaxed">{children}</div>
+    <div className="flex gap-3 border border-brand/30 bg-brand/5 p-4 relative">
+      <div className="absolute top-0 left-0 w-1 h-full bg-brand/50" />
+      <Info className="h-4 w-4 text-brand flex-shrink-0 mt-0.5 drop-shadow-[0_0_5px_rgba(0,255,170,0.5)]" />
+      <div className="font-mono text-[10px] uppercase tracking-widest text-brand/90 leading-relaxed leading-[1.6]">{children}</div>
     </div>
   );
 }
 
 function TipBox({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-2.5 rounded-lg bg-amber-500/8 border border-amber-500/20 px-3.5 py-3 text-sm text-amber-700 dark:text-amber-400">
-      <HelpCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-      <div className="leading-relaxed">{children}</div>
+    <div className="flex gap-3 border border-status-warning/30 bg-status-warning/5 p-4 relative">
+      <div className="absolute top-0 left-0 w-1 h-full bg-status-warning/50" />
+      <HelpCircle className="h-4 w-4 text-status-warning flex-shrink-0 mt-0.5 drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]" />
+      <div className="font-mono text-[10px] uppercase tracking-widest text-status-warning/90 leading-relaxed leading-[1.6]">{children}</div>
     </div>
   );
 }
@@ -127,23 +130,23 @@ function TipBox({ children }: { children: React.ReactNode }) {
 
 function StepIndicator({ current }: { current: number }) {
   return (
-    <div className="flex items-center gap-0">
+    <div className="flex items-center gap-2 mb-8 border-b border-border/50 pb-6 overflow-x-auto">
       {STEP_LABELS.map((label, i) => (
-        <div key={label} className="flex items-center">
-          <div className="flex flex-col items-center gap-1">
-            <div className={`flex items-center justify-center h-7 w-7 rounded-full text-xs font-bold border-2 transition-all ${
-              i < current   ? "bg-primary border-primary text-primary-foreground"
-              : i === current ? "border-primary text-primary bg-primary/5"
-              : "border-border text-muted-foreground"
+        <div key={label} className="flex items-center flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center justify-center h-8 w-8 rounded-none border text-[10px] font-mono transition-all ${
+              i < current   ? "bg-brand border-brand text-black shadow-[0_0_10px_rgba(0,255,170,0.3)]"
+              : i === current ? "border-brand text-brand bg-brand/10 shadow-[inset_0_0_10px_rgba(0,255,170,0.2)]"
+              : "border-border/50 text-muted-foreground bg-black/40"
             }`}>
-              {i < current ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
+              {i < current ? <CheckCircle2 className="h-4 w-4" /> : `0${i + 1}`}
             </div>
-            <span className={`text-[9px] whitespace-nowrap hidden sm:block ${i === current ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+            <span className={`text-[10px] uppercase tracking-widest font-mono hidden sm:block ${i === current ? "text-brand" : i < current ? "text-foreground/80" : "text-muted-foreground"}`}>
               {label}
             </span>
           </div>
           {i < STEP_LABELS.length - 1 && (
-            <div className={`h-0.5 w-6 sm:w-12 mx-1 mb-4 transition-colors ${i < current ? "bg-primary" : "bg-border"}`} />
+            <div className={`h-[1px] w-6 sm:w-10 mx-3 transition-colors ${i < current ? "bg-brand/50" : "bg-border/50"}`} />
           )}
         </div>
       ))}
@@ -157,43 +160,50 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
   const selected = SOURCE_TYPES.find((s) => s.value === state.sourceType);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-base font-semibold">Step 1 — Choose your source type</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          How does your equipment or cloud API deliver data? Pick the method that matches your setup.
+        <h2 className="text-xl font-mono uppercase tracking-widest text-foreground/90 flex items-center gap-3">
+          <Globe className="h-5 w-5 text-brand" />
+          SYSTEM INGEST PROTOCOL
+        </h2>
+        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2">
+          SELECT THE DATA ACQUISITION METHOD FOR THIS PIPELINE
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {SOURCE_TYPES.map(({ value, label, desc, icon: Icon }) => (
           <button
             key={value}
             onClick={() => update({ sourceType: value })}
-            className={`rounded-xl border-2 p-4 text-left transition-all ${
+            className={`border p-5 text-left transition-all relative group overflow-hidden ${
               state.sourceType === value
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-muted-foreground/30"
+                ? "border-brand bg-brand/5 shadow-[0_0_15px_rgba(0,255,170,0.1)]"
+                : "border-border/50 bg-black/40 hover:border-brand/50 hover:bg-brand/5"
             }`}
           >
-            <Icon className={`h-5 w-5 mb-2 ${state.sourceType === value ? "text-primary" : "text-muted-foreground"}`} />
-            <div className="font-medium text-sm">{label}</div>
-            <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{desc}</div>
+            <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${state.sourceType === value ? "bg-brand" : "bg-border/50 group-hover:bg-brand/50"}`} />
+            <Icon className={`h-6 w-6 mb-3 ${state.sourceType === value ? "text-brand drop-shadow-[0_0_8px_rgba(0,255,170,0.5)]" : "text-muted-foreground"}`} />
+            <div className={`font-mono text-sm uppercase tracking-widest mb-2 ${state.sourceType === value ? "text-foreground" : "text-foreground/80"}`}>{label}</div>
+            <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider leading-relaxed">{desc}</div>
           </button>
         ))}
       </div>
 
       {selected && (
-        <div className="rounded-lg border border-border bg-muted/5 p-4 space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-            What you'll need for {selected.label}
+        <div className="border border-brand/30 bg-brand/5 p-5 mt-6 relative">
+          <div className="absolute top-0 left-0 w-1 h-full bg-brand/50" />
+          <p className="text-[10px] font-mono font-bold text-brand uppercase tracking-[0.2em] mb-4">
+            REQUIRED PARAMETERS: {selected.label}
           </p>
-          {selected.needs.map((need) => (
-            <div key={need} className="flex items-start gap-2 text-sm">
-              <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
-              <span className="text-muted-foreground">{need}</span>
-            </div>
-          ))}
+          <div className="space-y-3">
+            {selected.needs.map((need) => (
+              <div key={need} className="flex items-start gap-3 text-[10px] font-mono uppercase tracking-widest">
+                <CheckCircle2 className="h-4 w-4 text-brand flex-shrink-0 mt-[-1px]" />
+                <span className="text-foreground/80">{need}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -206,33 +216,39 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
 
   if (state.sourceType === "http_push") {
     return (
-      <div className="space-y-5">
+      <div className="space-y-6">
         <div>
-          <h2 className="text-base font-semibold">Step 2 — HTTP Push (Webhook)</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Your device will POST its JSON payload directly to this SCADA server. No polling, no open ports on the device side.
+          <h2 className="text-xl font-mono uppercase tracking-widest text-foreground/90 flex items-center gap-3">
+            <ArrowDownToLine className="h-5 w-5 text-brand" />
+            HTTP PUSH (WEBHOOK) TARGET
+          </h2>
+          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2">
+            DEVICE POSTS JSON PAYLOAD DIRECTLY. NO POLLING. NO INBOUND FIREWALL RULES.
           </p>
         </div>
         <InfoBox>
-          After you activate in Step 5, you'll receive a unique <strong>Ingest URL</strong> to configure in your device's "Data to Server" settings. The URL token acts as the device credential — no username or password needed.
+          UPON ENERGIZATION (PHASE 5), A UNIQUE INGEST URL WILL BE GENERATED. CONFIGURE THE HARDWARE TARGET TO HTTP POST TO THIS URL. THE URL ITSELF AUTHORIZES THE INGEST.
         </InfoBox>
-        <div className="rounded-lg border border-border bg-muted/5 p-4 space-y-3">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Teltonika TRB246 setup (after activation)</p>
-          {[
-            { label: "Services menu", value: "Services → Data to Server → Add" },
-            { label: "Server URL", value: "https://scada.automystics.tech/api/ingest/<your-token>" },
-            { label: "HTTP method", value: "POST" },
-            { label: "Data format", value: "JSON" },
-            { label: "Period", value: "30 s (or your preferred interval)" },
-          ].map(({ label, value }) => (
-            <div key={label} className="flex gap-3 text-xs">
-              <span className="w-28 flex-shrink-0 text-muted-foreground">{label}</span>
-              <span className="font-mono text-foreground">{value}</span>
-            </div>
-          ))}
+        <div className="border border-border/50 bg-black/40 p-5 relative">
+          <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
+          <p className="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-4">TARGET CONFIGURATION EXAMPLE (TELTONIKA TRB)</p>
+          <div className="space-y-3">
+            {[
+              { label: "Target Route", value: "Services → Data to Server → Add" },
+              { label: "Endpoint URL", value: "https://scada.automystics.tech/api/ingest/<TOKEN>" },
+              { label: "HTTP Verb", value: "POST" },
+              { label: "Encoding", value: "JSON" },
+              { label: "Cycle Rate", value: "30 SECONDS" },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex gap-4 items-center">
+                <span className="w-32 flex-shrink-0 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">{label}</span>
+                <span className="font-mono text-xs text-brand/90 bg-brand/5 border border-brand/20 px-2 py-1 uppercase">{value}</span>
+              </div>
+            ))}
+          </div>
         </div>
         <TipBox>
-          The ingest endpoint accepts any nested JSON — including the TRB246's <code className="bg-amber-500/10 rounded px-1">readings.*.value</code> structure. Fields are auto-flattened and stored without any device-side changes needed.
+          NESTED JSON PAYLOADS ARE AUTOMATICALLY FLATTENED. COMPATIBLE WITH PROPRIETARY OBJECT STRUCTURES WITHOUT DEVICE-SIDE MUTATION.
         </TipBox>
       </div>
     );
@@ -240,17 +256,21 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
 
   if (state.sourceType === "csv_upload") {
     return (
-      <div className="space-y-5">
+      <div className="space-y-6">
         <div>
-          <h2 className="text-base font-semibold">Step 2 — File format requirements</h2>
-          <p className="text-sm text-muted-foreground mt-1">CSV upload has no network connection step. Review the format requirements below, then continue.</p>
+          <h2 className="text-xl font-mono uppercase tracking-widest text-foreground/90 flex items-center gap-3">
+            <Upload className="h-5 w-5 text-brand" />
+            FILE IMPORT SPECIFICATION
+          </h2>
+          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2">ARCHIVE INGEST REQUIRES STRICT STRUCTURAL COMPLIANCE</p>
         </div>
         <InfoBox>
-          Your CSV must have a header row. The first column should be named <code className="bg-blue-500/10 rounded px-1">timestamp</code> in ISO 8601 format (<code className="bg-blue-500/10 rounded px-1">2024-01-15T08:30:00Z</code>) or Unix epoch seconds. Each additional column becomes a measurement parameter.
+          HEADER ROW REQUIRED. INDEX 0 MUST BE <code className="bg-brand/20 text-brand px-1">timestamp</code> (ISO-8601 OR UNIX EPOCH). SUBSEQUENT COLUMNS REPRESENT TELEMETRY VECTORS.
         </InfoBox>
-        <div className="rounded-lg border border-border bg-muted/5 p-4">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Example CSV structure</p>
-          <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap">
+        <div className="border border-border/50 bg-black/40 p-5 relative">
+          <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
+          <p className="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-4">VALIDATED STRUCTURE EXAMPLE</p>
+          <pre className="text-[10px] font-mono text-brand/80 whitespace-pre-wrap bg-black/60 p-4 border border-border/30">
 {`timestamp,ac_power_w,daily_yield_kwh,grid_voltage_v,temperature_c
 2024-01-15T08:00:00Z,45000,12.5,230.1,42.3
 2024-01-15T08:00:30Z,45500,12.6,230.2,42.5
@@ -258,7 +278,7 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
           </pre>
         </div>
         <TipBox>
-          In the next step, paste the first few rows of your CSV as a preview. The wizard will auto-detect column names for field mapping.
+          PHASE 3 REQUIRES A PAYLOAD SAMPLE TO INITIALIZE REGISTRY MAPPINGS AUTOMATICALLY.
         </TipBox>
       </div>
     );
@@ -266,64 +286,66 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
 
   if (state.sourceType === "mqtt") {
     return (
-      <div className="space-y-5">
+      <div className="space-y-6">
         <div>
-          <h2 className="text-base font-semibold">Step 2 — MQTT broker connection</h2>
-          <p className="text-sm text-muted-foreground mt-1">Enter your broker address and the topic pattern your device publishes to.</p>
+          <h2 className="text-xl font-mono uppercase tracking-widest text-foreground/90 flex items-center gap-3">
+            <Radio className="h-5 w-5 text-brand" />
+            MQTT BROKER BINDING
+          </h2>
+          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2">DEFINE UPSTREAM BROKER AND TOPIC SUBSCRIPTION PARAMETERS</p>
         </div>
         <InfoBox>
-          The SCADA server will connect to your broker and subscribe to the topic. Make sure the broker is reachable from the server's network.
+          SCADA INGEST NODE WILL MAINTAIN PERSISTENT SUBSCRIPTION. VERIFY NETWORK TOPOLOGY AND BROKER ACLS PERMIT INBOUND TRAFFIC.
         </InfoBox>
-        <div className="space-y-4">
+        <div className="space-y-5 border border-border/50 bg-black/40 p-6 relative">
+          <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
           <div>
-            <Label className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" /> Broker URL <span className="text-red-400">*</span></Label>
+            <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><Globe className="h-3.5 w-3.5 text-brand" /> Broker Address <span className="text-status-fault">*</span></Label>
             <Input
-              className="mt-1 font-mono text-sm"
+              className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-foreground"
               placeholder="mqtt://192.168.1.50:1883  or  mqtts://broker.hivemq.com:8883"
               value={state.brokerUrl}
               onChange={(e) => update({ brokerUrl: e.target.value })}
             />
-            <p className="text-xs text-muted-foreground mt-1">Use <code className="bg-muted rounded px-1">mqtt://</code> for plain TCP, <code className="bg-muted rounded px-1">mqtts://</code> for TLS.</p>
+            <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-2">USE <code className="text-brand">mqtt://</code> FOR PLAINTEXT, <code className="text-brand">mqtts://</code> FOR TLS.</p>
           </div>
           <div>
-            <Label className="flex items-center gap-1.5"><Tag className="h-3.5 w-3.5" /> Topic Pattern <span className="text-red-400">*</span></Label>
+            <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><Tag className="h-3.5 w-3.5 text-brand" /> Topic Vector <span className="text-status-fault">*</span></Label>
             <Input
-              className="mt-1 font-mono text-sm"
+              className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-brand"
               placeholder="solar/plant/+/inverter/data"
               value={state.topic}
               onChange={(e) => update({ topic: e.target.value })}
             />
-            <p className="text-xs text-muted-foreground mt-1">Use <code className="bg-muted rounded px-1">+</code> for single-level wildcard, <code className="bg-muted rounded px-1">#</code> for multi-level. Each matching message will be ingested.</p>
+            <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-2">SUPPORTED WILDCARDS: <code className="text-brand">+</code> (SINGLE), <code className="text-brand">#</code> (MULTI-LEVEL).</p>
           </div>
-          <div className="sm:w-48">
-            <Label className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Keep-alive ping (seconds)</Label>
+          <div className="sm:w-64">
+            <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><Clock className="h-3.5 w-3.5 text-brand" /> Keep-Alive Ping (Sec)</Label>
             <Input
-              className="mt-1"
+              className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
               type="number" min={5} max={3600}
               value={state.pollIntervalSec}
               onChange={(e) => update({ pollIntervalSec: Number(e.target.value) || 30 })}
             />
           </div>
-          <div>
-            <Label className="flex items-center gap-1.5"><Key className="h-3.5 w-3.5" /> Broker credentials <span className="text-xs font-normal text-muted-foreground ml-1">(optional — leave blank for anonymous brokers)</span></Label>
-            <div className="grid grid-cols-2 gap-3 mt-1">
-              <div>
-                <Input
-                  placeholder="Username"
-                  value={state.mqttUsername}
-                  onChange={(e) => update({ mqttUsername: e.target.value })}
-                />
-              </div>
-              <div>
-                <Input
-                  type="password"
-                  placeholder="Password"
-                  value={state.mqttPassword}
-                  onChange={(e) => update({ mqttPassword: e.target.value })}
-                />
-              </div>
+          <div className="pt-4 border-t border-border/50">
+            <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2 block flex items-center gap-2"><Key className="h-3.5 w-3.5 text-brand" /> Broker Authentication <span className="opacity-50 ml-2">(IF REQUIRED)</span></Label>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
+                placeholder="USERNAME"
+                value={state.mqttUsername}
+                onChange={(e) => update({ mqttUsername: e.target.value })}
+              />
+              <Input
+                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
+                type="password"
+                placeholder="PASSWORD"
+                value={state.mqttPassword}
+                onChange={(e) => update({ mqttPassword: e.target.value })}
+              />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Required if your broker shows <code className="bg-muted rounded px-1">Connection refused: Not authorized</code>. Credentials are encrypted at rest.</p>
+            <p className="font-mono text-[9px] uppercase tracking-widest text-status-warning mt-2">CREDENTIALS STORED WITH AES-256-GCM ENCRYPTION. NEVER EXPOSED TO CLIENT.</p>
           </div>
         </div>
       </div>
@@ -333,80 +355,81 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
   const isWS = state.sourceType === "websocket";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-base font-semibold">
-          Step 2 — {isWS ? "WebSocket" : "REST API"} connection
+        <h2 className="text-xl font-mono uppercase tracking-widest text-foreground/90 flex items-center gap-3">
+          {isWS ? <Wifi className="h-5 w-5 text-brand" /> : <Globe className="h-5 w-5 text-brand" />}
+          {isWS ? "WEBSOCKET STREAM" : "REST API POLLING"} BINDING
         </h2>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2">
           {isWS
-            ? "Enter the WebSocket URL the device streams data to. The SCADA driver will maintain a persistent connection."
-            : "Enter the API endpoint URL and how often to poll it. The response must return JSON."}
+            ? "TARGET URL FOR PERSISTENT DATA STREAM"
+            : "TARGET URL AND CYCLE RATE FOR POLLING INGEST"}
         </p>
       </div>
 
       <InfoBox>
         {isWS
-          ? "The server will open a persistent WebSocket connection and ingest every JSON message received. Make sure the URL is reachable from the SCADA server's network."
-          : <>The server will call this endpoint every <strong>{state.pollIntervalSec}s</strong> and ingest the JSON response. The endpoint must be reachable from the SCADA server's network and return a flat or single-level JSON object.</>
+          ? "SYSTEM WILL MAINTAIN A PERSISTENT WSS CONNECTION. ALL RECEIVED JSON FRAMES WILL BE INGESTED."
+          : <>SYSTEM WILL EXECUTE HTTP GET EVERY <strong>{state.pollIntervalSec}s</strong>. RESPONSE MUST BE VALID JSON.</>
         }
       </InfoBox>
 
-      <div className="space-y-4">
+      <div className="space-y-5 border border-border/50 bg-black/40 p-6 relative">
+        <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
+        
         <div>
-          <Label className="flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />
-            {isWS ? "WebSocket URL" : "Endpoint URL"} <span className="text-red-400">*</span>
+          <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><Globe className="h-3.5 w-3.5 text-brand" />
+            {isWS ? "WebSocket Target" : "Endpoint Target"} <span className="text-status-fault">*</span>
           </Label>
           <Input
-            className="mt-1 font-mono text-sm"
+            className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-brand"
             placeholder={isWS ? "wss://device.example.com:8080/live" : "https://api.solarcloud.com/v1/readings"}
             value={state.url}
             onChange={(e) => update({ url: e.target.value })}
           />
-          <p className="text-xs text-muted-foreground mt-1">
-            {isWS ? "Use wss:// for TLS (required for production), ws:// for plain." : "Must return a JSON object. Arrays: wrap in an object like { \"data\": [...] }."}
+          <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-2">
+            {isWS ? "USE WSS:// FOR PRODUCTION ENVIRONMENTS." : "ARRAY RESPONSES MUST BE WRAPPED (E.G. { \"data\": [...] })."}
           </p>
         </div>
 
         {!isWS && (
-          <div className="sm:w-48">
-            <Label className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Poll interval (seconds)</Label>
+          <div className="sm:w-64">
+            <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><Clock className="h-3.5 w-3.5 text-brand" /> Polling Cycle (Sec)</Label>
             <Input
-              className="mt-1"
+              className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
               type="number" min={5} max={3600}
               value={state.pollIntervalSec}
               onChange={(e) => update({ pollIntervalSec: Number(e.target.value) || 30 })}
             />
-            <p className="text-xs text-muted-foreground mt-1">Min 5 s · Max 3600 s (1 hour). 30 s suits most inverter APIs.</p>
           </div>
         )}
 
-        <div>
-          <Label className="flex items-center gap-1.5"><Key className="h-3.5 w-3.5" /> Authentication</Label>
+        <div className="pt-4 border-t border-border/50">
+          <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2 block flex items-center gap-2"><Key className="h-3.5 w-3.5 text-brand" /> Authentication Strategy</Label>
           <Select value={state.authMethod} onValueChange={(v) => update({ authMethod: v as AuthMethod })}>
-            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">No authentication — public endpoint</SelectItem>
-              <SelectItem value="bearer">Bearer token — Authorization: Bearer &lt;token&gt;</SelectItem>
-              <SelectItem value="api_key">API key header — custom header name + key</SelectItem>
-              <SelectItem value="basic">Basic auth — username : password</SelectItem>
+            <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 uppercase tracking-widest"><SelectValue /></SelectTrigger>
+            <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
+              <SelectItem value="none">PUBLIC — NO AUTH</SelectItem>
+              <SelectItem value="bearer">BEARER TOKEN (AUTHORIZATION HEADER)</SelectItem>
+              <SelectItem value="api_key">API KEY (CUSTOM HEADER)</SelectItem>
+              <SelectItem value="basic">BASIC AUTH (BASE64 ENC)</SelectItem>
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground mt-1">Credentials are encrypted at rest (AES-256-GCM) and never returned by the API.</p>
+          <p className="font-mono text-[9px] uppercase tracking-widest text-status-warning mt-2">CREDENTIALS SECURED AT REST VIA AES-256-GCM.</p>
         </div>
 
         {state.authMethod === "api_key" && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Header name</Label>
-              <Input className="mt-1" placeholder="X-API-Key"
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Header Identifier</Label>
+              <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50" placeholder="X-API-Key"
                 value={state.apiKeyHeader}
                 onChange={(e) => update({ apiKeyHeader: e.target.value })} />
-              <p className="text-xs text-muted-foreground mt-1">e.g. X-API-Key, Authorization, X-Auth-Token</p>
             </div>
             <div>
-              <Label>Key value</Label>
-              <Input className="mt-1" type="password" placeholder="••••••••"
+              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Key Secret</Label>
+              <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50" type="password" placeholder="••••••••"
                 value={state.authValue}
                 onChange={(e) => update({ authValue: e.target.value })} />
             </div>
@@ -415,21 +438,20 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
 
         {state.authMethod === "bearer" && (
           <div>
-            <Label>Bearer token</Label>
-            <Input className="mt-1 font-mono text-sm" type="password" placeholder="eyJhbGciOiJ…"
+            <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Bearer Token</Label>
+            <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50" type="password" placeholder="eyJhbGciOiJ…"
               value={state.authValue}
               onChange={(e) => update({ authValue: e.target.value })} />
-            <p className="text-xs text-muted-foreground mt-1">Sent as: <code className="bg-muted rounded px-1">Authorization: Bearer &lt;token&gt;</code></p>
           </div>
         )}
 
         {state.authMethod === "basic" && (
           <div>
-            <Label>Credentials</Label>
-            <Input className="mt-1 font-mono text-sm" type="password" placeholder="username:password"
+            <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Basic Credentials</Label>
+            <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50" type="password" placeholder="USER:PASS"
               value={state.authValue}
               onChange={(e) => update({ authValue: e.target.value })} />
-            <p className="text-xs text-muted-foreground mt-1">Enter as <code className="bg-muted rounded px-1">username:password</code> — do not Base64 encode it.</p>
+            <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-2">INPUT RAW USER:PASS, ENCODER HANDLES BASE64 TRANSFORMATION.</p>
           </div>
         )}
       </div>
@@ -469,75 +491,74 @@ function Step3({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-base font-semibold">Step 3 — {isCSV ? "Preview your data" : "Test connection & preview"}</h2>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h2 className="text-xl font-mono uppercase tracking-widest text-foreground/90 flex items-center gap-3">
+          <TestTube2 className="h-5 w-5 text-brand" />
+          {isCSV ? "DATA STRUCTURAL PREVIEW" : "TELEMETRY LINK VERIFICATION"}
+        </h2>
+        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2">
           {isCSV
-            ? "Paste a sample of your CSV so the wizard can detect column names for field mapping in the next step."
-            : "Run a live connection test to confirm the server can reach your endpoint. Then paste or review the sample JSON response — it's used to auto-detect fields in the next step."}
+            ? "INPUT SAMPLE FRAMES TO INITIALIZE REGISTRY MAPPINGS."
+            : "EXECUTE DRY-RUN DIAGNOSTIC PING. PROVIDE PAYLOAD SAMPLE TO SEED EXTRACTORS."}
         </p>
       </div>
 
       {!isCSV && (
         <>
           <InfoBox>
-            The test sends a real request from the SCADA server to your endpoint. A success here means the driver will collect data when activated. The test does <strong>not</strong> save anything.
+            DIAGNOSTIC PING EXERTS ACTUAL NETWORK TRAFFIC TO TARGET PORT. SUCCESS INDICATES UNIMPEDED ROUTES. NO MUTATIONS OCCUR.
           </InfoBox>
 
           <Button
             variant="outline"
-            className="gap-2"
+            className="gap-2 rounded-none border-brand/50 text-brand hover:bg-brand/10 font-mono text-[10px] uppercase tracking-widest"
             onClick={() => void handleTest()}
             disabled={testing}
           >
             {testing
-              ? <><Loader2 className="h-4 w-4 animate-spin" /> Testing connection…</>
-              : <><RefreshCw className="h-4 w-4" /> Test Connection</>}
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> EXECUTING PING…</>
+              : <><RefreshCw className="h-4 w-4" /> INITIATE DIAGNOSTIC PING</>}
           </Button>
 
           {result === "ok" && (
-            <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-500/5 border border-green-500/20 rounded-lg px-3 py-2.5">
-              <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-              <span>Connection successful — responded in {latency} ms</span>
+            <div className="flex items-center gap-3 border border-status-normal/30 bg-status-normal/5 px-4 py-3 relative">
+              <div className="absolute top-0 left-0 w-1 h-full bg-status-normal/50" />
+              <CheckCircle2 className="h-4 w-4 text-status-normal drop-shadow-[0_0_5px_rgba(52,211,153,0.5)] flex-shrink-0" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-status-normal/90">HANDSHAKE VERIFIED — ROUND-TRIP LATENCY: {latency} MS</span>
             </div>
           )}
           {result === "error" && (
-            <div className="rounded-lg bg-red-500/5 border border-red-500/20 px-3.5 py-3 space-y-1.5">
-              <div className="flex items-center gap-2 text-sm font-medium text-red-600 dark:text-red-400">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" /> Connection failed
+            <div className="border border-status-fault/30 bg-status-fault/5 px-4 py-3 space-y-2 relative">
+              <div className="absolute top-0 left-0 w-1 h-full bg-status-fault/50" />
+              <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest text-status-fault font-bold">
+                <AlertCircle className="h-4 w-4 flex-shrink-0 drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]" /> PACKET LOSS / ROUTE FAILURE
               </div>
-              <p className="text-xs text-red-500 leading-relaxed">{error}</p>
-              <p className="text-xs text-muted-foreground">Check the URL, authentication settings, and that the endpoint is reachable from the SCADA server's network.</p>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-status-fault/80 leading-relaxed ml-7">{error}</p>
             </div>
           )}
         </>
       )}
 
       <div>
-        <Label>
-          {isCSV ? "Paste CSV sample (first 5–10 rows)" : "Sample JSON response"}
-          <span className="text-muted-foreground font-normal ml-1.5 text-xs">— used to auto-detect fields in the next step</span>
+        <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2 block flex items-center gap-2">
+          <Database className="h-3.5 w-3.5 text-brand" />
+          {isCSV ? "CSV Header/Data Sample" : "JSON Response Payload Sample"}
         </Label>
         <textarea
-          className="mt-1 w-full h-44 rounded-lg border border-border bg-muted/10 px-3 py-2.5 text-xs font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/50"
+          className="w-full h-56 rounded-none border border-border/50 bg-black/60 px-4 py-3 font-mono text-xs text-brand/80 resize-y focus:outline-none focus:border-brand/50 placeholder:text-muted-foreground/30 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]"
           placeholder={isCSV
             ? `timestamp,ac_power_w,daily_yield_kwh,grid_voltage_v\n2024-01-15T08:00:00Z,45000,12.5,230.1\n2024-01-15T08:00:30Z,45500,12.6,230.2`
             : `{\n  "ac_power":      45000,\n  "daily_energy":  125.3,\n  "temperature":   42.1,\n  "grid_voltage":  230.5,\n  "pf":            0.98\n}`}
           value={state.sampleJson}
           onChange={(e) => update({ sampleJson: e.target.value })}
         />
-        {!state.sampleJson.trim() && (
-          <p className="text-xs text-muted-foreground mt-1">
-            Paste a real sample response so the next step can suggest field mappings automatically.
-          </p>
-        )}
       </div>
 
       <TipBox>
         {isCSV
-          ? "Make sure the first row contains column headers. The wizard will map each column to a SCADA parameter in the next step."
-          : "You can skip the test and proceed — but if the connection fails later, the device will show as offline until the issue is resolved."}
+          ? "HEADER ROW REQUIRED. DATA TYPES INFERRED FROM SAMPLE."
+          : "DIAGNOSTIC FAILURE DOES NOT PREVENT CONFIGURATION PERSISTENCE, BUT ACQUISITION WILL HALT UNTIL ROUTES ARE CLEAR."}
       </TipBox>
     </div>
   );

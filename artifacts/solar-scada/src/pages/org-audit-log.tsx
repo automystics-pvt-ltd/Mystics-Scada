@@ -3,15 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { ScrollText, Download, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { AppLayout } from "@/components/layout";
 import { OrgNav } from "@/components/org-nav";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -39,30 +30,30 @@ const RESOURCE_TYPES = [
 ];
 
 const ACTION_COLORS: Record<string, string> = {
-  "user.invite":            "text-blue-400",
-  "user.update":            "text-primary",
-  "user.disable":           "text-status-fault",
-  "org.update":             "text-primary",
-  "notifications.update":   "text-primary",
-  "alert.acknowledge":      "text-status-warning",
-  "alert.resolve":          "text-status-normal",
-  "work_order.create":      "text-blue-400",
-  "work_order.update":      "text-primary",
-  "work_order.close":       "text-status-normal",
-  "device.register":        "text-blue-400",
-  "device.update":          "text-primary",
-  "device.restart":         "text-status-warning",
-  "device.sync":            "text-status-normal",
+  "user.invite":            "text-accent-brand bg-accent-brand/10 border border-accent-brand/20 shadow-[0_0_5px_hsl(var(--accent-brand)/0.15)]",
+  "user.update":            "text-primary bg-primary/10 border border-primary/20",
+  "user.disable":           "text-status-fault bg-status-fault/10 border border-status-fault/20 shadow-[0_0_5px_hsl(var(--status-fault)/0.15)]",
+  "org.update":             "text-primary bg-primary/10 border border-primary/20",
+  "notifications.update":   "text-primary bg-primary/10 border border-primary/20",
+  "alert.acknowledge":      "text-status-warning bg-status-warning/10 border border-status-warning/20 shadow-[0_0_5px_hsl(var(--status-warning)/0.15)]",
+  "alert.resolve":          "text-status-normal bg-status-normal/10 border border-status-normal/20 shadow-[0_0_5px_hsl(var(--status-normal)/0.15)]",
+  "work_order.create":      "text-accent-brand bg-accent-brand/10 border border-accent-brand/20",
+  "work_order.update":      "text-primary bg-primary/10 border border-primary/20",
+  "work_order.close":       "text-status-normal bg-status-normal/10 border border-status-normal/20",
+  "device.register":        "text-accent-brand bg-accent-brand/10 border border-accent-brand/20",
+  "device.update":          "text-primary bg-primary/10 border border-primary/20",
+  "device.restart":         "text-status-warning bg-status-warning/10 border border-status-warning/20",
+  "device.sync":            "text-status-normal bg-status-normal/10 border border-status-normal/20",
 };
 
 function ActionBadge({ action }: { action: string }) {
-  const cls = ACTION_COLORS[action] ?? "text-muted-foreground";
-  return <code className={`text-xs font-mono ${cls}`}>{action}</code>;
+  const cls = ACTION_COLORS[action] ?? "text-muted-foreground border border-border bg-muted/30";
+  return <code className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${cls}`}>{action}</code>;
 }
 
 function timeLabel(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).toUpperCase();
 }
 
 export default function OrgAuditLogPage() {
@@ -108,13 +99,13 @@ export default function OrgAuditLogPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-5xl">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <ScrollText className="h-6 w-6 text-primary" />
+      <div className="max-w-6xl mx-auto flex flex-col space-y-6 h-full">
+        <div className="animate-fade-up">
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <ScrollText className="h-7 w-7 text-accent-brand" />
             Organisation Settings
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="text-sm text-muted-foreground mt-2">
             Manage your org profile, users, notifications, and activity log
           </p>
         </div>
@@ -122,58 +113,57 @@ export default function OrgAuditLogPage() {
         <OrgNav />
 
         {/* Toolbar */}
-        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm" variant="outline" className="h-9 gap-1.5"
+        <div className="flex items-center justify-between animate-fade-up" style={{ animationDelay: '50ms' }}>
+          <div className="flex items-center gap-3">
+            <button
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-[10px] font-bold uppercase tracking-widest transition-all shadow-sm ${filtersOpen ? "bg-accent-brand/10 border-accent-brand/40 text-accent-brand" : "bg-card border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/30"}`}
               onClick={() => setFiltersOpen((o) => !o)}
             >
               <Filter className="h-3.5 w-3.5" />
               Filters
               {(filterResourceType !== "all" || filterFrom || filterTo) && (
-                <span className="ml-1 bg-primary text-primary-foreground text-[10px] font-bold px-1 rounded-full">
+                <span className="ml-1 bg-accent-brand text-background text-[9px] px-1.5 py-0.5 rounded shadow-[0_0_5px_hsl(var(--accent-brand)/0.3)]">
                   {[filterResourceType !== "all", !!filterFrom, !!filterTo].filter(Boolean).length}
                 </span>
               )}
-            </Button>
+            </button>
             {(filterResourceType !== "all" || filterFrom || filterTo) && (
-              <Button size="sm" variant="ghost" className="h-9 text-muted-foreground" onClick={resetFilters}>
-                Clear filters
-              </Button>
+              <button className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:underline transition-all" onClick={resetFilters}>
+                Clear
+              </button>
             )}
           </div>
-          <Button size="sm" variant="outline" className="h-9 gap-2" onClick={exportCsv}>
+          <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border/50 bg-card shadow-sm text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all" onClick={exportCsv}>
             <Download className="h-3.5 w-3.5" /> Export CSV
-          </Button>
+          </button>
         </div>
 
         {/* Filter panel */}
         {filtersOpen && (
-          <div className="rounded-lg border border-border bg-muted/20 p-4 mb-4 grid grid-cols-3 gap-4">
+          <div className="rounded-xl border border-card-border bg-card/40 backdrop-blur-md p-6 grid grid-cols-1 md:grid-cols-3 gap-6 shadow-sm animate-fade-up" style={{ animationDelay: '100ms' }}>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Resource Type</label>
-              <Select value={filterResourceType} onValueChange={(v) => { setFilterResourceType(v); setPage(1); }}>
-                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All types</SelectItem>
-                  {RESOURCE_TYPES.map((t) => (
-                    <SelectItem key={t} value={t}>{t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Resource Type</label>
+              <select className="w-full h-10 px-4 rounded-lg border border-border/50 bg-background/50 text-sm font-medium text-foreground focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all" value={filterResourceType} onChange={(e) => { setFilterResourceType(e.target.value); setPage(1); }}>
+                <option value="all">ALL TYPES</option>
+                {RESOURCE_TYPES.map((t) => (
+                  <option key={t} value={t}>{t.replace(/_/g, " ").toUpperCase()}</option>
+                ))}
+              </select>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">From Date</label>
-              <Input
-                type="date" className="h-8 text-sm"
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">From Date</label>
+              <input
+                type="date"
+                className="w-full h-10 px-4 rounded-lg border border-border/50 bg-background/50 text-sm font-mono text-foreground focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all [color-scheme:dark]"
                 value={filterFrom}
                 onChange={(e) => { setFilterFrom(e.target.value); setPage(1); }}
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">To Date</label>
-              <Input
-                type="date" className="h-8 text-sm"
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">To Date</label>
+              <input
+                type="date"
+                className="w-full h-10 px-4 rounded-lg border border-border/50 bg-background/50 text-sm font-mono text-foreground focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all [color-scheme:dark]"
                 value={filterTo}
                 onChange={(e) => { setFilterTo(e.target.value); setPage(1); }}
               />
@@ -182,50 +172,52 @@ export default function OrgAuditLogPage() {
         )}
 
         {/* Table */}
-        <div className="rounded-lg border border-border overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="rounded-xl border border-card-border bg-card/40 backdrop-blur-md overflow-hidden shadow-sm animate-fade-up" style={{ animationDelay: '150ms' }}>
+          <table className="w-full text-sm min-w-[800px]">
             <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide w-44">Timestamp</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">Actor</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">Action</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">Resource</th>
+              <tr className="border-b border-border/50 bg-muted/10">
+                <th className="text-left px-5 py-4 text-[9px] font-bold text-muted-foreground uppercase tracking-widest w-48 whitespace-nowrap">Timestamp</th>
+                <th className="text-left px-5 py-4 text-[9px] font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">Actor</th>
+                <th className="text-left px-5 py-4 text-[9px] font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">Action</th>
+                <th className="text-left px-5 py-4 text-[9px] font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">Resource Target</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">Loading audit log…</td></tr>
+                Array.from({ length: 15 }).map((_, i) => (
+                  <tr key={i} className="border-b border-border/30 bg-card/20"><td colSpan={4} className="px-5 py-4"><div className="h-5 w-full bg-muted/30 rounded animate-shimmer" style={{ width: `${60 + (i * 13) % 30}%` }} /></td></tr>
+                ))
               ) : !data?.data.length ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-10 text-center">
-                    <ScrollText className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">No activity recorded yet</p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">
-                      Actions taken via the org portal will appear here
+                  <td colSpan={4} className="px-5 py-20 text-center bg-card/20 border-dashed">
+                    <ScrollText className="h-8 w-8 text-muted-foreground/30 mx-auto mb-4" />
+                    <p className="text-sm font-bold text-foreground mb-1 uppercase tracking-wider">No activity recorded</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+                      Actions taken via the platform will appear here
                     </p>
                   </td>
                 </tr>
               ) : (
                 data.data.map((entry) => (
-                  <tr key={entry.id} className={`border-b border-border last:border-0 hover:bg-muted/20 ${isFetching ? "opacity-60" : ""}`}>
-                    <td className="px-4 py-2.5 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+                  <tr key={entry.id} className={`border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors bg-card/20 ${isFetching ? "opacity-60 grayscale-[0.3]" : ""}`}>
+                    <td className="px-5 py-4 text-[10px] font-bold font-mono text-muted-foreground tabular-nums whitespace-nowrap tracking-widest">
                       {timeLabel(entry.createdAt)}
                     </td>
-                    <td className="px-4 py-2.5">
-                      <span className="text-sm text-foreground/80 truncate max-w-[180px] block" title={entry.userName}>
+                    <td className="px-5 py-4">
+                      <span className="text-sm font-bold text-foreground truncate max-w-[200px] block" title={entry.userName}>
                         {entry.userName}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-5 py-4">
                       <ActionBadge action={entry.action} />
                     </td>
-                    <td className="px-4 py-2.5">
-                      <span className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
-                        {entry.resourceType}
+                    <td className="px-5 py-4 flex items-center gap-3">
+                      <span className="text-[9px] font-bold uppercase tracking-widest border border-border/50 bg-muted/30 px-2 py-0.5 rounded text-muted-foreground">
+                        {entry.resourceType.replace(/_/g, " ")}
                       </span>
-                      <code className="text-xs text-muted-foreground/60 ml-2 font-mono">
+                      <code className="text-[10px] font-bold text-muted-foreground/80 font-mono tracking-widest">
                         {entry.resourceId.length > 24
-                          ? `${entry.resourceId.slice(0, 12)}…`
+                          ? `${entry.resourceId.slice(0, 16)}…`
                           : entry.resourceId}
                       </code>
                     </td>
@@ -238,25 +230,25 @@ export default function OrgAuditLogPage() {
 
         {/* Pagination */}
         {(data && (data.hasMore || page > 1)) && (
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-xs text-muted-foreground">
-              Page {page} · {data.data.length} entries
+          <div className="flex items-center justify-between px-2 pt-2 pb-6 animate-fade-up" style={{ animationDelay: '200ms' }}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              PAGE <span className="text-foreground font-mono">{page}</span> · <span className="text-foreground font-mono">{data.data.length}</span> ENTRIES
             </p>
             <div className="flex gap-2">
-              <Button
-                size="sm" variant="outline" className="h-8 gap-1.5"
+              <button
+                className="flex items-center justify-center h-10 w-10 rounded-lg border border-border/50 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
               >
-                <ChevronLeft className="h-3.5 w-3.5" /> Previous
-              </Button>
-              <Button
-                size="sm" variant="outline" className="h-8 gap-1.5"
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                className="flex items-center justify-center h-10 w-10 rounded-lg border border-border/50 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
                 onClick={() => setPage((p) => p + 1)}
                 disabled={!data.hasMore}
               >
-                Next <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
           </div>
         )}

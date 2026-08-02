@@ -83,108 +83,118 @@ function InsightCard({
   onCreateWorkOrder: (insight: Insight) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const { border } = SEV_CONFIG[insight.severity];
   const typeInfo = TYPE_CONFIG[insight.type];
   const TypeIcon = typeInfo?.Icon ?? Brain;
+  const sevColor = insight.severity === "critical" ? "border-status-fault shadow-[0_0_15px_rgba(239,68,68,0.2)]" : insight.severity === "warning" ? "border-status-warning shadow-[0_0_15px_rgba(251,191,36,0.1)]" : "border-brand shadow-[0_0_15px_rgba(0,255,170,0.1)]";
 
   return (
-    <div className={`bg-card border border-card-border border-l-4 ${border} rounded-xl overflow-hidden`}>
+    <div className={`border bg-black/60 relative overflow-hidden group ${sevColor}`}>
+      <div className={`absolute top-0 left-0 w-1 h-full ${insight.severity === "critical" ? "bg-status-fault" : insight.severity === "warning" ? "bg-status-warning" : "bg-brand"}`} />
+      
       {/* Header */}
-      <div className="px-4 pt-4 pb-3">
-        <div className="flex items-start justify-between gap-2 mb-2">
+      <div className="p-4 border-b border-border/50 bg-black/40">
+        <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <SeverityBadge severity={insight.severity} />
-            <span className="text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded font-medium">
+            <span className={`font-mono text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 border ${insight.severity === "critical" ? "border-status-fault text-status-fault bg-status-fault/10" : insight.severity === "warning" ? "border-status-warning text-status-warning bg-status-warning/10" : "border-brand text-brand bg-brand/10"}`}>
+              {insight.severity}
+            </span>
+            <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground bg-white/5 border border-border/50 px-2 py-0.5">
               {insight.plantName}
             </span>
             {insight.deviceName && (
-              <span className="text-[10px] text-muted-foreground bg-muted/30 px-2 py-0.5 rounded">
+              <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground bg-white/5 border border-border/50 px-2 py-0.5">
                 {insight.deviceName}
               </span>
             )}
           </div>
           <button
             onClick={() => onDismiss(insight.id)}
-            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 mt-0.5"
-            title="Dismiss insight"
+            className="text-muted-foreground hover:text-brand transition-colors p-1"
+            title="DISMISS ANOMALY"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div className="flex items-start gap-2">
-          <TypeIcon className="w-4 h-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-          <h3 className="text-sm font-semibold leading-snug">{insight.title}</h3>
+        <div className="flex items-start gap-3">
+          <div className={`w-8 h-8 border flex items-center justify-center flex-shrink-0 ${insight.severity === "critical" ? "border-status-fault/50 text-status-fault bg-black" : insight.severity === "warning" ? "border-status-warning/50 text-status-warning bg-black" : "border-brand/50 text-brand bg-black"}`}>
+            <TypeIcon className="w-4 h-4" />
+          </div>
+          <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-foreground leading-snug mt-1">{insight.title}</h3>
         </div>
       </div>
 
       {/* Sparkline */}
-      <div className="px-4 pb-1">
+      <div className="p-4 pb-2">
         <InsightSparklineChart sparkline={insight.sparkline} severity={insight.severity} />
-        <div className="flex gap-3 mt-1 text-[9px] text-muted-foreground">
-          <span>{insight.sparkline.metric} ({insight.sparkline.unit})</span>
+        <div className="flex gap-4 mt-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+          <span>VECTOR: {insight.sparkline.metric} ({insight.sparkline.unit})</span>
           {insight.sparkline.points[0]?.ref !== undefined && (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-2">
               <span className="inline-block w-4 border-t border-dashed border-muted-foreground" />
-              Threshold / Expected
+              BASELINE THRESHOLD
             </span>
           )}
         </div>
       </div>
 
       {/* Energy impact + confidence chips */}
-      <div className="px-4 py-2 flex items-center gap-3 flex-wrap">
+      <div className="px-4 py-3 flex items-center gap-3 flex-wrap">
         {insight.energyImpactKwhPerDay > 0 && (
-          <div className="flex items-center gap-1 text-xs text-status-warning bg-status-warning/10 px-2 py-1 rounded">
+          <div className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest font-bold text-status-warning bg-status-warning/10 border border-status-warning/30 px-2 py-1">
             <Zap className="w-3 h-3" />
-            <span className="font-mono font-semibold">{insight.energyImpactKwhPerDay.toLocaleString()} kWh/day</span>
-            <span className="text-muted-foreground">impact</span>
+            <span>{insight.energyImpactKwhPerDay.toLocaleString()} KWH/DAY DELTA</span>
           </div>
         )}
-        <div className="text-xs text-muted-foreground">
-          <span className="font-mono">{insight.confidencePct}%</span> confidence
+        <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground border border-border/50 px-2 py-1 bg-black/40">
+          <span className="font-bold text-foreground">{insight.confidencePct}%</span> CONFIDENCE INDEX
         </div>
       </div>
 
       {/* Explanation (collapsible) */}
-      <div className="px-4 pb-3">
+      <div className="px-4 pb-4">
         <button
           onClick={() => setExpanded(e => !e)}
-          className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors mb-1"
+          className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest font-bold text-muted-foreground hover:text-brand transition-colors mb-3"
         >
           {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-          {expanded ? "Hide details" : "Show details"}
+          {expanded ? "COLLAPSE TELEMETRY" : "EXPAND TELEMETRY"}
         </button>
 
         {expanded && (
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground leading-relaxed">{insight.explanation}</p>
-            <div className="bg-muted/30 border border-border/50 rounded-lg p-2.5">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                Recommended Action
+          <div className="space-y-4 mb-4">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground leading-relaxed border-l border-border/50 pl-3">
+              {insight.explanation}
+            </p>
+            <div className="border border-brand/30 bg-brand/5 p-3 relative">
+              <div className="absolute top-0 left-0 w-1 h-full bg-brand/50" />
+              <div className="font-mono text-[9px] uppercase tracking-widest font-bold text-brand mb-1 flex items-center gap-2">
+                <Wrench className="w-3 h-3" /> RECOMMENDED PROTOCOL
               </div>
-              <p className="text-xs text-foreground/80 leading-relaxed">{insight.recommendedAction}</p>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-foreground/90 leading-relaxed">
+                {insight.recommendedAction}
+              </p>
             </div>
           </div>
         )}
-      </div>
 
-      {/* Actions */}
-      <div className="px-4 pb-4 flex items-center gap-2">
-        <button
-          onClick={() => onCreateWorkOrder(insight)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
-        >
-          <Wrench className="w-3 h-3" />
-          Create Work Order
-        </button>
-        {insight.deviceId && (
-          <Link href={`/plants/${insight.plantId}/inverters/${insight.deviceId}`}>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
-              View Device →
-            </button>
-          </Link>
-        )}
+        {/* Actions */}
+        <div className="flex items-center gap-3 pt-3 border-t border-border/50">
+          <button
+            onClick={() => onCreateWorkOrder(insight)}
+            className="flex-1 font-mono text-[9px] uppercase tracking-widest font-bold border border-brand bg-brand/10 text-brand hover:bg-brand/20 px-3 py-2 flex items-center justify-center gap-2 transition-colors shadow-[0_0_10px_rgba(0,255,170,0.1)]"
+          >
+            <Wrench className="w-3 h-3" />
+            INITIATE WORK ORDER
+          </button>
+          {insight.deviceId && (
+            <Link href={`/plants/${insight.plantId}/inverters/${insight.deviceId}`}>
+              <button className="flex-1 font-mono text-[9px] uppercase tracking-widest font-bold border border-border/50 bg-black/40 text-muted-foreground hover:text-foreground hover:border-brand/50 px-3 py-2 transition-colors text-center">
+                INSPECT DEVICE →
+              </button>
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -287,56 +297,57 @@ export default function InsightsPage() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col space-y-5">
+      <div className="flex flex-col space-y-6">
 
         {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2.5 mb-1">
-              <Brain className="w-5 h-5 text-primary" />
-              <h1 className="text-2xl font-bold tracking-tight">AI Insights</h1>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Rule-based anomaly detection across your fleet — {insights.length} active finding{insights.length !== 1 ? "s" : ""}
+        <div className="border border-border/50 bg-black/40 p-5 relative flex-shrink-0">
+          <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
+          <h1 className="text-xl font-mono font-bold uppercase tracking-widest text-foreground flex items-center gap-3">
+            <Brain className="w-5 h-5 text-brand" />
+            AI DIAGNOSTICS & INSIGHTS
+          </h1>
+          <div className="flex items-center justify-between mt-2 ml-8">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              ANOMALY DETECTION // {insights.length} ACTIVE FINDING{insights.length !== 1 ? "S" : ""}
             </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {counts.critical > 0 && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-status-fault/15 text-status-fault border border-status-fault/30">
-                {counts.critical} Critical
-              </span>
-            )}
-            {counts.warning > 0 && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-status-warning/15 text-status-warning border border-status-warning/30">
-                {counts.warning} Warning
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {counts.critical > 0 && (
+                <span className="font-mono text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 border border-status-fault text-status-fault bg-status-fault/10 shadow-[0_0_10px_rgba(239,68,68,0.3)] animate-pulse">
+                  {counts.critical} CRITICAL
+                </span>
+              )}
+              {counts.warning > 0 && (
+                <span className="font-mono text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 border border-status-warning text-status-warning bg-status-warning/10 shadow-[0_0_10px_rgba(251,191,36,0.3)]">
+                  {counts.warning} WARNING
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Filter bar */}
-        <div className="flex items-center gap-3 flex-wrap bg-card border border-card-border rounded-xl px-4 py-3">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mr-1">
+        <div className="border border-border/50 bg-black/60 p-3 flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground border-r border-border/50 pr-3">
             <Filter className="w-3.5 h-3.5" />
-            {activeFilters > 0 ? <span className="text-primary font-medium">{activeFilters} active</span> : "Filters"}
+            {activeFilters > 0 ? <span className="text-brand font-bold">{activeFilters} ACTIVE</span> : "FILTERS"}
           </div>
 
           {/* Severity */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 border-r border-border/50 pr-3">
             {(["all", "critical", "warning", "info"] as const).map(s => (
               <button
                 key={s}
                 onClick={() => setSeverityFilter(s)}
-                className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
+                className={`font-mono text-[9px] uppercase tracking-widest px-3 py-1.5 transition-colors border ${
                   severityFilter === s
-                    ? s === "all" ? "bg-primary text-primary-foreground"
-                      : s === "critical" ? "bg-status-fault text-white"
-                      : s === "warning" ? "bg-status-warning text-black"
-                      : "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted"
+                    ? s === "all" ? "bg-brand/20 text-brand border-brand shadow-[0_0_5px_rgba(0,255,170,0.3)]"
+                      : s === "critical" ? "bg-status-fault/20 text-status-fault border-status-fault shadow-[0_0_5px_rgba(239,68,68,0.3)]"
+                      : s === "warning" ? "bg-status-warning/20 text-status-warning border-status-warning shadow-[0_0_5px_rgba(251,191,36,0.3)]"
+                      : "bg-primary/20 text-primary border-primary"
+                    : "bg-black/40 text-muted-foreground border-border/50 hover:border-brand/50 hover:text-brand"
                 }`}
               >
-                {s === "all" ? "All severity" : s.charAt(0).toUpperCase() + s.slice(1)}
+                {s === "all" ? "ALL SEVERITY" : s}
               </button>
             ))}
           </div>
@@ -346,9 +357,9 @@ export default function InsightsPage() {
             <select
               value={plantFilter}
               onChange={e => setPlantFilter(e.target.value)}
-              className="text-xs bg-muted/40 border border-border rounded px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="font-mono text-[9px] uppercase tracking-widest bg-black/40 border border-border/50 px-2 py-1.5 text-foreground focus:border-brand/50 focus:outline-none focus:ring-0"
             >
-              <option value="all">All plants</option>
+              <option value="all">ALL ZONES</option>
               {plantList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           )}
@@ -357,51 +368,51 @@ export default function InsightsPage() {
           <select
             value={typeFilter}
             onChange={e => setTypeFilter(e.target.value)}
-            className="text-xs bg-muted/40 border border-border rounded px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            className="font-mono text-[9px] uppercase tracking-widest bg-black/40 border border-border/50 px-2 py-1.5 text-foreground focus:border-brand/50 focus:outline-none focus:ring-0"
           >
-            <option value="all">All types</option>
+            <option value="all">ALL TYPES</option>
             {Object.entries(TYPE_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
           </select>
 
           {activeFilters > 0 && (
             <button
               onClick={() => { setSeverityFilter("all"); setTypeFilter("all"); setPlantFilter("all"); }}
-              className="text-[11px] text-muted-foreground hover:text-foreground ml-auto"
+              className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground hover:text-brand ml-auto"
             >
-              Clear filters
+              CLEAR FILTERS
             </button>
           )}
         </div>
 
         {/* Feed */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-card border border-card-border rounded-xl h-64 animate-pulse" />
+              <div key={i} className="border border-border/50 bg-black/60 h-64 animate-pulse" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <Brain className="w-12 h-12 text-status-normal mb-4 opacity-60" />
-            <h3 className="font-semibold text-lg">
-              {insights.length === 0 ? "All systems nominal" : "No insights match your filters"}
+          <div className="flex flex-col items-center justify-center h-64 border border-border/50 bg-black/40 text-center">
+            <Brain className="w-12 h-12 text-status-normal mb-4 shadow-[0_0_15px_rgba(34,197,94,0.3)] animate-pulse" />
+            <h3 className="font-mono text-sm uppercase tracking-widest font-bold text-status-normal">
+              {insights.length === 0 ? "SYSTEMS NOMINAL // NO ANOMALIES" : "NO INSIGHTS MATCH PARAMETERS"}
             </h3>
-            <p className="text-muted-foreground text-sm mt-1">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mt-2">
               {insights.length === 0
-                ? "No anomalies detected across your fleet right now."
-                : "Try adjusting the filters above."}
+                ? "DIAGNOSTIC ENGINE DETECTS NO DEVIATIONS ACROSS THE FLEET."
+                : "ADJUST FILTERS TO BROADEN SEARCH SPACE."}
             </p>
             {activeFilters > 0 && (
               <button
                 onClick={() => { setSeverityFilter("all"); setTypeFilter("all"); setPlantFilter("all"); }}
-                className="mt-3 text-sm text-primary hover:underline"
+                className="mt-4 font-mono text-[10px] uppercase tracking-widest text-brand hover:text-brand/80"
               >
-                Clear all filters
+                RESET FILTERS
               </button>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filtered.map(insight => (
               <InsightCard
                 key={insight.id}

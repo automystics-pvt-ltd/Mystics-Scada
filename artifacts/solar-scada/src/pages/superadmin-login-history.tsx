@@ -42,7 +42,7 @@ const ACTION_META: Record<string, {
 }> = {
   login:                 { label: "Login",            icon: LogIn,      color: "text-status-normal",  bg: "bg-status-normal/10" },
   login_failed:          { label: "Login Failed",     icon: UserX,      color: "text-status-fault",   bg: "bg-status-fault/10" },
-  logout:                { label: "Logout",           icon: LogOut,     color: "text-muted-foreground",bg: "bg-muted/30" },
+  logout:                { label: "Logout",           icon: LogOut,     color: "text-muted-foreground",bg: "bg-black/40" },
   otp_sent:              { label: "OTP Sent",         icon: Key,        color: "text-blue-400",        bg: "bg-blue-500/10" },
   otp_verified:          { label: "OTP Verified",     icon: UserCheck,  color: "text-status-normal",  bg: "bg-status-normal/10" },
   superadmin_login:      { label: "SA Login",         icon: ShieldAlert, color: "text-purple-400",    bg: "bg-purple-500/10" },
@@ -112,13 +112,13 @@ export default function SuperAdminLoginHistory() {
         <div className="space-y-6">
 
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between border-b border-border/50 pb-4 relative"><div className="absolute bottom-0 left-0 w-1/4 h-[1px] bg-accent-brand shadow-[0_0_15px_rgba(0,195,255,0.8)]" />
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <LogIn className="h-6 w-6 text-primary" />
+              <h1 className="font-mono text-2xl font-bold flex items-center gap-3 text-foreground uppercase tracking-widest">
+                <LogIn className="h-6 w-6 text-accent-brand" />
                 Login History
               </h1>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-1">
                 Authentication events across all organisations · {total.toLocaleString()} total records
               </p>
             </div>
@@ -134,8 +134,8 @@ export default function SuperAdminLoginHistory() {
               { label: "Failed (this page)",    value: counts.failed,     color: counts.failed ? "text-status-fault" : "text-muted-foreground" },
               { label: "SA Logins (this page)", value: counts.superadmin, color: counts.superadmin ? "text-purple-400" : "text-muted-foreground" },
             ].map(({ label, value, color }) => (
-              <div key={label} className="border border-border rounded-xl p-4 bg-card">
-                <p className="text-xs text-muted-foreground mb-1">{label}</p>
+              <div key={label} className="border border-border/50 rounded-none-none p-4 bg-black/40">
+                <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
                 <p className={`text-3xl font-bold font-mono ${color}`}>
                   {isLoading ? "—" : value}
                 </p>
@@ -151,7 +151,7 @@ export default function SuperAdminLoginHistory() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name or email…"
-                className="pl-8 text-sm h-8"
+                className="pl-8 font-mono text-[9px] uppercase tracking-widest h-8"
               />
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -160,10 +160,10 @@ export default function SuperAdminLoginHistory() {
                 <button
                   key={value}
                   onClick={() => { setAction(value); setPage(0); }}
-                  className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                  className={`px-2.5 py-1 rounded-none font-mono text-[8px] uppercase tracking-widest font-medium border transition-colors ${
                     actionFilter === value
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                      ? "bg-accent-brand text-accent-brand-foreground border-accent-brand"
+                      : "border-border/50 text-muted-foreground hover:border-accent-brand/40 hover:text-foreground"
                   }`}
                 >
                   {label}
@@ -173,14 +173,14 @@ export default function SuperAdminLoginHistory() {
           </div>
 
           {/* Table */}
-          <div className="border border-border rounded-xl overflow-hidden bg-card">
-            <table className="w-full text-sm">
+          <div className="border border-border/50 rounded-none-none overflow-hidden bg-black/40">
+            <table className="w-full font-mono text-[9px] uppercase tracking-widest">
               <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Event</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">User</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">IP / Device</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">When</th>
+                <tr className="border-b border-border/50 bg-black/40">
+                  <th className="px-4 py-2.5 text-left font-mono text-[8px] uppercase tracking-widest font-semibold text-muted-foreground uppercase tracking-wider">Event</th>
+                  <th className="px-4 py-2.5 text-left font-mono text-[8px] uppercase tracking-widest font-semibold text-muted-foreground uppercase tracking-wider">User</th>
+                  <th className="px-4 py-2.5 text-left font-mono text-[8px] uppercase tracking-widest font-semibold text-muted-foreground uppercase tracking-wider">IP / Device</th>
+                  <th className="px-4 py-2.5 text-left font-mono text-[8px] uppercase tracking-widest font-semibold text-muted-foreground uppercase tracking-wider">When</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -189,14 +189,14 @@ export default function SuperAdminLoginHistory() {
                     <tr key={i}>
                       {Array.from({ length: 4 }).map((__, j) => (
                         <td key={j} className="px-4 py-3">
-                          <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
+                          <div className="h-4 bg-white/10 animate-pulse rounded-none w-3/4" />
                         </td>
                       ))}
                     </tr>
                   ))
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-12 text-center text-muted-foreground text-sm">
+                    <td colSpan={4} className="px-4 py-12 text-center text-muted-foreground font-mono text-[9px] uppercase tracking-widest">
                       <Clock className="h-8 w-8 mx-auto mb-2 opacity-20" />
                       No authentication events found
                     </td>
@@ -205,7 +205,7 @@ export default function SuperAdminLoginHistory() {
                   const meta  = ACTION_META[evt.action];
                   const Icon  = meta?.icon ?? LogIn;
                   const color = meta?.color ?? "text-muted-foreground";
-                  const bg    = meta?.bg    ?? "bg-muted/30";
+                  const bg    = meta?.bg    ?? "bg-black/40";
                   const ip    = (evt.metadata?.ip as string | undefined) ?? null;
                   const ua    = (evt.metadata?.userAgent as string | undefined) ?? null;
                   const browser = ua
@@ -217,37 +217,37 @@ export default function SuperAdminLoginHistory() {
                     : null;
 
                   return (
-                    <tr key={evt.id} className="hover:bg-muted/10 transition-colors">
+                    <tr key={evt.id} className="hover:bg-white/5 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className={`p-1 rounded ${bg}`}>
+                          <div className={`p-1 rounded-none ${bg}`}>
                             <Icon className={`h-3.5 w-3.5 ${color}`} />
                           </div>
-                          <span className={`text-xs font-medium ${color}`}>
+                          <span className={`font-mono text-[8px] uppercase tracking-widest font-medium ${color}`}>
                             {meta?.label ?? evt.action}
                           </span>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-sm font-medium truncate max-w-[180px]">
+                        <p className="font-mono text-[9px] uppercase tracking-widest font-bold text-foreground truncate max-w-[180px]">
                           {evt.actorEmail ?? evt.metadata?.email as string ?? "—"}
                         </p>
                         {evt.actorName && (
-                          <p className="text-xs text-muted-foreground truncate">{evt.actorName}</p>
+                          <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground truncate">{evt.actorName}</p>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         {ip ? (
                           <>
-                            <p className="text-xs font-mono text-foreground">{ip}</p>
-                            {browser && <p className="text-xs text-muted-foreground">{browser}</p>}
+                            <p className="font-mono text-[8px] uppercase tracking-widest font-mono text-foreground">{ip}</p>
+                            {browser && <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground">{browser}</p>}
                           </>
                         ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
+                          <span className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-xs text-muted-foreground">{timeAgo(evt.createdAt)}</p>
+                        <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground">{timeAgo(evt.createdAt)}</p>
                         <p className="text-[10px] text-muted-foreground/60 font-mono">
                           {new Date(evt.createdAt).toLocaleString()}
                         </p>
@@ -261,7 +261,7 @@ export default function SuperAdminLoginHistory() {
 
           {/* Pagination */}
           {pageCount > 1 && (
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div className="flex items-center justify-between font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
               <span>
                 Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total.toLocaleString()}
               </span>
@@ -274,7 +274,7 @@ export default function SuperAdminLoginHistory() {
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
                 </Button>
-                <span className="px-3 py-1 text-xs border border-border rounded">
+                <span className="px-3 py-1 font-mono text-[8px] uppercase tracking-widest border border-border/50 rounded-none">
                   {page + 1} / {pageCount}
                 </span>
                 <Button
@@ -290,7 +290,7 @@ export default function SuperAdminLoginHistory() {
           )}
 
           {/* Note about IP capture */}
-          <div className="flex items-start gap-2 px-4 py-3 rounded-lg bg-blue-500/5 border border-blue-500/20 text-xs text-blue-400">
+          <div className="flex items-start gap-2 px-4 py-3 rounded-none-none bg-blue-500/5 border border-blue-500/20 font-mono text-[8px] uppercase tracking-widest text-blue-400">
             <ShieldAlert className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
             IP address and browser data are captured when login events include metadata.
             Older events may show "—" for these fields until IP capture middleware is fully deployed.

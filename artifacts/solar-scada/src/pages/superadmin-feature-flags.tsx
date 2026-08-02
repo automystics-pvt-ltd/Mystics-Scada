@@ -18,9 +18,9 @@ interface FeatureFlag {
 }
 
 const CATEGORY_COLOR: Record<string, string> = {
-  features: "bg-primary/10 text-primary border-primary/20",
-  beta:     "bg-status-warning/10 text-status-warning border-status-warning/20",
-  drivers:  "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  features: "bg-accent-brand/10 text-accent-brand border-accent-brand",
+  beta:     "bg-status-warning/10 text-status-warning border-status-warning",
+  drivers:  "bg-blue-500/10 text-blue-400 border-blue-500",
 };
 
 export default function SuperAdminFeatureFlags() {
@@ -48,63 +48,69 @@ export default function SuperAdminFeatureFlags() {
     <SuperAdminGuard>
       <SuperAdminLayout>
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between border-b border-border/50 pb-4 relative">
+            <div className="absolute bottom-0 left-0 w-1/4 h-[1px] bg-accent-brand shadow-[0_0_15px_rgba(0,195,255,0.8)]" />
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2"><Flag className="h-6 w-6 text-primary" />Feature Flags</h1>
-              <p className="text-sm text-muted-foreground mt-1">Toggle platform features globally or per-organisation</p>
+              <h1 className="font-mono text-2xl font-bold flex items-center gap-3 text-foreground uppercase tracking-widest">
+                <Flag className="h-6 w-6 text-accent-brand" />
+                FEATURE FLAGS
+              </h1>
+              <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mt-2">TOGGLE PLATFORM FEATURES GLOBALLY OR PER-ORGANISATION</p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => void refetch()} className="gap-1.5">
-              <RefreshCw className="h-3.5 w-3.5" /> Refresh
+            <Button variant="outline" size="sm" onClick={() => void refetch()} className="font-mono text-[9px] uppercase tracking-widest border-accent-brand/30 text-accent-brand hover:bg-accent-brand/10 rounded-none gap-2">
+              <RefreshCw className="h-3 w-3" /> REFRESH
             </Button>
           </div>
 
-          <div className="flex items-start gap-3 bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+          <div className="flex items-start gap-3 bg-blue-500/10 border border-blue-500/30 p-4">
             <Info className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-muted-foreground">
-              Flags are stored in-memory and reset on API restart. Use org overrides for per-tenant control without changing the global default.
+            <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground leading-relaxed">
+              FLAGS ARE STORED IN-MEMORY AND RESET ON API RESTART. USE ORG OVERRIDES FOR PER-TENANT CONTROL WITHOUT CHANGING THE GLOBAL DEFAULT.
             </p>
           </div>
 
           {isLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-20 bg-muted animate-pulse rounded-xl" />
+                <div key={i} className="h-24 border border-border/50 bg-black/40 animate-pulse" />
               ))}
             </div>
           ) : (
             categories.map(cat => (
               <div key={cat}>
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-                  <Badge variant="outline" className={`text-[10px] capitalize ${CATEGORY_COLOR[cat] ?? ""}`}>{cat}</Badge>
-                  <span>{flags.filter(f => f.category === cat).length} flag{flags.filter(f => f.category === cat).length !== 1 ? "s" : ""}</span>
+                <h2 className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-3">
+                  <Badge variant="outline" className={`font-mono text-[8px] uppercase tracking-widest rounded-none px-2 py-0.5 ${CATEGORY_COLOR[cat] ?? ""}`}>{cat}</Badge>
+                  <span>{flags.filter(f => f.category === cat).length} FLAG{flags.filter(f => f.category === cat).length !== 1 ? "S" : ""}</span>
+                  <div className="flex-1 h-[1px] bg-border/30 ml-2" />
                 </h2>
-                <div className="space-y-2">
+                <div className="space-y-3 mb-8">
                   {flags.filter(f => f.category === cat).map(flag => (
-                    <div key={flag.key} className={`border rounded-xl p-4 flex items-center gap-4 transition-colors ${flag.enabled ? "border-border bg-card" : "border-border/50 bg-muted/20"}`}>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <code className="text-sm font-mono font-semibold text-foreground">{flag.key}</code>
+                    <div key={flag.key} className={`border p-4 flex items-center gap-4 transition-colors relative group ${flag.enabled ? "border-accent-brand/30 bg-accent-brand/5 hover:border-accent-brand" : "border-border/50 bg-black/40 hover:border-border"}`}>
+                      <div className={`absolute top-0 left-0 w-1 h-full ${flag.enabled ? "bg-accent-brand shadow-[0_0_10px_rgba(0,195,255,0.8)]" : "bg-border/50"}`} />
+                      <div className="flex-1 min-w-0 pl-2">
+                        <div className="flex items-center gap-3 mb-1.5">
+                          <code className="font-mono text-[11px] font-bold uppercase tracking-widest text-foreground">{flag.key}</code>
                           {Object.keys(flag.orgOverrides).length > 0 && (
-                            <Badge variant="outline" className="text-[10px] border-status-warning/30 text-status-warning">
-                              {Object.keys(flag.orgOverrides).length} org override{Object.keys(flag.orgOverrides).length !== 1 ? "s" : ""}
+                            <Badge variant="outline" className="font-mono text-[8px] uppercase tracking-widest rounded-none border-status-warning/50 text-status-warning bg-status-warning/10 px-1.5 py-0.5">
+                              {Object.keys(flag.orgOverrides).length} ORG OVERRIDE{Object.keys(flag.orgOverrides).length !== 1 ? "S" : ""}
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground">{flag.description}</p>
+                        <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground/80 leading-relaxed">{flag.description}</p>
                       </div>
 
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        <span className={`text-xs font-semibold ${flag.enabled ? "text-status-normal" : "text-muted-foreground"}`}>
-                          {flag.enabled ? "Enabled" : "Disabled"}
+                      <div className="flex items-center gap-4 flex-shrink-0">
+                        <span className={`font-mono text-[9px] font-bold uppercase tracking-widest ${flag.enabled ? "text-status-normal" : "text-muted-foreground"}`}>
+                          {flag.enabled ? "ENABLED" : "DISABLED"}
                         </span>
                         <button
                           onClick={() => toggleMut.mutate({ key: flag.key, enabled: !flag.enabled })}
                           disabled={toggleMut.isPending}
-                          className="transition-colors"
+                          className="transition-transform hover:scale-110"
                         >
                           {flag.enabled
-                            ? <ToggleRight className="h-7 w-7 text-status-normal" />
-                            : <ToggleLeft className="h-7 w-7 text-muted-foreground" />}
+                            ? <ToggleRight className="h-8 w-8 text-accent-brand drop-shadow-[0_0_8px_rgba(0,195,255,0.6)]" />
+                            : <ToggleLeft className="h-8 w-8 text-muted-foreground" />}
                         </button>
                       </div>
                     </div>
@@ -115,15 +121,16 @@ export default function SuperAdminFeatureFlags() {
           )}
 
           {/* Summary row */}
-          <div className="grid grid-cols-3 gap-4 pt-2">
+          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/50">
             {[
-              { label: "Total Flags",    value: flags.length,                              color: "text-foreground" },
-              { label: "Enabled",        value: flags.filter(f => f.enabled).length,       color: "text-status-normal" },
-              { label: "Disabled / Beta",value: flags.filter(f => !f.enabled).length,      color: "text-status-warning" },
+              { label: "TOTAL FLAGS",    value: flags.length,                              color: "text-foreground" },
+              { label: "ENABLED",        value: flags.filter(f => f.enabled).length,       color: "text-status-normal" },
+              { label: "DISABLED / BETA",value: flags.filter(f => !f.enabled).length,      color: "text-status-warning" },
             ].map(({ label, value, color }) => (
-              <div key={label} className="border border-border rounded-xl p-4 bg-card text-center">
-                <p className={`text-3xl font-bold font-mono ${color}`}>{value}</p>
-                <p className="text-xs text-muted-foreground mt-1">{label}</p>
+              <div key={label} className="border border-border/50 bg-black/40 p-4 text-center group hover:border-border transition-colors relative">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-border/30 group-hover:bg-border/60 transition-colors" />
+                <p className={`font-mono text-3xl font-bold ${color}`}>{value}</p>
+                <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-2">{label}</p>
               </div>
             ))}
           </div>

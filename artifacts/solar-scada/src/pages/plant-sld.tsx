@@ -75,37 +75,37 @@ function SldFlowNode({ data }: NodeProps<Node<Record<string, unknown>>>) {
   const content = (
     <div
       className={cn(
-        "bg-card w-[180px] border-2 rounded-lg p-3 flex flex-col items-center text-center relative transition-colors cursor-pointer hover:bg-muted/20",
+        "bg-black/80 backdrop-blur-md w-[180px] border rounded-none p-3 flex flex-col items-center text-center relative transition-all cursor-pointer hover:bg-brand/10 hover:border-brand",
         STATUS_COLOR[node.status],
       )}
     >
       <Handle type="target" position={Position.Bottom} className="!opacity-0" />
       <Handle type="source" position={Position.Top} className="!opacity-0" />
-      <div className="flex items-center gap-1.5 mb-1">
+      <div className="flex items-center gap-1.5 mb-1.5">
         <Icon className="w-4 h-4 text-muted-foreground" />
-        <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT[node.status])} />
+        <span className={cn("w-1.5 h-1.5", STATUS_DOT[node.status])} />
       </div>
-      <span className="font-semibold text-sm truncate w-full">{node.label}</span>
+      <span className="font-mono uppercase tracking-widest text-[11px] font-bold truncate w-full text-foreground/90">{node.label}</span>
 
-      <div className="mt-2 w-full border-t border-border pt-2 grid grid-cols-2 gap-x-2 gap-y-1 text-[11px]">
+      <div className="mt-2 w-full border-t border-border/50 pt-2 grid grid-cols-2 gap-x-2 gap-y-1 text-[10px]">
         {node.powerKw !== undefined && node.powerKw !== null && (
           <div className="flex flex-col items-start">
-            <span className="text-muted-foreground">Power</span>
-            <span className="font-mono">{node.powerKw.toFixed(0)} kW</span>
+            <span className="text-muted-foreground font-mono uppercase tracking-widest text-[8px]">PWR</span>
+            <span className="font-mono text-brand font-bold">{node.powerKw.toFixed(0)}kW</span>
           </div>
         )}
         {node.voltageV !== undefined && node.voltageV !== null && (
           <div className="flex flex-col items-start">
-            <span className="text-muted-foreground">Volt</span>
-            <span className="font-mono">
-              {node.voltageV >= 1000 ? `${(node.voltageV / 1000).toFixed(1)} kV` : `${node.voltageV.toFixed(0)} V`}
+            <span className="text-muted-foreground font-mono uppercase tracking-widest text-[8px]">VLT</span>
+            <span className="font-mono text-brand/80">
+              {node.voltageV >= 1000 ? `${(node.voltageV / 1000).toFixed(1)}kV` : `${node.voltageV.toFixed(0)}V`}
             </span>
           </div>
         )}
         {node.currentA !== undefined && node.currentA !== null && (
           <div className="flex flex-col items-start">
-            <span className="text-muted-foreground">Current</span>
-            <span className="font-mono">{node.currentA.toFixed(0)} A</span>
+            <span className="text-muted-foreground font-mono uppercase tracking-widest text-[8px]">CUR</span>
+            <span className="font-mono text-brand/80">{node.currentA.toFixed(0)}A</span>
           </div>
         )}
       </div>
@@ -113,48 +113,48 @@ function SldFlowNode({ data }: NodeProps<Node<Record<string, unknown>>>) {
       {hasBreaker && (
         <div
           className={cn(
-            "mt-2 w-full flex items-center justify-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border",
+            "mt-2 w-full flex items-center justify-center gap-1 border px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-widest",
             node.breakerState === "closed"
               ? "text-status-normal border-status-normal/30 bg-status-normal/10"
               : "text-status-fault border-status-fault/30 bg-status-fault/10",
           )}
         >
           {node.breakerState === "closed" ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-          Breaker {node.breakerState === "closed" ? "Closed" : "Open"}
+          {node.breakerState === "closed" ? "BRK:CLOSED" : "BRK:OPEN"}
         </div>
       )}
 
       {node.type === "combiner" && node.stringFaultCount != null && node.stringFaultCount > 0 && (
-        <div className="mt-2 w-full flex items-center justify-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border border-status-warning/40 bg-status-warning/10 text-status-warning">
+        <div className="mt-2 w-full flex items-center justify-center gap-1 border border-status-warning/40 bg-status-warning/10 text-status-warning px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-widest">
           <AlertTriangle className="w-3 h-3 shrink-0" />
-          {node.stringFaultCount} string{node.stringFaultCount !== 1 ? "s" : ""} faulted
+          {node.stringFaultCount} STR FLT
         </div>
       )}
 
       {node.type === "combiner" && node.stringFaultCount != null && node.stringFaultCount === 0 && (
-        <div className="mt-2 w-full flex items-center justify-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border border-status-normal/30 bg-status-normal/10 text-status-normal">
-          All strings nominal
+        <div className="mt-2 w-full flex items-center justify-center gap-1 border border-status-normal/30 bg-status-normal/10 text-status-normal px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-widest">
+          STR:NOMINAL
         </div>
       )}
 
       {/* Inverters offline or irradiance too low — deviation math is unreliable */}
       {node.type === "combiner" && node.stringFaultCount == null && (
-        <div className="mt-2 w-full flex items-center justify-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border border-muted-foreground/20 bg-muted/20 text-muted-foreground">
-          Readings unavailable
+        <div className="mt-2 w-full flex items-center justify-center gap-1 border border-border/50 bg-black/40 text-muted-foreground px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-widest">
+          NO DATA
         </div>
       )}
 
       {/* SIM badge — top-left — shown when this fault was injected by the operator */}
       {node.simulated && (
-        <div className="absolute -top-2.5 -left-2 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500 text-black text-[9px] font-black leading-none z-10">
+        <div className="absolute -top-2 -left-2 flex items-center gap-0.5 px-1.5 py-0.5 border border-status-warning/50 bg-status-warning text-black text-[9px] font-mono uppercase tracking-widest font-bold z-10 shadow-[0_0_10px_rgba(251,191,36,0.5)]">
           <FlaskConical className="w-2.5 h-2.5" />
           SIM
         </div>
       )}
 
-      <div className="absolute -top-2 -right-2">
-        {node.status === "fault" && <div className="w-4 h-4 rounded-full bg-status-fault animate-ping absolute" />}
-        {node.status === "fault" && <div className="w-4 h-4 rounded-full bg-status-fault" />}
+      <div className="absolute -top-1.5 -right-1.5">
+        {node.status === "fault" && <div className="w-3 h-3 bg-status-fault animate-ping absolute" />}
+        {node.status === "fault" && <div className="w-3 h-3 bg-status-fault" />}
       </div>
     </div>
   );
@@ -162,7 +162,7 @@ function SldFlowNode({ data }: NodeProps<Node<Record<string, unknown>>>) {
   return (
     <Popover>
       <PopoverTrigger asChild>{content}</PopoverTrigger>
-      <PopoverContent side="right" className="w-64">
+      <PopoverContent side="right" className="w-64 rounded-none border border-brand/50 bg-black/90 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] p-0">
         <SldNodeDetail node={node} />
       </PopoverContent>
     </Popover>
@@ -171,71 +171,83 @@ function SldFlowNode({ data }: NodeProps<Node<Record<string, unknown>>>) {
 
 function SldNodeDetail({ node }: { node: SldNodeDatum }) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="font-semibold text-sm">{node.label}</span>
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{node.type.replace("_", " ")}</span>
-      </div>
-      <div className="grid grid-cols-2 gap-2 text-xs">
+    <div className="flex flex-col">
+      <div className="p-3 border-b border-border/50 flex items-start justify-between bg-brand/5">
         <div>
-          <div className="text-muted-foreground">Status</div>
-          <div className="font-medium capitalize">{node.status}</div>
+          <div className="font-mono text-sm font-bold uppercase tracking-widest text-foreground">{node.label}</div>
+          <div className="text-[10px] uppercase tracking-widest text-brand font-mono mt-1">{node.type.replace("_", " ")}</div>
         </div>
+        <span className={cn("px-2 py-0.5 text-[9px] font-mono uppercase tracking-widest font-bold border", 
+          node.status === "normal" ? "border-status-normal/50 bg-status-normal/10 text-status-normal" :
+          node.status === "warning" ? "border-status-warning/50 bg-status-warning/10 text-status-warning" :
+          node.status === "offline" ? "border-status-offline/50 bg-status-offline/10 text-status-offline" :
+          "border-status-fault/50 bg-status-fault/10 text-status-fault"
+        )}>
+          {node.status}
+        </span>
+      </div>
+      
+      <div className="p-3 grid grid-cols-2 gap-4 text-xs">
         {node.powerKw !== undefined && node.powerKw !== null && (
           <div>
-            <div className="text-muted-foreground">Power</div>
-            <div className="font-mono">{node.powerKw.toFixed(1)} kW</div>
+            <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground mb-1">Power Vector</div>
+            <div className="font-mono text-brand text-sm">{node.powerKw.toFixed(1)} kW</div>
           </div>
         )}
         {node.voltageV !== undefined && node.voltageV !== null && (
           <div>
-            <div className="text-muted-foreground">Voltage</div>
-            <div className="font-mono">
+            <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground mb-1">Voltage</div>
+            <div className="font-mono text-foreground text-sm">
               {node.voltageV >= 1000 ? `${(node.voltageV / 1000).toFixed(2)} kV` : `${node.voltageV.toFixed(0)} V`}
             </div>
           </div>
         )}
         {node.currentA !== undefined && node.currentA !== null && (
           <div>
-            <div className="text-muted-foreground">Current</div>
-            <div className="font-mono">{node.currentA.toFixed(1)} A</div>
+            <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground mb-1">Current</div>
+            <div className="font-mono text-foreground text-sm">{node.currentA.toFixed(1)} A</div>
           </div>
         )}
         {node.breakerState && (
           <div>
-            <div className="text-muted-foreground">Breaker</div>
-            <div className="font-medium capitalize">{node.breakerState}</div>
+            <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground mb-1">Breaker Status</div>
+            <div className={cn("font-mono text-xs uppercase tracking-widest", node.breakerState === "closed" ? "text-status-normal" : "text-status-fault")}>
+              {node.breakerState}
+            </div>
           </div>
         )}
       </div>
-      {node.type === "combiner" && node.stringFaultCount != null && node.stringFaultCount > 0 && (
-        <div className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium border border-status-warning/40 bg-status-warning/10 text-status-warning">
-          <AlertTriangle className="w-3 h-3 shrink-0" />
-          {node.stringFaultCount} string{node.stringFaultCount !== 1 ? "s" : ""} faulted
-        </div>
-      )}
-      {node.type === "combiner" && node.stringFaultCount != null && node.stringFaultCount === 0 && (
-        <div className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium border border-status-normal/30 bg-status-normal/10 text-status-normal">
-          All strings nominal
-        </div>
-      )}
-      {/* Inverters offline or irradiance too low — deviation math is unreliable */}
-      {node.type === "combiner" && node.stringFaultCount == null && (
-        <div className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium border border-muted-foreground/20 bg-muted/20 text-muted-foreground">
-          Readings unavailable
-        </div>
-      )}
-      {node.simulated && (
-        <div className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium border border-amber-500/40 bg-amber-500/10 text-amber-400">
-          <FlaskConical className="w-3 h-3 shrink-0" />
-          Simulated fault — operator drill, not a real alarm
-        </div>
-      )}
-      {node.detailPath && (
-        <Link href={node.detailPath} className="inline-block text-xs text-primary hover:underline pt-1">
-          {node.type === "combiner" ? "View string diagnostics →" : "View equipment detail →"}
-        </Link>
-      )}
+
+      <div className="px-3 pb-3 space-y-2">
+        {node.type === "combiner" && node.stringFaultCount != null && node.stringFaultCount > 0 && (
+          <div className="flex items-center gap-2 border border-status-warning/40 bg-status-warning/10 text-status-warning px-2 py-1.5 text-[10px] font-mono uppercase tracking-widest">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            {node.stringFaultCount} STRING{node.stringFaultCount !== 1 ? "S" : ""} FAULTED
+          </div>
+        )}
+        {node.type === "combiner" && node.stringFaultCount != null && node.stringFaultCount === 0 && (
+          <div className="flex items-center gap-2 border border-status-normal/30 bg-status-normal/10 text-status-normal px-2 py-1.5 text-[10px] font-mono uppercase tracking-widest">
+            ALL STRINGS NOMINAL
+          </div>
+        )}
+        {node.type === "combiner" && node.stringFaultCount == null && (
+          <div className="flex items-center gap-2 border border-border/50 bg-black/40 text-muted-foreground px-2 py-1.5 text-[10px] font-mono uppercase tracking-widest">
+            READINGS UNAVAILABLE
+          </div>
+        )}
+        {node.simulated && (
+          <div className="flex items-center gap-2 border border-status-warning/40 bg-status-warning/10 text-status-warning px-2 py-1.5 text-[10px] font-mono uppercase tracking-widest">
+            <FlaskConical className="w-3 h-3 shrink-0" />
+            SIMULATED FAULT (DRILL)
+          </div>
+        )}
+        
+        {node.detailPath && (
+          <Link href={node.detailPath} className="block mt-2 text-[10px] font-mono uppercase tracking-widest text-brand hover:text-brand/80 transition-colors bg-brand/10 border border-brand/20 text-center py-2 hover:bg-brand/20">
+            {node.type === "combiner" ? "ACCESS DIAGNOSTICS →" : "ACCESS EQUIPMENT →"}
+          </Link>
+        )}
+      </div>
     </div>
   );
 }
@@ -396,51 +408,53 @@ function FaultSimulatorPanel({
       <button
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border transition-colors",
+          "inline-flex items-center gap-2 border px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-all",
           hasFaults
-            ? "border-status-fault/50 bg-status-fault/10 text-status-fault hover:bg-status-fault/20"
-            : "border-card-border bg-card hover:bg-muted/30",
+            ? "border-status-warning/50 bg-status-warning/10 text-status-warning shadow-[0_0_10px_rgba(251,191,36,0.3)] hover:bg-status-warning/20"
+            : "border-border/50 bg-black/40 text-foreground hover:bg-brand/10 hover:border-brand/50 hover:text-brand",
         )}
       >
         <ShieldAlert className="w-3.5 h-3.5" />
-        Fault Simulator
+        DRILL SIMULATOR
         {hasFaults && (
-          <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-status-fault text-white text-[10px] leading-none font-bold">
+          <span className="ml-1 bg-status-warning text-black px-1.5 py-0.5 leading-none font-bold animate-pulse">
             {faults.length}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-80 rounded-xl border border-card-border bg-[#111] shadow-2xl p-4 space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="absolute right-0 top-full mt-2 z-50 w-80 rounded-none border border-brand/50 bg-black/90 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] p-5 space-y-5">
+          <div className="flex items-center justify-between border-b border-border/50 pb-3">
             <div className="flex items-center gap-2">
               <TriangleAlert className="w-4 h-4 text-status-warning" />
-              <span className="font-semibold text-sm">Fault Simulator</span>
+              <span className="font-mono text-sm uppercase tracking-widest text-foreground">DRILL SIMULATOR</span>
             </div>
-            <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
+            <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-brand transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Inject a transient fault to see the live topology react — breaker trips, de-energized edges, and status changes reflect in real time.
+          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground leading-relaxed">
+            INJECT A TRANSIENT FAULT TO OBSERVE LIVE TOPOLOGY REACTIONS: BREAKER TRIPS, DE-ENERGIZED VECTORS, AND ALARM PROPAGATION.
           </p>
 
           {/* Target selector */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Fault Target</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-mono text-brand uppercase tracking-widest flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-brand inline-block" /> FAULT VECTOR
+            </label>
             <select
               value={target}
               onChange={(e) => setTarget(e.target.value)}
-              className="w-full bg-card border border-card-border rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+              className="w-full bg-black/40 border border-border/50 rounded-none px-3 py-2 text-xs font-mono uppercase tracking-widest text-foreground focus:outline-none focus:border-brand/50"
             >
-              <option value="plant">⚡ Full Plant Grid Disconnect</option>
+              <option value="plant">⚡ FULL ZONE DISCONNECT</option>
               {Array.from({ length: inverterCount }, (_, i) => {
                 const invId = `${plantId}-inv-${i}`;
                 return (
                   <option key={invId} value={invId}>
-                    Inverter {i + 1} offline
+                    INVERTER {String(i + 1).padStart(2, '0')} FAULT
                   </option>
                 );
               })}
@@ -448,18 +462,20 @@ function FaultSimulatorPanel({
           </div>
 
           {/* Duration selector */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Duration</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-mono text-brand uppercase tracking-widest flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-brand inline-block" /> DURATION
+            </label>
             <div className="flex gap-2">
               {DURATIONS.map((d) => (
                 <button
                   key={d.value}
                   onClick={() => setDuration(d.value)}
                   className={cn(
-                    "flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
+                    "flex-1 border px-2 py-1.5 text-[10px] font-mono uppercase tracking-widest transition-all",
                     duration === d.value
-                      ? "border-primary bg-primary/20 text-primary"
-                      : "border-card-border bg-card hover:bg-muted/30",
+                      ? "border-brand bg-brand/20 text-brand shadow-[0_0_10px_rgba(0,255,170,0.3)]"
+                      : "border-border/50 bg-black/40 text-foreground/70 hover:border-brand/50 hover:text-foreground",
                   )}
                 >
                   {d.label}
@@ -472,41 +488,46 @@ function FaultSimulatorPanel({
           <button
             onClick={inject}
             disabled={injecting}
-            className="w-full flex items-center justify-center gap-2 rounded-md bg-status-fault/20 border border-status-fault/40 text-status-fault hover:bg-status-fault/30 transition-colors px-3 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 border border-status-warning/50 bg-status-warning/10 text-status-warning hover:bg-status-warning/20 transition-all px-3 py-2.5 text-xs font-mono uppercase tracking-widest font-bold disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden"
           >
+            <div className="absolute top-0 left-0 w-1 h-full bg-status-warning/50 group-hover:bg-status-warning transition-colors" />
             <ZapIcon className="w-4 h-4" />
-            {injecting ? "Injecting…" : "Inject Fault"}
+            {injecting ? "INJECTING..." : "EXECUTE DRILL"}
           </button>
 
           {/* Active faults list */}
           {faults.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-3 pt-3 border-t border-border/50">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Active Faults</span>
+                <span className="text-[10px] font-mono text-status-warning uppercase tracking-widest flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-status-warning animate-pulse inline-block" /> ACTIVE DRILLS
+                </span>
                 <button
                   onClick={clearAll}
-                  className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+                  className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground hover:text-brand transition-colors border-b border-dashed border-muted-foreground/50 hover:border-brand/50"
                 >
-                  Clear all
+                  ABORT ALL
                 </button>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1 custom-scrollbar">
                 {faults.map((f) => (
                   <div
                     key={f.key}
-                    className="flex items-center justify-between rounded-md border border-status-fault/30 bg-status-fault/10 px-2.5 py-1.5"
+                    className="flex items-center justify-between border border-status-warning/30 bg-status-warning/5 px-3 py-2 relative"
                   >
+                    <div className="absolute top-0 left-0 w-1 h-full bg-status-warning/50" />
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-1.5 h-1.5 rounded-full bg-status-fault animate-pulse shrink-0" />
-                      <span className="text-xs truncate text-status-fault">{f.label}</span>
+                      <span className="text-[10px] font-mono uppercase tracking-widest truncate text-status-warning">{f.label}</span>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      <FaultCountdown expiresAt={f.expiresAt} />
+                    <div className="flex items-center gap-3 shrink-0 ml-2">
+                      <div className="text-[10px] text-status-warning/80">
+                        <FaultCountdown expiresAt={f.expiresAt} />
+                      </div>
                       <button
                         onClick={() => clearOne(f.key)}
-                        className="text-muted-foreground hover:text-foreground"
+                        className="text-muted-foreground hover:text-status-warning transition-colors"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -516,7 +537,9 @@ function FaultSimulatorPanel({
           )}
 
           {faults.length === 0 && (
-            <p className="text-center text-[11px] text-muted-foreground py-1">No active faults</p>
+            <div className="pt-3 border-t border-border/50 text-center">
+              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">NO ACTIVE DRILLS</p>
+            </div>
           )}
         </div>
       )}
@@ -640,24 +663,32 @@ export default function PlantSld() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col space-y-6 h-full">
-        <div>
-          <div className="flex items-center mb-2 text-sm text-muted-foreground">
-            <Link href="/" className="hover:text-foreground transition-colors">Portfolio</Link>
-            <span className="mx-2">/</span>
-            <Link href={`/plants/${plantId}`} className="hover:text-foreground transition-colors">Plant Overview</Link>
-            <span className="mx-2">/</span>
-            <span className="text-foreground">Single Line Diagram</span>
+      <div className="flex flex-col h-[calc(100vh-100px)] space-y-6">
+        <div className="border border-border/50 bg-black/40 p-5 relative flex-shrink-0">
+          <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
+          
+          <div className="flex items-center mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            <Link href="/" className="hover:text-brand transition-colors">Portfolio</Link>
+            <span className="mx-2 text-border/50">/</span>
+            <Link href={`/plants/${plantId}`} className="hover:text-brand transition-colors">Zone Overview</Link>
+            <span className="mx-2 text-border/50">/</span>
+            <span className="text-foreground">Topology Matrix</span>
           </div>
 
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold tracking-tight flex items-center">
-              <Network className="w-6 h-6 mr-2 text-primary" />
-              Live Topology (SLD)
-            </h1>
-            <div className="flex items-center gap-3">
-              <div className="text-sm text-muted-foreground">
-                Last updated: {new Date().toLocaleTimeString()}
+          <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
+            <div>
+              <h1 className="text-xl font-mono uppercase tracking-widest text-foreground flex items-center gap-3">
+                <Network className="w-5 h-5 text-brand" />
+                Live Topology Matrix
+              </h1>
+              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2">
+                REAL-TIME SINGLE LINE DIAGRAM / HARDWARE CONNECTIVITY GRAPH
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-brand border border-brand/20 bg-brand/5 px-2 py-1 hidden md:block">
+                T-MINUS 00:00:00 (LIVE)
               </div>
               {plantId && (
                 <FaultSimulatorPanel
@@ -667,10 +698,10 @@ export default function PlantSld() {
               )}
               <button
                 onClick={() => setFullscreen((v) => !v)}
-                className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border border-card-border bg-card hover:bg-muted/30 transition-colors"
+                className="inline-flex items-center gap-2 border border-border/50 bg-black/40 px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-foreground hover:bg-brand/10 hover:text-brand hover:border-brand/50 transition-colors"
               >
                 <Maximize2 className="w-3.5 h-3.5" />
-                {fullscreen ? "Exit Full Screen" : "Full Screen"}
+                {fullscreen ? "CONTRACT" : "EXPAND"}
               </button>
             </div>
           </div>
@@ -678,21 +709,24 @@ export default function PlantSld() {
 
         <div
           className={cn(
-            "flex-1 bg-[#0a0a0a] rounded-xl border border-card-border overflow-hidden relative min-h-[600px]",
-            fullscreen && "fixed inset-4 z-50 min-h-0",
+            "flex-1 bg-black/60 rounded-none border border-border/50 overflow-hidden relative shadow-[inset_0_0_50px_rgba(0,0,0,0.8)]",
+            fullscreen && "fixed inset-4 z-50 min-h-0 bg-background border-brand/50",
           )}
         >
           {/* SIMULATION ACTIVE banner — displayed when any SLD node carries an operator-injected fault */}
           {hasSimulatedNodes && (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-semibold whitespace-nowrap pointer-events-none">
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2 border border-status-warning bg-status-warning/10 text-status-warning text-[10px] font-mono uppercase tracking-widest whitespace-nowrap pointer-events-none shadow-[0_0_15px_rgba(251,191,36,0.2)]">
               <FlaskConical className="w-3.5 h-3.5 shrink-0" />
-              SIMULATION ACTIVE — faults shown are operator-injected drills, not real alarms
+              SIMULATION ACTIVE // FAULTS SHOWN ARE OPERATOR-INJECTED DRILLS
             </div>
           )}
 
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
-              <div className="animate-spin text-primary"><Network className="w-8 h-8" /></div>
+              <div className="flex flex-col items-center gap-4 text-brand">
+                <Network className="w-8 h-8 animate-pulse" />
+                <span className="font-mono text-[10px] uppercase tracking-widest">INITIALIZING GRAPH...</span>
+              </div>
             </div>
           ) : (
             <ReactFlow
@@ -708,8 +742,8 @@ export default function PlantSld() {
               proOptions={{ hideAttribution: true }}
               colorMode="dark"
             >
-              <Background color="#333" gap={24} />
-              <Controls showInteractive={false} />
+              <Background color="rgba(255,255,255,0.05)" gap={24} />
+              <Controls showInteractive={false} className="border-border/50 bg-black/60 fill-foreground" />
             </ReactFlow>
           )}
         </div>

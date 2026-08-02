@@ -45,124 +45,158 @@ export default function PlantZoneDetail() {
   return (
     <AppLayout>
       <div className="flex flex-col space-y-6">
-        {/* Breadcrumb */}
-        <div>
-          <div className="flex items-center mb-1 text-sm text-muted-foreground gap-2">
-            <Link href="/" className="hover:text-foreground">Portfolio</Link>
-            <span>/</span>
-            <Link href={`/plants/${pid}`} className="hover:text-foreground">{plant?.name ?? pid}</Link>
-            <span>/</span>
-            <Link href={`/plants/${pid}/zones`} className="hover:text-foreground">Zones</Link>
-            <span>/</span>
+        {/* Breadcrumb & Header */}
+        <div className="border border-border/50 bg-black/40 p-5 relative flex-shrink-0">
+          <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
+          
+          <div className="flex items-center mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            <Link href="/" className="hover:text-brand transition-colors">Portfolio</Link>
+            <span className="mx-2 text-border/50">/</span>
+            <Link href={`/plants/${pid}`} className="hover:text-brand transition-colors">{plant?.name ?? pid}</Link>
+            <span className="mx-2 text-border/50">/</span>
+            <Link href={`/plants/${pid}/zones`} className="hover:text-brand transition-colors">ZONES</Link>
+            <span className="mx-2 text-border/50">/</span>
             <span className="text-foreground">{zone?.name ?? zid}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href={`/plants/${pid}/zones`} className="text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <h1 className="text-2xl font-bold tracking-tight">{zone?.name ?? "Zone"} — Inverter Detail</h1>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            {plant?.name} · Inverters {(zone?.startIdx ?? 0) + 1}–{(zone?.endIdx ?? 0) + 1}
-          </p>
-        </div>
 
-        {/* Zone KPI bar */}
-        <div className="bg-card border border-card-border rounded-xl p-5 flex flex-wrap items-center gap-8">
-          <GenerationRing
-            pct={availabilityPct}
-            label={`${healthScore}`}
-            sublabel="health score"
-            size={80}
-            strokeWidth={7}
-            color={color}
-          />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-            {[
-              { label: "Total Power", value: totalPower >= 1000 ? `${(totalPower / 1000).toFixed(1)} MW` : `${totalPower.toFixed(0)} kW` },
-              { label: "Online / Total", value: `${online} / ${total}` },
-              { label: "Availability", value: `${availabilityPct.toFixed(1)}%` },
-              { label: "Status", value: healthStatus.charAt(0).toUpperCase() + healthStatus.slice(1) },
-            ].map(({ label, value }) => (
-              <div key={label}>
-                <div className="text-xs text-muted-foreground uppercase tracking-wider">{label}</div>
-                <div className="font-mono font-semibold mt-0.5">{value}</div>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-4 flex-wrap">
+                <Link href={`/plants/${pid}/zones`} className="border border-border/50 bg-black/60 p-1.5 hover:text-brand hover:border-brand/50 transition-colors">
+                  <ArrowLeft className="w-4 h-4" />
+                </Link>
+                <h1 className="text-xl font-mono font-bold uppercase tracking-widest text-foreground">
+                  {zone?.name ?? "ZONE"} // MATRIX DETAIL
+                </h1>
               </div>
-            ))}
-          </div>
-          <div className="ml-auto">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mt-2 ml-[3.25rem]">
+                {plant?.name} · INVERTERS {(zone?.startIdx ?? 0) + 1} TO {(zone?.endIdx ?? 0) + 1}
+              </p>
+            </div>
+            
             <HealthBadge status={healthStatus} />
           </div>
         </div>
 
+        {/* Zone KPI bar */}
+        <div className="border border-border/50 bg-black/60 relative overflow-hidden flex flex-wrap items-center">
+          <div className="absolute top-0 left-0 w-1 h-full bg-brand shadow-[0_0_10px_rgba(0,255,170,0.5)]" />
+          
+          {/* Progress block */}
+          <div className="p-5 border-r border-border/50 bg-black/40 flex items-center justify-center flex-shrink-0 min-w-[140px]">
+            <div className="text-center">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">HEALTH SCORE</div>
+              <div className="font-mono text-3xl font-bold" style={{ color: color, textShadow: `0 0 10px ${color}80` }}>
+                {healthScore}
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-5 grid grid-cols-2 sm:grid-cols-4 gap-8 flex-1">
+            {[
+              { label: "POWER VECTOR", value: totalPower >= 1000 ? `${(totalPower / 1000).toFixed(1)} MW` : `${totalPower.toFixed(0)} KW` },
+              { label: "UNITS ONLINE", value: `${online} / ${total}` },
+              { label: "AVAILABILITY", value: `${availabilityPct.toFixed(1)}%` },
+              { label: "STATUS CODE", value: healthStatus.toUpperCase() },
+            ].map(({ label, value }) => (
+              <div key={label}>
+                <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-1 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-brand/50 inline-block" /> {label}
+                </div>
+                <div className="font-mono text-lg font-bold text-foreground">{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Links to zone arrays and inverter list */}
-        <div className="flex gap-3 flex-wrap">
+        <div className="flex gap-4 flex-wrap">
           <Link href={`/plants/${pid}/zones/${zid}/arrays`}>
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 text-primary text-sm font-medium rounded-lg hover:bg-primary/20 transition-colors cursor-pointer">
-              View String Arrays <ArrowRight className="w-4 h-4" />
+            <div className="inline-flex items-center gap-2 border border-brand bg-brand/10 text-brand px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:bg-brand/20 transition-colors shadow-[0_0_10px_rgba(0,255,170,0.2)] cursor-pointer">
+              ACCESS STRING ARRAYS <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </Link>
           <Link href={`/plants/${pid}/inverters`}>
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-muted/50 border border-border text-muted-foreground text-sm font-medium rounded-lg hover:text-foreground transition-colors cursor-pointer">
-              All Inverters <ArrowRight className="w-4 h-4" />
+            <div className="inline-flex items-center gap-2 border border-border/50 bg-black/40 text-muted-foreground px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-brand/50 hover:text-brand transition-colors cursor-pointer">
+              GLOBAL INVERTER REGISTRY <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </Link>
         </div>
 
         {/* Inverter grid */}
         <div>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            Inverters in {zone?.name}
-          </h2>
+          <div className="flex items-center gap-3 mb-4">
+            <h2 className="font-mono text-[10px] uppercase tracking-widest text-brand font-bold">
+              {zone?.name} HARDWARE MATRIX
+            </h2>
+            <div className="flex-1 h-px bg-border/50" />
+          </div>
+          
           {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="bg-card border border-card-border rounded-xl p-4 h-36 animate-pulse" />
+                <div key={i} className="border border-border/50 bg-black/40 h-[180px] animate-pulse" />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {zoneInvs.map((inv) => {
                 const arrLink = `/plants/${pid}/zones/${zid}/arrays/${inv.id}-arr-0`;
+                
+                const isFault = inv.status === "fault" || inv.status === "comm_lost";
+                const isWarning = inv.status === "standby";
+                
                 return (
                   <Link key={inv.id} href={`/plants/${pid}/inverters/${inv.id}`}>
-                    <div className="bg-card border border-card-border rounded-xl p-4 hover:border-primary/40 cursor-pointer group transition-all">
-                      <div className="flex items-start justify-between mb-3">
+                    <div className={`border bg-black/60 p-4 hover:bg-brand/5 cursor-pointer group transition-all relative ${
+                      isFault ? "border-status-fault/50" : isWarning ? "border-status-warning/50" : "border-border/50 hover:border-brand/50"
+                    }`}>
+                      <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${
+                        isFault ? "bg-status-fault" : isWarning ? "bg-status-warning" : "bg-border/50 group-hover:bg-brand"
+                      }`} />
+                      
+                      <div className="flex items-start justify-between mb-4">
                         <div>
-                          <div className="font-semibold group-hover:text-primary transition-colors">{inv.name}</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">{inv.id}</div>
+                          <div className="font-mono font-bold uppercase tracking-widest text-sm group-hover:text-brand transition-colors">{inv.name}</div>
+                          <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-1">{inv.id}</div>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className={`w-2.5 h-2.5 rounded-full ${STATUS_DOT[inv.status] ?? "bg-muted"}`} />
-                          <span className="text-xs text-muted-foreground capitalize">{inv.status.replace("_", " ")}</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 ${STATUS_DOT[inv.status] ?? "bg-muted"} ${inv.status === "running" ? "shadow-[0_0_5px_rgba(34,197,94,0.5)]" : ""}`} />
+                          <span className={`font-mono text-[9px] uppercase tracking-widest font-bold ${
+                            isFault ? "text-status-fault" : isWarning ? "text-status-warning" : "text-status-normal"
+                          }`}>{inv.status.replace("_", " ")}</span>
                         </div>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 text-center">
-                        <div className="bg-muted/30 rounded-lg p-2">
-                          <div className="text-[10px] text-muted-foreground">Power</div>
-                          <div className="font-mono text-xs font-semibold mt-0.5">
-                            {inv.acPowerKw != null ? `${inv.acPowerKw.toFixed(0)} kW` : "--"}
+                      
+                      <div className="grid grid-cols-3 gap-px bg-border/50 border border-border/50">
+                        <div className="bg-black p-2 text-center">
+                          <div className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mb-1">POWER</div>
+                          <div className="font-mono text-sm font-bold text-foreground">
+                            {inv.acPowerKw != null ? `${inv.acPowerKw.toFixed(0)} KW` : "--"}
                           </div>
                         </div>
-                        <div className="bg-muted/30 rounded-lg p-2">
-                          <div className="text-[10px] text-muted-foreground">Eff.</div>
-                          <div className="font-mono text-xs font-semibold mt-0.5">
+                        <div className="bg-black p-2 text-center">
+                          <div className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mb-1">EFFICIENCY</div>
+                          <div className="font-mono text-sm font-bold text-foreground">
                             {inv.efficiencyPct != null && inv.efficiencyPct > 0 ? `${inv.efficiencyPct.toFixed(1)}%` : "--"}
                           </div>
                         </div>
-                        <div className="bg-muted/30 rounded-lg p-2">
-                          <div className="text-[10px] text-muted-foreground">Temp</div>
-                          <div className={`font-mono text-xs font-semibold mt-0.5 ${(inv.temperatureC ?? 0) > 62 ? "text-status-warning" : ""}`}>
+                        <div className="bg-black p-2 text-center">
+                          <div className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mb-1">TEMP</div>
+                          <div className={`font-mono text-sm font-bold ${(inv.temperatureC ?? 0) > 62 ? "text-status-warning drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]" : "text-foreground"}`}>
                             {inv.temperatureC != null ? `${inv.temperatureC.toFixed(0)}°C` : "--"}
                           </div>
                         </div>
                       </div>
-                      <div className="mt-2 flex justify-between items-center">
+                      
+                      <div className="mt-4 flex justify-between items-center border-t border-border/50 pt-3">
                         <Link href={arrLink} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                          <span className="text-[10px] text-primary hover:underline">View arrays →</span>
+                          <span className="font-mono text-[9px] uppercase tracking-widest text-brand hover:text-brand/80 border-b border-dashed border-brand/50 hover:border-brand">
+                            DIAGNOSTICS &rarr;
+                          </span>
                         </Link>
-                        <span className="text-xs text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          Inverter detail <ArrowRight className="w-3 h-3" />
+                        <span className="font-mono text-[9px] uppercase tracking-widest text-brand flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          INV DATA <ArrowRight className="w-3 h-3" />
                         </span>
                       </div>
                     </div>

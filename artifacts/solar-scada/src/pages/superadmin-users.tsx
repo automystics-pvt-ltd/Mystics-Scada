@@ -50,63 +50,64 @@ function SetPasswordModal({ user, onClose, onDone }: {
 
   return (
     <Dialog open onOpenChange={open => !open && onClose()}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <KeyRound className="h-4 w-4 text-primary" />
-            Set Password
+      <DialogContent className="max-w-sm bg-black/95 border border-accent-brand/50 rounded-none shadow-[0_0_30px_rgba(0,195,255,0.15)] backdrop-blur-xl">
+        <DialogHeader className="border-b border-border/50 pb-4">
+          <DialogTitle className="font-mono text-sm uppercase tracking-widest text-accent-brand flex items-center gap-2">
+            <KeyRound className="h-4 w-4" />
+            SET CREDENTIALS
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-1 py-1">
-          <p className="text-sm text-muted-foreground">
-            Setting a password for <span className="font-medium text-foreground">{user.name}</span>
-            <span className="block text-xs font-mono">{user.email}</span>
+        <div className="space-y-1 py-4">
+          <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+            TARGET USER: <span className="font-bold text-foreground">{user.name}</span>
+            <span className="block text-[8px] text-accent-brand mt-1">{user.email}</span>
           </p>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-4 pb-4">
           <div className="space-y-1.5">
-            <Label>New Password</Label>
+            <Label className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">NEW PASSPHRASE</Label>
             <div className="relative">
               <Input
                 type={showPw ? "text" : "password"}
-                placeholder="Min 8 characters"
+                placeholder="MIN 8 CHARACTERS"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="pr-9"
+                className="pr-9 font-mono text-xs bg-black/50 border-border/50 rounded-none focus-visible:ring-accent-brand"
                 autoFocus
               />
               <button
                 type="button"
                 onClick={() => setShowPw(v => !v)}
-                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-2.5 top-2 text-muted-foreground hover:text-accent-brand transition-colors"
               >
                 {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Confirm Password</Label>
+            <Label className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">CONFIRM PASSPHRASE</Label>
             <Input
               type={showPw ? "text" : "password"}
-              placeholder="Re-enter password"
+              placeholder="RE-ENTER PASSPHRASE"
               value={confirm}
               onChange={e => setConfirm(e.target.value)}
               onKeyDown={e => e.key === "Enter" && void save()}
+              className="font-mono text-xs bg-black/50 border-border/50 rounded-none focus-visible:ring-accent-brand"
             />
             {confirm && password !== confirm && (
-              <p className="text-[11px] text-destructive">Passwords do not match</p>
+              <p className="font-mono text-[8px] uppercase tracking-widest text-status-fault mt-1">PASSPHRASES DO NOT MATCH</p>
             )}
           </div>
           {user.hasPassword && (
-            <p className="text-[11px] text-amber-400 flex items-center gap-1.5">
-              <KeyRound className="h-3 w-3" /> This user already has a password — it will be replaced.
+            <p className="font-mono text-[8px] uppercase tracking-widest text-status-warning flex items-center gap-1.5 mt-2 bg-status-warning/10 p-2 border border-status-warning/30">
+              <KeyRound className="h-3 w-3" /> CREDENTIALS EXIST — WILL BE OVERWRITTEN.
             </p>
           )}
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => void save()} disabled={saving || !password || !confirm}>
-            {saving ? "Saving…" : "Set Password"}
+        <DialogFooter className="border-t border-border/50 pt-4">
+          <Button variant="outline" onClick={onClose} className="font-mono text-[10px] uppercase tracking-widest rounded-none border-border/50 hover:bg-white/5">ABORT</Button>
+          <Button onClick={() => void save()} disabled={saving || !password || !confirm} className="font-mono text-[10px] uppercase tracking-widest bg-accent-brand/10 text-accent-brand border border-accent-brand hover:bg-accent-brand hover:text-black transition-colors rounded-none">
+            {saving ? "EXECUTING..." : "COMMIT"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -115,9 +116,9 @@ function SetPasswordModal({ user, onClose, onDone }: {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  active:    "bg-status-normal/15 text-status-normal border-status-normal/20",
-  invited:   "bg-blue-500/15 text-blue-400 border-blue-500/20",
-  suspended: "bg-status-fault/15 text-status-fault border-status-fault/20",
+  active:    "bg-status-normal/10 text-status-normal border-status-normal",
+  invited:   "bg-blue-500/10 text-blue-400 border-blue-500",
+  suspended: "bg-status-fault/10 text-status-fault border-status-fault",
 };
 
 const PAGE_SIZE = 50;
@@ -168,114 +169,118 @@ export default function SuperAdminUsers() {
     <SuperAdminGuard>
       <SuperAdminLayout>
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between border-b border-border/50 pb-4 relative">
+            <div className="absolute bottom-0 left-0 w-1/4 h-[1px] bg-accent-brand shadow-[0_0_15px_rgba(0,195,255,0.8)]" />
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2"><Users className="h-6 w-6 text-primary" />Fleet Users</h1>
-              <p className="text-sm text-muted-foreground mt-1">All users across every organisation — {total.toLocaleString()} total</p>
+              <h1 className="font-mono text-2xl font-bold flex items-center gap-3 text-foreground uppercase tracking-widest">
+                <Users className="h-6 w-6 text-accent-brand" />
+                FLEET USERS
+              </h1>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mt-2">ALL USERS ACROSS EVERY ORGANISATION // {total.toLocaleString()} TOTAL</p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => void refetch()} className="gap-1.5">
-              <RefreshCw className="h-3.5 w-3.5" /> Refresh
+            <Button variant="outline" size="sm" onClick={() => void refetch()} className="font-mono text-[9px] uppercase tracking-widest border-accent-brand/30 text-accent-brand hover:bg-accent-brand/10 rounded-none gap-2">
+              <RefreshCw className="h-3 w-3" /> REFRESH
             </Button>
           </div>
 
           {/* Filters */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-3 bg-black/40 border border-border/50 p-2">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name or email…"
-                className="pl-8" onKeyDown={e => e.key === "Enter" && applySearch()} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-accent-brand" />
+              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="SEARCH NAME OR EMAIL..."
+                className="pl-9 h-8 font-mono text-[10px] uppercase tracking-widest bg-black/60 border-border/50 rounded-none focus-visible:ring-accent-brand" onKeyDown={e => e.key === "Enter" && applySearch()} />
             </div>
-            <Input value={orgId} onChange={e => setOrgId(e.target.value)} placeholder="Filter by org ID…" className="w-48"
+            <Input value={orgId} onChange={e => setOrgId(e.target.value)} placeholder="ORG ID..." className="w-48 h-8 font-mono text-[10px] uppercase tracking-widest bg-black/60 border-border/50 rounded-none focus-visible:ring-accent-brand"
               onKeyDown={e => e.key === "Enter" && applySearch()} />
             <select value={status} onChange={e => setStatus(e.target.value)}
-              className="border border-border rounded-md bg-background text-sm px-3 py-2">
-              <option value="">All statuses</option>
-              <option value="active">Active</option>
-              <option value="invited">Invited</option>
-              <option value="suspended">Suspended</option>
+              className="border border-border/50 bg-black/60 font-mono text-[10px] uppercase tracking-widest rounded-none h-8 px-3 focus:outline-none focus:ring-1 focus:ring-accent-brand">
+              <option value="">ALL STATUSES</option>
+              <option value="active">ACTIVE</option>
+              <option value="invited">INVITED</option>
+              <option value="suspended">SUSPENDED</option>
             </select>
-            <Button onClick={applySearch}>Search</Button>
+            <Button onClick={applySearch} className="h-8 font-mono text-[10px] uppercase tracking-widest bg-white/5 border border-border/50 hover:bg-white/10 rounded-none">EXECUTE</Button>
           </div>
 
           {/* Users table */}
-          <div className="border border-border rounded-xl overflow-hidden">
+          <div className="border border-border/50 bg-black/40">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
-                <thead className="bg-muted/50">
+              <table className="w-full text-left">
+                <thead className="bg-black/60 border-b border-border/50">
                   <tr>
-                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">User</th>
-                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Organisation</th>
-                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Role</th>
-                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Status</th>
-                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Last Login</th>
-                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Joined</th>
-                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">Password</th>
+                    <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">USER</th>
+                    <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">ORGANISATION</th>
+                    <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">ROLE</th>
+                    <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">STATUS</th>
+                    <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">LAST LOGIN</th>
+                    <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">JOINED</th>
+                    <th className="px-4 py-2 text-right font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">AUTH LOGIC</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border/30">
                   {isLoading ? (
                     Array.from({ length: 8 }).map((_, i) => (
-                      <tr key={i} className="border-t border-border/50">
-                        {Array.from({ length: 6 }).map((_, j) => (
-                          <td key={j} className="px-4 py-3"><div className="h-4 bg-muted animate-pulse rounded w-24" /></td>
+                      <tr key={i} className="hover:bg-transparent">
+                        {Array.from({ length: 7 }).map((_, j) => (
+                          <td key={j} className="px-4 py-3"><div className="h-4 bg-white/5 animate-pulse w-24" /></td>
                         ))}
                       </tr>
                     ))
                   ) : users.length === 0 ? (
-                    <tr><td colSpan={7} className="text-center py-12 text-muted-foreground">No users found</td></tr>
+                    <tr><td colSpan={7} className="text-center py-12 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">NO USERS FOUND</td></tr>
                   ) : users.map(user => (
-                    <tr key={user.id} className="border-t border-border/50 hover:bg-muted/20">
+                    <tr key={user.id} className="hover:bg-white/5 transition-colors">
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-accent-brand/10 text-accent-brand border border-accent-brand/30 flex items-center justify-center text-[10px] font-mono font-bold flex-shrink-0 shadow-[inset_0_0_10px_rgba(0,195,255,0.2)]">
                             {user.name?.slice(0, 2).toUpperCase() ?? "??"}
                           </div>
                           <div>
-                            <p className="font-medium text-sm">{user.name}</p>
-                            <p className="text-[11px] text-muted-foreground">{user.email}</p>
+                            <p className="font-mono text-xs font-bold text-foreground uppercase tracking-wider">{user.name}</p>
+                            <p className="font-mono text-[9px] text-muted-foreground mt-0.5 uppercase tracking-widest">{user.email}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                          <Building2 className="h-3.5 w-3.5 flex-shrink-0" />
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                           <div>
-                            <p className="text-foreground text-xs">{user.orgName ?? "—"}</p>
-                            <p className="text-[10px] font-mono text-muted-foreground/60">{user.orgId}</p>
+                            <p className="font-mono text-[10px] font-bold text-foreground uppercase tracking-widest">{user.orgName ?? "—"}</p>
+                            <p className="font-mono text-[8px] text-muted-foreground/60 uppercase mt-0.5">{user.orgId}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">{user.roleName ?? "—"}</td>
+                      <td className="px-4 py-3 font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{user.roleName ?? "—"}</td>
                       <td className="px-4 py-3">
-                        <Badge variant="outline" className={`text-[10px] capitalize ${STATUS_COLOR[user.status] ?? ""}`}>
+                        <Badge variant="outline" className={`font-mono text-[9px] font-bold uppercase tracking-widest rounded-none px-2 py-0.5 ${STATUS_COLOR[user.status] ?? ""}`}>
                           {user.status}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground font-mono">
-                        {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : "Never"}
+                      <td className="px-4 py-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground/80">
+                        {user.lastLoginAt ? new Date(user.lastLoginAt).toISOString().slice(0,10) : "NEVER"}
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground font-mono">
-                        {new Date(user.createdAt).toLocaleDateString()}
+                      <td className="px-4 py-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground/80">
+                        {new Date(user.createdAt).toISOString().slice(0,10)}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center justify-end gap-1.5">
                           <Button
                             size="sm" variant="ghost"
-                            className="h-7 px-2 text-xs gap-1 text-primary hover:bg-primary/10"
+                            className="h-7 px-2 font-mono text-[8px] font-bold uppercase tracking-widest text-accent-brand border border-transparent hover:border-accent-brand/50 hover:bg-accent-brand/10 gap-1 rounded-none"
                             onClick={() => setSetPasswordFor(user)}
                           >
                             <KeyRound className="h-3 w-3" />
-                            {user.hasPassword ? "Change" : "Set"}
+                            {user.hasPassword ? "CHANGE" : "SET"}
                           </Button>
                           {user.hasPassword && (
                             <Button
                               size="sm" variant="ghost"
-                              className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              className="h-7 px-2 font-mono text-[8px] font-bold uppercase tracking-widest text-muted-foreground border border-transparent hover:border-status-fault/50 hover:text-status-fault hover:bg-status-fault/10 gap-1 rounded-none"
                               disabled={removingId === user.id}
                               onClick={() => void removePassword(user)}
                             >
                               <ShieldOff className="h-3 w-3" />
-                              {removingId === user.id ? "…" : "Remove"}
+                              {removingId === user.id ? "..." : "REMOVE"}
                             </Button>
                           )}
                         </div>
@@ -286,16 +291,16 @@ export default function SuperAdminUsers() {
               </table>
             </div>
             {/* Pagination */}
-            <div className="border-t border-border px-4 py-2.5 flex items-center justify-between bg-muted/20">
-              <p className="text-xs text-muted-foreground">
-                {total > 0 ? `${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, total)} of ${total.toLocaleString()}` : "0 results"}
+            <div className="border-t border-border/50 px-4 py-3 flex items-center justify-between bg-black">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground font-bold">
+                {total > 0 ? `${page * PAGE_SIZE + 1} TO ${Math.min((page + 1) * PAGE_SIZE, total)} OF ${total.toLocaleString()}` : "NO RESULTS"}
               </p>
-              <div className="flex items-center gap-1">
-                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
-                  <ChevronLeft className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" className="h-7 w-7 p-0 rounded-none border-border/50 text-muted-foreground hover:text-accent-brand hover:border-accent-brand" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={(page + 1) * PAGE_SIZE >= total} onClick={() => setPage(p => p + 1)}>
-                  <ChevronRight className="h-3.5 w-3.5" />
+                <Button size="sm" variant="outline" className="h-7 w-7 p-0 rounded-none border-border/50 text-muted-foreground hover:text-accent-brand hover:border-accent-brand" disabled={(page + 1) * PAGE_SIZE >= total} onClick={() => setPage(p => p + 1)}>
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -304,16 +309,14 @@ export default function SuperAdminUsers() {
           {/* Summary cards */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Active",    value: users.filter(u => u.status === "active").length,    color: "text-status-normal",  icon: UserCheck },
-              { label: "Invited",   value: users.filter(u => u.status === "invited").length,   color: "text-blue-400",       icon: Mail },
-              { label: "Suspended", value: users.filter(u => u.status === "suspended").length, color: "text-status-fault",   icon: UserX },
-            ].map(({ label, value, color, icon: Icon }) => (
-              <div key={label} className="border border-border rounded-xl p-4 bg-card flex items-center gap-3">
-                <Icon className={`h-5 w-5 ${color}`} />
-                <div>
-                  <p className="text-xs text-muted-foreground">{label} (this page)</p>
-                  <p className={`text-2xl font-bold font-mono ${color}`}>{value}</p>
-                </div>
+              { label: "ACTIVE",    value: users.filter(u => u.status === "active").length,    color: "text-status-normal" },
+              { label: "INVITED",   value: users.filter(u => u.status === "invited").length,   color: "text-blue-400" },
+              { label: "SUSPENDED", value: users.filter(u => u.status === "suspended").length, color: "text-status-fault" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="border border-border/50 bg-black/40 p-4 text-center group hover:border-border transition-colors relative">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-border/30 group-hover:bg-border/60 transition-colors" />
+                <p className={`font-mono text-3xl font-bold ${color}`}>{value}</p>
+                <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-2">{label} (BUFFER)</p>
               </div>
             ))}
           </div>

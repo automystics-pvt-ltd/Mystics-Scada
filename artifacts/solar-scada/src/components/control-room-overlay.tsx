@@ -42,41 +42,45 @@ export function ControlRoomOverlay() {
   if (!isActive) return null;
 
   const tickerText = alerts.length === 0
-    ? "● All systems nominal — no open alerts"
+    ? "● ALL SYSTEMS NOMINAL // NO OPEN ALERTS"
     : alerts.map((a) => `● ${a.plantName}: ${a.title}`).join("          ");
 
-  const clockStr = clock.toUTCString().replace("GMT", "UTC").slice(0, 25);
+  const clockStr = clock.toISOString().replace("T", " ").slice(0, 19) + " UTC";
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-[#05080a] text-white">
+    <div className="fixed inset-0 z-[200] flex flex-col bg-black text-white">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-white/10 bg-black/40 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <Monitor className="h-5 w-5 text-primary" />
-          <span className="text-sm font-bold tracking-[0.15em] uppercase text-primary">Solar SCADA</span>
-          <span className="text-xs text-white/40 tracking-widest uppercase">Control Room</span>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-brand/50 bg-black flex-shrink-0 relative">
+        <div className="absolute bottom-0 left-0 w-full h-[1px] bg-brand shadow-[0_0_15px_rgba(0,255,170,0.8)]" />
+        <div className="flex items-center gap-4">
+          <Monitor className="h-5 w-5 text-brand" />
+          <span className="font-mono text-sm font-bold uppercase tracking-widest text-brand">CONTROL ROOM TERMINAL</span>
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-8">
           {/* Live indicator */}
-          <div className="flex items-center gap-1.5 text-xs text-green-400">
-            <Radio className="h-3 w-3 animate-pulse" />
-            <span className="font-mono">Live</span>
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-status-normal font-bold">
+            <Radio className="h-3.5 w-3.5 animate-pulse" />
+            LIVE TELEMETRY
           </div>
-          <span className="font-mono text-xs text-white/60">{clockStr}</span>
+          <span className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground bg-white/5 border border-border/50 px-3 py-1">
+            {clockStr}
+          </span>
           <button
             onClick={toggle}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-white/20 text-xs text-white/70 hover:text-white hover:border-white/50 transition-colors"
+            className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest font-bold border border-status-fault/50 text-status-fault hover:bg-status-fault/10 px-3 py-1.5 transition-colors"
           >
-            <X className="h-3.5 w-3.5" /> Exit
+            <X className="h-3.5 w-3.5" /> CLOSE TERMINAL
           </button>
         </div>
       </div>
 
       {/* Main plant grid */}
-      <div className="flex-1 p-6 grid grid-cols-2 gap-4 min-h-0">
+      <div className="flex-1 p-6 grid grid-cols-2 gap-6 min-h-0 bg-[radial-gradient(ellipse_at_center,rgba(0,255,170,0.05)_0%,transparent_100%)]">
         {plants.length === 0
           ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-white/5 rounded-xl border border-white/10 animate-pulse" />
+              <div key={i} className="border border-border/50 bg-black/40 animate-pulse relative">
+                <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
+              </div>
             ))
           : plants.map((plant, i) => {
               const isHighlighted = i === activePlantIdx;
@@ -90,77 +94,83 @@ export function ControlRoomOverlay() {
                 <button
                   key={plant.id}
                   onClick={() => setActivePlantIdx(i)}
-                  className={`relative rounded-xl border-2 p-5 flex flex-col gap-4 transition-all text-left cursor-pointer
+                  className={`relative border p-6 flex flex-col gap-6 transition-all text-left cursor-pointer bg-black/60 overflow-hidden
                     ${isHighlighted
-                      ? "border-primary bg-primary/10 shadow-[0_0_40px_rgba(34,197,94,0.15)]"
+                      ? "border-brand shadow-[0_0_30px_rgba(0,255,170,0.15)]"
                       : isFault
-                        ? "border-red-500/50 bg-red-950/30"
-                        : "border-white/10 bg-white/5 hover:border-white/25"
+                        ? "border-status-fault/50 bg-status-fault/5"
+                        : "border-border/50 hover:border-brand/50"
                     }`}
                 >
+                  <div className={`absolute top-0 left-0 w-1 h-full ${
+                    isHighlighted ? "bg-brand" : isFault ? "bg-status-fault" : isWarn ? "bg-status-warning" : "bg-status-normal"
+                  }`} />
+
                   {/* Plant name + health */}
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="font-bold text-base text-white/90">{plant.name}</div>
-                      <div className="text-xs text-white/40 mt-0.5">{plant.region}</div>
+                      <div className="font-mono text-sm font-bold uppercase tracking-widest text-foreground">{plant.name}</div>
+                      <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-1 bg-white/5 border border-border/50 inline-block px-2 py-0.5">{plant.region}</div>
                     </div>
-                    <div className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      isFault ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                        : isWarn ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                          : "bg-green-500/20 text-green-400 border border-green-500/30"
+                    <div className={`font-mono text-[9px] uppercase tracking-widest font-bold px-2 py-1 border ${
+                      isFault ? "bg-status-fault/10 text-status-fault border-status-fault"
+                        : isWarn ? "bg-status-warning/10 text-status-warning border-status-warning"
+                          : "bg-status-normal/10 text-status-normal border-status-normal"
                     }`}>
-                      {plant.healthStatus.toUpperCase()}
+                      {plant.healthStatus}
                     </div>
                   </div>
 
                   {/* KPIs */}
-                  <div className="flex items-center gap-6">
-                    <GenerationRing
-                      pct={utilPct}
-                      label={`${score}`}
-                      sublabel="score"
-                      size={80}
-                      strokeWidth={7}
-                      color={ringColor}
-                      trackColor="rgba(255,255,255,0.08)"
-                    />
-                    <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-2">
+                  <div className="flex items-center gap-8">
+                    <div className={isHighlighted ? "drop-shadow-[0_0_15px_rgba(0,255,170,0.4)]" : ""}>
+                      <GenerationRing
+                        pct={utilPct}
+                        label={`${score}`}
+                        sublabel="SCORE"
+                        size={90}
+                        strokeWidth={4}
+                        color={ringColor}
+                        trackColor="rgba(255,255,255,0.05)"
+                      />
+                    </div>
+                    <div className="flex-1 grid grid-cols-2 gap-x-8 gap-y-4">
                       <div>
-                        <div className="text-[10px] text-white/40 uppercase tracking-wider">Live Power</div>
-                        <div className="text-2xl font-bold font-mono text-white/90">
+                        <div className="font-mono text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-1">LIVE POWER VECTOR</div>
+                        <div className="font-mono text-2xl font-bold text-foreground">
                           {plant.currentPowerKw >= 1000
                             ? `${(plant.currentPowerKw / 1000).toFixed(1)} MW`
-                            : `${plant.currentPowerKw.toFixed(0)} kW`}
+                            : `${plant.currentPowerKw.toFixed(0)} KW`}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-white/40 uppercase tracking-wider">Capacity</div>
-                        <div className="text-xl font-bold font-mono text-white/70">
-                          {(plant.capacityKw / 1000).toFixed(0)} MWp
+                        <div className="font-mono text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-1">CAPACITY INDEX</div>
+                        <div className="font-mono text-xl font-bold text-muted-foreground">
+                          {(plant.capacityKw / 1000).toFixed(0)} MWP
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-white/40 uppercase tracking-wider">PR</div>
-                        <div className="text-lg font-mono font-semibold text-white/80">{plant.pr.toFixed(1)}%</div>
+                        <div className="font-mono text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-1">PERF RATIO</div>
+                        <div className="font-mono text-lg font-bold text-foreground">{plant.pr.toFixed(1)}%</div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-white/40 uppercase tracking-wider">Availability</div>
-                        <div className="text-lg font-mono font-semibold text-white/80">{plant.availabilityPct.toFixed(1)}%</div>
+                        <div className="font-mono text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-1">UPTIME</div>
+                        <div className="font-mono text-lg font-bold text-foreground">{plant.availabilityPct.toFixed(1)}%</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Alert chips */}
                   {(plant.alertCounts.critical > 0 || plant.alertCounts.major > 0) && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-auto">
                       {plant.alertCounts.critical > 0 && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">
-                          {plant.alertCounts.critical} Critical
+                        <span className="font-mono text-[9px] uppercase tracking-widest font-bold px-2 py-1 border border-status-fault text-status-fault bg-status-fault/10 shadow-[0_0_10px_rgba(239,68,68,0.3)] animate-pulse">
+                          {plant.alertCounts.critical} CRITICAL
                         </span>
                       )}
                       {plant.alertCounts.major > 0 && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                          {plant.alertCounts.major} Major
+                        <span className="font-mono text-[9px] uppercase tracking-widest font-bold px-2 py-1 border border-[#e67e22] text-[#e67e22] bg-[#e67e22]/10">
+                          {plant.alertCounts.major} MAJOR
                         </span>
                       )}
                     </div>
@@ -168,9 +178,9 @@ export function ControlRoomOverlay() {
 
                   {/* Cycle progress bar for highlighted plant */}
                   {isHighlighted && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10 rounded-b-xl overflow-hidden">
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black">
                       <div
-                        className="h-full bg-primary"
+                        className="h-full bg-brand shadow-[0_0_10px_rgba(0,255,170,0.8)]"
                         style={{ animation: `cr-progress ${CYCLE_INTERVAL_MS}ms linear forwards` }}
                       />
                     </div>
@@ -181,31 +191,31 @@ export function ControlRoomOverlay() {
       </div>
 
       {/* Fleet summary bar */}
-      <div className="flex items-center gap-8 px-6 py-2 border-t border-white/10 bg-black/30 flex-shrink-0">
-        <div className="flex items-center gap-2 text-xs text-white/50">
-          <Zap className="h-3.5 w-3.5 text-primary" />
-          <span>Fleet:</span>
-          <span className="font-mono text-white/80 font-medium">
-            {summary ? `${summary.totalCurrentPowerMw.toFixed(1)} / ${summary.totalCapacityMw.toFixed(0)} MW` : "--"}
+      <div className="flex items-center gap-10 px-6 py-4 border-t border-brand/50 bg-black flex-shrink-0">
+        <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest">
+          <Zap className="h-4 w-4 text-brand" />
+          <span className="text-muted-foreground font-bold">GLOBAL FLEET OUTPUT:</span>
+          <span className="text-foreground font-bold">
+            {summary ? `${summary.totalCurrentPowerMw.toFixed(1)} / ${summary.totalCapacityMw.toFixed(0)} MW` : "..."}
           </span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-white/50">
-          <Activity className="h-3.5 w-3.5 text-green-400" />
-          <span>Avg PR:</span>
-          <span className="font-mono text-white/80 font-medium">{summary?.avgPr.toFixed(1) ?? "--"}%</span>
+        <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest">
+          <Activity className="h-4 w-4 text-status-normal" />
+          <span className="text-muted-foreground font-bold">AVG PERF RATIO:</span>
+          <span className="text-foreground font-bold">{summary?.avgPr.toFixed(1) ?? "..."}%</span>
         </div>
-        <div className="text-xs text-white/30">
-          {plants.length} plants · Auto-cycle 30s · Press Esc to exit
+        <div className="font-mono text-[9px] uppercase tracking-widest font-bold text-muted-foreground ml-auto bg-white/5 border border-border/50 px-3 py-1.5">
+          {plants.length} ZONES // AUTO-CYCLE {CYCLE_INTERVAL_MS/1000}S // ESC TO ABORT
         </div>
       </div>
 
       {/* Alert ticker */}
-      <div className={`flex-shrink-0 py-2 px-0 border-t overflow-hidden ${alerts.some(a => a.severity === "critical") ? "border-red-500/30 bg-red-950/40" : "border-white/10 bg-black/40"}`}>
+      <div className={`flex-shrink-0 py-2.5 px-0 border-t ${alerts.some(a => a.severity === "critical") ? "border-status-fault bg-status-fault/10 shadow-[inset_0_0_15px_rgba(239,68,68,0.2)]" : "border-border/50 bg-black/40"} overflow-hidden`}>
         <div
-          className="whitespace-nowrap text-xs font-mono"
+          className="whitespace-nowrap font-mono text-[10px] uppercase tracking-widest font-bold"
           style={{ animation: `cr-ticker ${Math.max(20, alerts.length * 6)}s linear infinite` }}
         >
-          <span className={alerts.some(a => a.severity === "critical") ? "text-red-400" : "text-white/50"}>
+          <span className={alerts.some(a => a.severity === "critical") ? "text-status-fault" : "text-brand"}>
             {tickerText}
             {"          "}
             {tickerText}

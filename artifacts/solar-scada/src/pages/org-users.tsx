@@ -12,10 +12,6 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/layout";
 import { OrgNav } from "@/components/org-nav";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -23,13 +19,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -64,19 +53,19 @@ interface Role {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
-  active:   { label: "Active",   cls: "text-status-normal border-status-normal/40" },
-  invited:  { label: "Invited",  cls: "text-blue-400 border-blue-500/40" },
-  disabled: { label: "Disabled", cls: "text-muted-foreground border-border" },
+  active:   { label: "Active",   cls: "text-status-normal border-status-normal/40 bg-status-normal/10 shadow-[0_0_10px_hsl(var(--status-normal)/0.1)]" },
+  invited:  { label: "Invited",  cls: "text-accent-brand border-accent-brand/40 bg-accent-brand/10 shadow-[0_0_10px_hsl(var(--accent-brand)/0.1)]" },
+  disabled: { label: "Disabled", cls: "text-muted-foreground border-border/50 bg-muted/50" },
 };
 
 function timeAgo(iso: string | null): string {
-  if (!iso) return "Never";
+  if (!iso) return "NEVER";
   const diff = Date.now() - new Date(iso).getTime();
   const days = Math.floor(diff / 86400000);
-  if (days === 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
+  if (days === 0) return "TODAY";
+  if (days === 1) return "YESTERDAY";
+  if (days < 30) return `${days}D AGO`;
+  return new Date(iso).toLocaleDateString().toUpperCase();
 }
 
 function getInitials(name: string) {
@@ -189,13 +178,13 @@ export default function OrgUsersPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-5xl">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Users className="h-6 w-6 text-primary" />
+      <div className="max-w-5xl mx-auto flex flex-col space-y-6 h-full">
+        <div className="animate-fade-up">
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <Users className="h-7 w-7 text-accent-brand" />
             Organisation Settings
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="text-sm text-muted-foreground mt-2">
             Manage your org profile, users, notifications, and activity log
           </p>
         </div>
@@ -203,126 +192,132 @@ export default function OrgUsersPage() {
         <OrgNav />
 
         {/* KPI strip */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2 animate-fade-up" style={{ animationDelay: '50ms' }}>
           {[
-            { label: "Active",   count: counts.active,   cls: "text-status-normal" },
-            { label: "Invited",  count: counts.invited,  cls: "text-blue-400" },
-            { label: "Disabled", count: counts.disabled, cls: "text-muted-foreground" },
+            { label: "Active Users",   count: counts.active,   cls: "text-status-normal shadow-[0_0_15px_hsl(var(--status-normal)/0.15)] bg-status-normal/5 border-status-normal/20" },
+            { label: "Pending Invites",  count: counts.invited,  cls: "text-accent-brand shadow-[0_0_15px_hsl(var(--accent-brand)/0.15)] bg-accent-brand/5 border-accent-brand/20" },
+            { label: "Disabled Accounts", count: counts.disabled, cls: "text-muted-foreground bg-card/40 border-card-border" },
           ].map(({ label, count, cls }) => (
-            <div key={label} className="rounded-lg border border-border px-4 py-3 flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">{label}</span>
-              <span className={`text-2xl font-bold ${cls}`}>{count}</span>
+            <div key={label} className={`rounded-xl border p-5 flex flex-col justify-center backdrop-blur-md ${cls}`}>
+              <span className="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-1">{label}</span>
+              <span className="text-3xl font-mono font-bold tracking-tighter">{count}</span>
             </div>
           ))}
         </div>
 
         {/* Toolbar */}
-        <div className="flex items-center justify-between mb-4">
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="h-9 w-36"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All users</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="invited">Invited</SelectItem>
-              <SelectItem value="disabled">Disabled</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="h-9 gap-1.5"
+        <div className="flex items-center justify-between animate-fade-up" style={{ animationDelay: '100ms' }}>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="h-10 px-4 rounded-lg border border-border/50 bg-card text-[10px] font-bold uppercase tracking-widest text-foreground focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 hover:border-border transition-colors shadow-sm"
+          >
+            <option value="all">ALL USERS</option>
+            <option value="active">ACTIVE ONLY</option>
+            <option value="invited">INVITED ONLY</option>
+            <option value="disabled">DISABLED ONLY</option>
+          </select>
+          <div className="flex gap-3">
+            <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border/50 bg-card shadow-sm text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
               onClick={() => void queryClient.invalidateQueries({ queryKey: ["org-users"] })}>
               <RefreshCw className="h-3.5 w-3.5" /> Refresh
-            </Button>
+            </button>
             {canManage && (
-              <Button size="sm" className="h-9 gap-2" onClick={() => setShowInvite(true)}>
-                <UserPlus className="h-4 w-4" /> Invite User
-              </Button>
+              <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-accent-brand/50 bg-accent-brand text-background text-[10px] font-bold uppercase tracking-widest hover:bg-accent-brand/90 transition-all shadow-[0_0_15px_hsl(var(--accent-brand)/0.3)]" onClick={() => setShowInvite(true)}>
+                <UserPlus className="h-3.5 w-3.5" /> Invite User
+              </button>
             )}
           </div>
         </div>
 
         {/* User table */}
-        <div className="rounded-lg border border-border overflow-hidden">
+        <div className="rounded-xl border border-card-border bg-card/40 backdrop-blur-md overflow-hidden shadow-sm animate-fade-up" style={{ animationDelay: '150ms' }}>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">User</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">Role</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">Last Login</th>
-                {canManage && <th className="px-4 py-2.5" />}
+              <tr className="border-b border-border/50 bg-muted/10">
+                <th className="text-left px-5 py-4 text-[9px] font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">User</th>
+                <th className="text-left px-5 py-4 text-[9px] font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">Role</th>
+                <th className="text-left px-5 py-4 text-[9px] font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">Status</th>
+                <th className="text-left px-5 py-4 text-[9px] font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">Last Login</th>
+                {canManage && <th className="px-5 py-4" />}
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Loading users…</td></tr>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-b border-border/30 bg-card/20"><td colSpan={5} className="px-5 py-6"><div className="h-6 w-full bg-muted/30 rounded animate-shimmer" /></td></tr>
+                ))
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No users found.</td></tr>
+                <tr><td colSpan={5} className="px-5 py-16 text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-card/20 border-dashed">No users found.</td></tr>
               ) : (
                 filtered.map((u) => {
                   const statusCfg = STATUS_CONFIG[u.status];
                   return (
-                    <tr key={u.id} className="border-b border-border last:border-0 hover:bg-muted/20">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs font-bold text-muted-foreground">{getInitials(u.name)}</span>
+                    <tr key={u.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors bg-card/20 group">
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-muted/50 border border-border/50 flex items-center justify-center flex-shrink-0 shadow-inner group-hover:border-accent-brand/30 transition-colors">
+                            <span className="text-xs font-bold font-mono text-muted-foreground group-hover:text-accent-brand transition-colors">{getInitials(u.name)}</span>
                           </div>
                           <div>
-                            <div className="font-medium flex items-center gap-2">
+                            <div className="font-bold text-foreground flex items-center gap-2 mb-1 group-hover:text-accent-brand transition-colors">
                               {u.name}
                               {u.isSuperAdmin && (
-                                <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-400 py-0">SA</Badge>
+                                <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 uppercase tracking-widest shadow-[0_0_5px_rgba(251,191,36,0.2)]">SA</span>
                               )}
                               {u.id === user?.id && (
-                                <Badge variant="outline" className="text-[10px] border-primary/40 text-primary py-0">You</Badge>
+                                <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-status-normal/10 text-status-normal border border-status-normal/30 uppercase tracking-widest shadow-[0_0_5px_rgba(16,185,129,0.2)]">You</span>
                               )}
                             </div>
-                            <div className="text-xs text-muted-foreground">{u.email}</div>
+                            <div className="text-[10px] font-mono text-muted-foreground">{u.email}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">{u.roleName}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{u.roleName}</td>
+                      <td className="px-5 py-4">
                         {statusCfg && (
-                          <Badge variant="outline" className={`text-xs ${statusCfg.cls}`}>
+                          <span className={`px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-widest border ${statusCfg.cls}`}>
                             {statusCfg.label}
-                          </Badge>
+                          </span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
+                      <td className="px-5 py-4">
+                        <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest font-mono text-muted-foreground">
+                          <Clock className="h-3.5 w-3.5" />
                           {timeAgo(u.lastLoginAt)}
                         </span>
                       </td>
                       {canManage && (
-                        <td className="px-4 py-3">
+                        <td className="px-5 py-4">
                           {!u.isSuperAdmin && u.id !== user?.id && (
-                            <div className="flex gap-1 justify-end">
-                              <Button
-                                size="sm" variant="ghost" className="h-7 px-2"
+                            <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                className="p-2 rounded-lg border border-border/50 bg-card text-muted-foreground hover:text-accent-brand hover:border-accent-brand/40 hover:bg-accent-brand/10 transition-all shadow-sm"
                                 onClick={() => {
                                   setEditUser(u);
                                   setEditForm({ name: u.name, roleId: u.roleId, status: u.status });
                                 }}
+                                title="Edit User"
                               >
-                                <Edit2 className="h-3.5 w-3.5" />
-                              </Button>
+                                <Edit2 className="h-4 w-4" />
+                              </button>
                               {u.status !== "disabled" && (
-                                <Button
-                                  size="sm" variant="ghost" className="h-7 px-2 text-status-fault hover:text-status-fault"
+                                <button
+                                  className="p-2 rounded-lg border border-border/50 bg-card text-muted-foreground hover:text-status-fault hover:border-status-fault/40 hover:bg-status-fault/10 transition-all shadow-sm"
                                   onClick={() => setDisableUser(u)}
+                                  title="Disable Account"
                                 >
-                                  <Ban className="h-3.5 w-3.5" />
-                                </Button>
+                                  <Ban className="h-4 w-4" />
+                                </button>
                               )}
                               {u.status === "disabled" && (
-                                <Button
-                                  size="sm" variant="ghost" className="h-7 px-2 text-status-normal hover:text-status-normal"
+                                <button
+                                  className="p-2 rounded-lg border border-border/50 bg-card text-muted-foreground hover:text-status-normal hover:border-status-normal/40 hover:bg-status-normal/10 transition-all shadow-sm"
                                   onClick={() => updateMutation.mutate({ userId: u.id, body: { status: "active" } })}
+                                  title="Re-enable Account"
                                 >
-                                  <CheckCircle2 className="h-3.5 w-3.5" />
-                                </Button>
+                                  <CheckCircle2 className="h-4 w-4" />
+                                </button>
                               )}
                             </div>
                           )}
@@ -339,60 +334,61 @@ export default function OrgUsersPage() {
 
       {/* Invite modal */}
       <Dialog open={showInvite} onOpenChange={setShowInvite}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Invite New User</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
+        <DialogContent className="max-w-md bg-card/95 backdrop-blur-xl border-card-border shadow-2xl">
+          <DialogHeader><DialogTitle className="text-xl font-bold tracking-tight">Invite New User</DialogTitle></DialogHeader>
+          <div className="space-y-5 py-4">
             <div>
-              <Label>Full Name</Label>
-              <Input className="mt-1" placeholder="Jane Doe" value={inviteForm.name}
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Full Name</label>
+              <input className="w-full h-10 px-4 rounded-lg border border-border/50 bg-background/50 text-sm text-foreground focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all" placeholder="Jane Doe" value={inviteForm.name}
                 onChange={(e) => setInviteForm((f) => ({ ...f, name: e.target.value }))} />
             </div>
             <div>
-              <Label>Email Address</Label>
-              <Input className="mt-1" type="email" placeholder="jane@company.com" value={inviteForm.email}
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Email Address</label>
+              <input className="w-full h-10 px-4 rounded-lg border border-border/50 bg-background/50 text-sm text-foreground focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all font-mono" type="email" placeholder="jane@company.com" value={inviteForm.email}
                 onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))} />
             </div>
             <div>
-              <Label>Role</Label>
-              <Select value={inviteForm.roleId} onValueChange={(v) => setInviteForm((f) => ({ ...f, roleId: v }))}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Select a role…" /></SelectTrigger>
-                <SelectContent>
-                  {roles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Role</label>
+              <select className="w-full h-10 px-4 rounded-lg border border-border/50 bg-background/50 text-sm font-medium text-foreground focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all" value={inviteForm.roleId} onChange={(e) => setInviteForm((f) => ({ ...f, roleId: e.target.value }))}>
+                <option value="" disabled>Select a role…</option>
+                {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowInvite(false)}>Cancel</Button>
-            <Button
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button className="px-5 py-2.5 rounded-lg border border-border/50 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all" onClick={() => setShowInvite(false)}>Cancel</button>
+            <button
+              className="px-5 py-2.5 rounded-lg bg-accent-brand text-background text-[10px] font-bold uppercase tracking-widest hover:bg-accent-brand/90 disabled:opacity-50 transition-all shadow-[0_0_15px_hsl(var(--accent-brand)/0.3)]"
               onClick={() => inviteMutation.mutate(inviteForm)}
               disabled={!inviteForm.name || !inviteForm.email || !inviteForm.roleId || inviteMutation.isPending}
             >
               {inviteMutation.isPending ? "Inviting…" : "Send Invite"}
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Temp password reveal */}
       <Dialog open={!!tempPassword} onOpenChange={() => setTempPassword(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Invitation Created</DialogTitle></DialogHeader>
-          <div className="space-y-3 py-2">
-            <p className="text-sm text-muted-foreground">
-              Share these temporary credentials with the new user. They should change their password on first login.
+        <DialogContent className="max-w-md bg-card/95 backdrop-blur-xl border-card-border shadow-2xl border-accent-brand/20">
+          <DialogHeader><DialogTitle className="text-xl font-bold tracking-tight text-accent-brand flex items-center gap-2"><CheckCircle2 className="w-6 h-6" /> Invitation Created</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Share these temporary credentials with the new user. They will be required to change their password on first login.
             </p>
-            <div className="rounded-lg bg-muted p-3 font-mono text-sm flex items-center justify-between">
-              <span>{tempPassword}</span>
-              <Button size="sm" variant="ghost" className="h-7 px-2 ml-2"
-                onClick={() => { void navigator.clipboard.writeText(tempPassword ?? ""); toast({ title: "Copied" }); }}>
+            <div className="rounded-xl bg-background/80 border border-accent-brand/30 p-4 flex items-center justify-between shadow-inner">
+              <span className="font-mono text-lg font-bold tracking-widest text-foreground">{tempPassword}</span>
+              <button className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-card hover:bg-muted/50 text-[10px] font-bold uppercase tracking-widest text-muted-foreground transition-all"
+                onClick={() => { void navigator.clipboard.writeText(tempPassword ?? ""); toast({ title: "Copied to clipboard" }); }}>
                 <Copy className="h-3.5 w-3.5" />
-              </Button>
+              </button>
             </div>
-            <p className="text-xs text-muted-foreground">This password is only shown once.</p>
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-status-warning bg-status-warning/10 p-3 rounded-lg border border-status-warning/20">
+              <Clock className="w-3.5 h-3.5" /> This password is only shown once.
+            </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => setTempPassword(null)}>Done</Button>
+            <button className="px-5 py-2.5 rounded-lg bg-foreground text-background text-[10px] font-bold uppercase tracking-widest hover:bg-foreground/90 transition-all" onClick={() => setTempPassword(null)}>Done</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -400,38 +396,33 @@ export default function OrgUsersPage() {
       {/* Edit user modal */}
       {editUser && (
         <Dialog open onOpenChange={() => setEditUser(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Edit {editUser.name}</DialogTitle></DialogHeader>
-            <div className="space-y-4 py-2">
+          <DialogContent className="max-w-md bg-card/95 backdrop-blur-xl border-card-border shadow-2xl">
+            <DialogHeader><DialogTitle className="text-xl font-bold tracking-tight">Edit {editUser.name}</DialogTitle></DialogHeader>
+            <div className="space-y-5 py-4">
               <div>
-                <Label>Full Name</Label>
-                <Input className="mt-1" value={editForm.name}
+                <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Full Name</label>
+                <input className="w-full h-10 px-4 rounded-lg border border-border/50 bg-background/50 text-sm text-foreground focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all" value={editForm.name}
                   onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
               </div>
               <div>
-                <Label>Role</Label>
-                <Select value={editForm.roleId} onValueChange={(v) => setEditForm((f) => ({ ...f, roleId: v }))}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {roles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Role</label>
+                <select className="w-full h-10 px-4 rounded-lg border border-border/50 bg-background/50 text-sm font-medium text-foreground focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all" value={editForm.roleId} onChange={(e) => setEditForm((f) => ({ ...f, roleId: e.target.value }))}>
+                  {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
               </div>
               <div>
-                <Label>Status</Label>
-                <Select value={editForm.status} onValueChange={(v) => setEditForm((f) => ({ ...f, status: v }))}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="invited">Invited</SelectItem>
-                    <SelectItem value="disabled">Disabled</SelectItem>
-                  </SelectContent>
-                </Select>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Status</label>
+                <select className="w-full h-10 px-4 rounded-lg border border-border/50 bg-background/50 text-sm font-medium text-foreground focus:outline-none focus:border-accent-brand/50 focus:ring-1 focus:ring-accent-brand/50 transition-all" value={editForm.status} onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}>
+                  <option value="active">Active</option>
+                  <option value="invited">Invited</option>
+                  <option value="disabled">Disabled</option>
+                </select>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setEditUser(null)}>Cancel</Button>
-              <Button
+            <DialogFooter className="gap-2 sm:gap-0">
+              <button className="px-5 py-2.5 rounded-lg border border-border/50 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all" onClick={() => setEditUser(null)}>Cancel</button>
+              <button
+                className="px-5 py-2.5 rounded-lg bg-accent-brand text-background text-[10px] font-bold uppercase tracking-widest hover:bg-accent-brand/90 disabled:opacity-50 transition-all shadow-[0_0_15px_hsl(var(--accent-brand)/0.3)]"
                 onClick={() => updateMutation.mutate({
                   userId: editUser.id,
                   body: { name: editForm.name, roleId: editForm.roleId, status: editForm.status },
@@ -439,7 +430,7 @@ export default function OrgUsersPage() {
                 disabled={updateMutation.isPending}
               >
                 {updateMutation.isPending ? "Saving…" : "Save Changes"}
-              </Button>
+              </button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -447,18 +438,18 @@ export default function OrgUsersPage() {
 
       {/* Disable confirm */}
       <AlertDialog open={!!disableUser} onOpenChange={() => setDisableUser(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-card/95 backdrop-blur-xl border-status-fault/20 shadow-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Disable {disableUser?.name}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will prevent <strong>{disableUser?.email}</strong> from signing in. You can re-enable them later.
+            <AlertDialogTitle className="text-xl font-bold tracking-tight text-status-fault flex items-center gap-2"><Ban className="w-6 h-6" /> Disable Account?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-muted-foreground leading-relaxed mt-2">
+              This will immediately revoke access and prevent <strong className="text-foreground font-mono">{disableUser?.email}</strong> from signing in. You can re-enable the account later.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="mt-6">
+            <AlertDialogCancel className="rounded-lg border-border/50 text-[10px] font-bold uppercase tracking-widest hover:bg-muted/30">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => disableUser && disableMutation.mutate(disableUser.id)}
-              className="bg-status-fault hover:bg-status-fault/90"
+              className="rounded-lg bg-status-fault text-white hover:bg-status-fault/90 text-[10px] font-bold uppercase tracking-widest shadow-[0_0_15px_hsl(var(--status-fault)/0.3)]"
             >
               Disable Account
             </AlertDialogAction>

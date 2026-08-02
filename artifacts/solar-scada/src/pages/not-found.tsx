@@ -1,23 +1,31 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
+import { Zap, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Link } from "wouter";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md mx-4">
-        <CardContent className="pt-6">
-          <div className="flex mb-4 gap-2">
-            <AlertCircle className="h-8 w-8 text-red-500" />
-            <h1 className="text-2xl font-bold text-gray-900">
-              404 Page Not Found
-            </h1>
-          </div>
+    <div className="min-h-screen flex items-center justify-center p-6 bg-background relative overflow-hidden">
+      <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
+      
+      <div className="w-full max-w-[400px] z-10 flex flex-col items-center text-center animate-fade-up">
+        <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 bg-status-fault/10 border border-status-fault/20 shadow-[0_0_30px_hsl(var(--status-fault)/0.2)] ring-1 ring-status-fault/30">
+          <AlertTriangle className="h-10 w-10 text-status-fault" strokeWidth={2} />
+        </div>
+        
+        <h1 className="text-4xl font-bold text-foreground tracking-tight mb-2">404</h1>
+        <h2 className="text-xl font-bold text-muted-foreground uppercase tracking-widest mb-6">System Not Found</h2>
+        
+        <p className="text-sm text-muted-foreground/80 mb-8 max-w-[300px] leading-relaxed">
+          The requested interface or control module could not be located in the central SCADA registry.
+        </p>
 
-          <p className="mt-4 text-sm text-gray-600">
-            Did you forget to add the page to the router?
-          </p>
-        </CardContent>
-      </Card>
+        <Link
+          href="/"
+          className="inline-flex items-center justify-center gap-2 bg-foreground text-background hover:bg-foreground/90 font-semibold px-6 py-3 rounded-lg transition-all"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Return to Portfolio
+        </Link>
+      </div>
     </div>
   );
 }

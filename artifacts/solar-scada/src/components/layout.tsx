@@ -150,31 +150,25 @@ function RailIcon({
       onClick={onClick}
       title={section.label}
       className={`
-        group relative w-full flex flex-col items-center justify-center gap-1
-        py-3 transition-all duration-150
-        ${isActive ? section.bgColor : "hover:bg-sidebar-accent/40"}
+        group relative w-full flex flex-col items-center justify-center gap-1.5
+        py-4 transition-all duration-300
+        ${isActive ? "bg-accent-brand/5 border-l-2 border-accent-brand" : "hover:bg-muted/30 border-l-2 border-transparent"}
       `}
     >
-      {/* Active left-edge bar */}
-      {isActive && (
-        <span
-          className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full ${section.color.replace("text-", "bg-")}`}
-        />
-      )}
       <Icon
-        className={`h-[18px] w-[18px] transition-colors ${
-          isActive ? section.color : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70"
+        className={`h-5 w-5 transition-colors duration-300 ${
+          isActive ? section.color : "text-muted-foreground group-hover:text-foreground"
         }`}
       />
       <span
-        className={`text-[9px] font-semibold leading-none tracking-tight transition-colors ${
-          isActive ? section.color : "text-sidebar-foreground/30 group-hover:text-sidebar-foreground/50"
+        className={`text-[9px] font-bold tracking-widest uppercase transition-colors duration-300 ${
+          isActive ? section.color : "text-muted-foreground group-hover:text-foreground"
         }`}
       >
         {section.id === "operations" ? "Ops"
           : section.id === "devices"  ? "Data"
           : section.id === "admin"    ? "Admin"
-          : "Platform"}
+          : "Sys"}
       </span>
     </button>
   );
@@ -195,31 +189,31 @@ function PanelItem({
     <Link href={item.href}>
       <div
         className={`
-          relative flex items-center gap-2.5 px-3 py-2 mx-1 rounded-lg
-          cursor-pointer transition-all duration-100 group
+          relative flex items-center gap-3 px-4 py-2.5 mx-2 my-0.5 rounded-lg
+          cursor-pointer transition-all duration-200 group
           ${isActive
-            ? "bg-sidebar-accent shadow-sm"
-            : "hover:bg-sidebar-accent/50"
+            ? "bg-accent-brand/10"
+            : "hover:bg-muted/40"
           }
         `}
       >
         {isActive && (
           <span
-            className={`absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full ${sectionColor.replace("text-", "bg-")}`}
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-accent-brand rounded-r-full shadow-[0_0_8px_rgba(20,205,230,0.8)]"
           />
         )}
         <Icon
-          className={`h-3.5 w-3.5 flex-shrink-0 transition-colors ${
+          className={`h-4 w-4 flex-shrink-0 transition-colors ${
             isActive
               ? sectionColor
-              : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/60"
+              : "text-muted-foreground group-hover:text-foreground"
           }`}
         />
         <span
-          className={`text-[13px] font-medium truncate transition-colors ${
+          className={`text-xs font-semibold truncate transition-colors ${
             isActive
-              ? "text-sidebar-foreground"
-              : "text-sidebar-foreground/65 group-hover:text-sidebar-foreground"
+              ? "text-foreground"
+              : "text-muted-foreground group-hover:text-foreground"
           }`}
         >
           {item.name}
@@ -293,22 +287,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <ControlRoomOverlay />
-      <div className="flex h-screen overflow-hidden bg-background">
+      <div className="flex h-screen overflow-hidden bg-black text-foreground selection:bg-accent-brand/30">
 
         {/* ── Sidebar: Rail + Panel ── */}
-        <aside className="hidden md:flex flex-shrink-0 border-r border-sidebar-border bg-sidebar">
+        <aside className="hidden md:flex flex-shrink-0 border-r border-border/50 bg-card/40 backdrop-blur-xl z-20">
 
-          {/* ── Rail (52px) ──────────────────────────────────────────────────── */}
-          <div className="w-[52px] flex flex-col border-r border-sidebar-border/60 bg-sidebar">
+          {/* ── Rail (64px) ──────────────────────────────────────────────────── */}
+          <div className="w-[64px] flex flex-col border-r border-border/50 bg-card/60">
             {/* Brand mark */}
-            <div className="h-12 flex items-center justify-center border-b border-sidebar-border/60 flex-shrink-0">
-              <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center">
-                <Zap className="h-3.5 w-3.5 text-primary" strokeWidth={2.5} />
-              </div>
+            <div className="h-16 flex items-center justify-center border-b border-border/50 flex-shrink-0">
+              <Link href="/">
+                <div className="w-9 h-9 rounded-lg bg-card border border-card-border shadow-[0_0_15px_rgba(20,205,230,0.15)] flex items-center justify-center cursor-pointer hover:border-accent-brand/50 transition-colors">
+                  <Zap className="h-5 w-5 text-accent-brand" strokeWidth={2.5} />
+                </div>
+              </Link>
             </div>
 
             {/* Section icons */}
-            <nav className="flex-1 flex flex-col pt-1">
+            <nav className="flex-1 flex flex-col pt-2">
               {sections.map(s => (
                 <RailIcon
                   key={s.id}
@@ -323,24 +319,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <a
                   href={`${import.meta.env.BASE_URL}platform-admin`}
                   title="Platform Admin Login"
-                  className="mt-auto mb-1 w-full flex flex-col items-center justify-center py-3 text-sidebar-foreground/25 hover:text-purple-400 hover:bg-purple-500/10 transition-all"
+                  className="mt-auto mb-2 w-full flex flex-col items-center justify-center py-4 text-muted-foreground hover:text-accent-brand hover:bg-accent-brand/5 transition-all"
                 >
-                  <ShieldAlert className="h-[18px] w-[18px]" />
-                  <span className="text-[8px] font-semibold mt-1 tracking-tight">Admin</span>
+                  <ShieldAlert className="h-5 w-5" />
+                  <span className="text-[9px] font-bold mt-1.5 tracking-widest uppercase">Admin</span>
                 </a>
               )}
             </nav>
 
             {/* Rail bottom: stream dot + user avatar */}
-            <div className="flex flex-col items-center gap-1.5 py-2 border-t border-sidebar-border/60 flex-shrink-0">
+            <div className="flex flex-col items-center gap-3 py-4 border-t border-border/50 flex-shrink-0">
               {/* Stream status dot */}
               <div title={connected ? `Live · ${syncAgoLabel} ago` : "Stream offline"}>
-                <div className={`relative flex items-center justify-center w-7 h-7 rounded-full ${
+                <div className={`relative flex items-center justify-center w-8 h-8 rounded-full ${
                   connected ? "bg-emerald-500/10" : "bg-red-500/10"
                 }`}>
-                  <span className={`w-2 h-2 rounded-full ${
+                  <span className={`w-2.5 h-2.5 rounded-full ${
                     connected
-                      ? flash ? "bg-emerald-400 scale-125" : "bg-emerald-500 animate-pulse"
+                      ? flash ? "bg-emerald-400 scale-125 shadow-[0_0_8px_rgba(16,185,129,0.8)]" : "bg-emerald-500 animate-pulse-subtle shadow-[0_0_8px_rgba(16,185,129,0.4)]"
                       : "bg-red-500"
                   } transition-all duration-300`} />
                 </div>
@@ -350,20 +346,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 title={theme === "dark" ? "Light mode" : "Dark mode"}
-                className="w-7 h-7 rounded-md flex items-center justify-center text-sidebar-foreground/30 hover:text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
               >
-                {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
 
               {/* Control room */}
               <button
                 onClick={toggleCR}
                 title="Control Room Mode"
-                className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
-                  crActive ? "text-primary bg-primary/20" : "text-sidebar-foreground/30 hover:text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                  crActive ? "text-accent-brand bg-accent-brand/10 border border-accent-brand/20" : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
                 }`}
               >
-                <Monitor className="h-3.5 w-3.5" />
+                <Monitor className="h-4 w-4" />
               </button>
 
               {/* User avatar */}
@@ -371,9 +367,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <button
                   onClick={() => setUserMenuOpen(o => !o)}
                   title={user.name}
-                  className="relative w-7 h-7 rounded-full bg-accent-brand/10 border border-accent-brand/30 flex items-center justify-center hover:ring-2 hover:ring-accent-brand/40 transition-all"
+                  className="relative w-8 h-8 mt-1 rounded-lg bg-card border border-card-border shadow-sm flex items-center justify-center hover:border-accent-brand/50 hover:shadow-[0_0_10px_rgba(20,205,230,0.2)] transition-all"
                 >
-                  <span className="text-[10px] font-bold text-accent-brand leading-none">
+                  <span className="text-xs font-bold text-foreground leading-none">
                     {getInitials(user.name)}
                   </span>
                 </button>
@@ -381,48 +377,48 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          {/* ── Panel (192px) ───────────────────────────────────────────────── */}
-          <div className="w-48 flex flex-col">
+          {/* ── Panel (220px) ───────────────────────────────────────────────── */}
+          <div className="w-[220px] flex flex-col bg-card/30">
 
             {/* Panel header: org brand */}
-            <div className="h-12 flex items-center gap-2.5 px-3 border-b border-sidebar-border/60 flex-shrink-0">
+            <div className="h-16 flex items-center gap-3 px-4 border-b border-border/50 flex-shrink-0">
               {user?.orgLogoUrl ? (
                 <img
                   src={user.orgLogoUrl}
                   alt={user.orgName ?? "Org"}
-                  className="w-6 h-6 rounded-md object-cover border border-sidebar-border flex-shrink-0"
+                  className="w-7 h-7 rounded object-cover border border-border flex-shrink-0"
                   onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
                 />
               ) : (
-                <div className="w-6 h-6 rounded-md bg-primary/15 border border-primary/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[9px] font-bold text-primary">
+                <div className="w-7 h-7 rounded bg-card border border-card-border flex items-center justify-center flex-shrink-0">
+                  <span className="text-[10px] font-bold text-foreground">
                     {getOrgInitials(user?.orgName ?? user?.orgId ?? "?")}
                   </span>
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-semibold text-sidebar-foreground/90 truncate leading-tight">
+                <p className="text-xs font-bold text-foreground truncate leading-tight tracking-tight">
                   {user?.orgName ?? "My Organisation"}
                 </p>
-                <p className="text-[9px] text-sidebar-foreground/35 leading-tight">Solar SCADA</p>
+                <p className="text-[10px] font-mono text-muted-foreground leading-tight uppercase tracking-widest mt-0.5">Solar SCADA</p>
               </div>
               <NotificationBell />
             </div>
 
             {/* Section label + items */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden py-4">
               {/* Section header */}
-              <div className="flex items-center gap-2 px-4 pt-5 pb-3">
-                <div className={`flex items-center justify-center p-1.5 rounded-md ${currentSection.bgColor}`}>
-                  <currentSection.icon className={`h-4 w-4 flex-shrink-0 ${currentSection.color}`} />
+              <div className="flex items-center gap-2.5 px-4 mb-4">
+                <div className={`flex items-center justify-center w-6 h-6 rounded ${currentSection.bgColor}`}>
+                  <currentSection.icon className={`h-3.5 w-3.5 flex-shrink-0 ${currentSection.color}`} />
                 </div>
-                <span className={`text-[11px] font-bold uppercase tracking-widest ${currentSection.color}`}>
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   {currentSection.label}
                 </span>
               </div>
 
               {/* Nav items */}
-              <nav className="pb-3 space-y-0.5">
+              <nav className="space-y-1">
                 {currentSection.items.map(item => (
                   <PanelItem
                     key={item.href}
@@ -434,52 +430,54 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </nav>
 
               {/* Divider + quick jump to other sections */}
-              <div className="mx-3 border-t border-sidebar-border/40 pt-3 pb-3">
-                <p className="text-[9px] font-semibold tracking-[0.15em] text-muted-foreground/40 uppercase px-2 mb-1.5">
-                  Jump to
+              <div className="mx-4 mt-6 border-t border-border/50 pt-4">
+                <p className="text-[10px] font-bold tracking-widest text-muted-foreground/60 uppercase mb-2">
+                  Quick Jump
                 </p>
-                {sections.filter(s => s.id !== activeSection).map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => setActiveSection(s.id)}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-sidebar-accent/40 transition-colors group text-left"
-                  >
-                    <s.icon className={`h-3 w-3 flex-shrink-0 ${s.color} opacity-60 group-hover:opacity-100`} />
-                    <span className="text-[11px] text-sidebar-foreground/45 group-hover:text-sidebar-foreground/75 transition-colors truncate">
-                      {s.label}
-                    </span>
-                  </button>
-                ))}
+                <div className="space-y-1">
+                  {sections.filter(s => s.id !== activeSection).map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => setActiveSection(s.id)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-muted/40 transition-colors group text-left"
+                    >
+                      <s.icon className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
+                      <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors truncate">
+                        {s.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* Panel bottom: stream details + user info */}
-            <div className="border-t border-sidebar-border/60 flex-shrink-0">
+            <div className="border-t border-border/50 flex-shrink-0 bg-muted/10">
               {/* Stream indicator row */}
-              <div className="flex items-center justify-between px-3 py-2">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
+                <div className="flex items-center gap-2">
                   {connected
-                    ? <Radio className={`h-3 w-3 text-emerald-500 ${flash ? "text-emerald-300" : "animate-pulse"}`} />
-                    : <WifiOff className="h-3 w-3 text-red-500" />}
-                  <span className={`text-[10px] font-medium ${connected ? "text-emerald-500" : "text-red-500"}`}>
-                    {connected ? "Live" : "Offline"}
+                    ? <Radio className={`h-3.5 w-3.5 text-emerald-500 ${flash ? "text-emerald-300" : ""}`} />
+                    : <WifiOff className="h-3.5 w-3.5 text-red-500" />}
+                  <span className={`text-[11px] font-bold tracking-wide uppercase ${connected ? "text-emerald-500" : "text-red-500"}`}>
+                    {connected ? "SYS.ONLINE" : "SYS.OFFLINE"}
                   </span>
                 </div>
-                <span className="text-[10px] text-sidebar-foreground/40 font-mono">
+                <span className="text-[10px] text-muted-foreground font-mono">
                   {connected ? syncAgoLabel : "—"}
                 </span>
               </div>
 
               {/* Tick sparkline */}
               {connected && (
-                <div className="flex gap-px px-3 pb-2 h-4 items-end">
-                  {Array.from({ length: 12 }).map((_, i) => (
+                <div className="flex gap-1 px-4 py-3 h-8 items-end border-b border-border/30 bg-black/20">
+                  {Array.from({ length: 24 }).map((_, i) => (
                     <div
                       key={i}
                       className={`flex-1 rounded-sm transition-all duration-300 ${
-                        flash && i >= 12 - (tickCount % 12) - 1
-                          ? "h-3.5 bg-accent-brand"
-                          : "h-2 bg-accent-brand/20"
+                        flash && i >= 24 - (tickCount % 24) - 1
+                          ? "h-4 bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]"
+                          : "h-1 bg-emerald-500/20"
                       }`}
                     />
                   ))}
@@ -488,34 +486,31 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
               {/* User row */}
               {user && (
-                <div className="relative px-2 pb-2">
+                <div className="relative p-2">
                   <button
                     onClick={() => setUserMenuOpen(o => !o)}
-                    className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-sidebar-accent/50 transition-colors text-left"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-card border border-transparent hover:border-card-border transition-all text-left"
                   >
-                    <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0">
-                      <span className="text-[10px] font-bold text-primary">{getInitials(user.name)}</span>
-                    </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-semibold text-sidebar-foreground truncate">{user.name}</p>
-                      <p className="text-[9px] text-sidebar-foreground/40 truncate">{user.roleName}</p>
+                      <p className="text-xs font-bold text-foreground truncate">{user.name}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest truncate mt-0.5">{user.roleName}</p>
                     </div>
-                    <ChevronDown className={`h-3 w-3 text-sidebar-foreground/30 flex-shrink-0 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
                   </button>
 
                   {/* User menu popover */}
                   {userMenuOpen && (
-                    <div className="absolute bottom-full left-2 right-2 mb-1 bg-popover border border-border rounded-xl shadow-xl overflow-hidden z-50">
+                    <div className="absolute bottom-full left-2 right-2 mb-2 bg-card border border-card-border rounded-xl shadow-2xl overflow-hidden z-50 animate-fade-up" style={{ animationDuration: '0.2s' }}>
                       {/* User info */}
-                      <div className="px-3 py-2.5 border-b border-border/60">
-                        <p className="text-[11px] font-semibold text-foreground truncate">{user.name}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
-                        <div className="flex items-center gap-1.5 mt-1.5">
-                          <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-medium">
+                      <div className="px-4 py-3 border-b border-border bg-muted/20">
+                        <p className="text-sm font-bold text-foreground truncate">{user.name}</p>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-[10px] px-2 py-0.5 rounded border border-border bg-background text-muted-foreground font-semibold uppercase tracking-wider">
                             {user.roleName}
                           </span>
                           {user.isSuperAdmin && (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-purple-500/15 text-purple-400 font-semibold">
+                            <span className="text-[10px] px-2 py-0.5 rounded border border-accent-brand/30 bg-accent-brand/10 text-accent-brand font-bold uppercase tracking-wider">
                               SUPER ADMIN
                             </span>
                           )}
@@ -527,20 +522,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         <a
                           href={`${import.meta.env.BASE_URL}platform-admin`}
                           onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-3 py-2 text-[11px] text-purple-400 hover:bg-purple-500/10 transition-colors border-b border-border/60"
+                          className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-accent-brand hover:bg-accent-brand/5 transition-colors border-b border-border"
                         >
-                          <ShieldAlert className="h-3.5 w-3.5" />
-                          <span className="flex-1">Platform Admin Login</span>
+                          <ShieldAlert className="h-4 w-4" />
+                          <span className="flex-1">Admin Login</span>
                           <ExternalLink className="h-3 w-3 opacity-50" />
                         </a>
                       ) : (
                         <Link href="/superadmin">
                           <div
                             onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-2 px-3 py-2 text-[11px] text-purple-400 hover:bg-purple-500/10 transition-colors border-b border-border/60 cursor-pointer"
+                            className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-accent-brand hover:bg-accent-brand/5 transition-colors border-b border-border cursor-pointer"
                           >
-                            <ShieldAlert className="h-3.5 w-3.5" />
-                            <span className="flex-1">Platform Admin Portal</span>
+                            <ShieldAlert className="h-4 w-4" />
+                            <span className="flex-1">Platform Portal</span>
                           </div>
                         </Link>
                       )}
@@ -548,9 +543,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                       {/* Sign out */}
                       <button
                         onClick={async () => { setUserMenuOpen(false); await logout(); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-status-fault hover:bg-status-fault/10 transition-colors"
                       >
-                        <LogOut className="h-3.5 w-3.5" />
+                        <LogOut className="h-4 w-4" />
                         Sign out
                       </button>
                     </div>
@@ -562,32 +557,37 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </aside>
 
         {/* ── Main content ── */}
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0 relative">
+          
+          {/* subtle background grid */}
+          <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+          <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent-brand/5 blur-[120px] pointer-events-none" />
+
           {/* Impersonation banner */}
           {user?.orgOverride && (
-            <div className="flex items-center justify-between px-4 py-2 bg-amber-500/15 border-b border-amber-500/30 text-amber-400 text-xs font-medium flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="h-3.5 w-3.5" />
+            <div className="flex items-center justify-between px-6 py-2 bg-amber-500/10 border-b border-amber-500/30 text-amber-500 text-sm font-medium flex-shrink-0 z-10 relative">
+              <div className="flex items-center gap-3">
+                <ShieldAlert className="h-4 w-4" />
                 <span>
                   Acting as org:{" "}
-                  <span className="font-bold text-amber-300">{user.orgOverrideName ?? user.orgOverride}</span>
+                  <span className="font-bold text-amber-400">{user.orgOverrideName ?? user.orgOverride}</span>
                 </span>
-                <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-400 py-0">
+                <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-500 py-0 uppercase tracking-widest font-bold ml-2">
                   IMPERSONATION ACTIVE
                 </Badge>
               </div>
               <Button
                 size="sm" variant="ghost"
-                className="h-6 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 gap-1 px-2"
+                className="h-7 text-xs font-bold text-amber-500 hover:text-amber-400 hover:bg-amber-500/20 gap-2 px-3"
                 onClick={() => void exitImpersonation()}
               >
-                <X className="h-3 w-3" /> Exit
+                <X className="h-3 w-3" /> EXIT
               </Button>
             </div>
           )}
 
-          <main className="flex-1 overflow-y-auto bg-background focus:outline-none">
-            <div className="py-4 px-4 md:py-6 md:px-8 h-full pb-[72px] md:pb-6">
+          <main className="flex-1 overflow-y-auto relative z-10">
+            <div className="py-6 px-6 md:py-8 md:px-10 h-full max-w-[1600px] mx-auto pb-[80px] md:pb-8">
               {children}
             </div>
           </main>

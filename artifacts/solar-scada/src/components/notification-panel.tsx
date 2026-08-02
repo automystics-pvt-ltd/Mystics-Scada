@@ -4,7 +4,6 @@ import {
   Bell, X, CheckCheck, ExternalLink, AlertTriangle, Wrench, Zap, Info,
 } from "lucide-react";
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -35,22 +34,22 @@ const TYPE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 const TYPE_COLOR: Record<string, string> = {
-  "alarm.critical": "text-status-fault bg-status-fault/10",
-  "alarm.major":    "text-status-warning bg-status-warning/10",
-  "alarm.minor":    "text-blue-400 bg-blue-400/10",
-  "work_order.status":  "text-primary bg-primary/10",
-  "work_order.created": "text-primary bg-primary/10",
-  "device.offline": "text-muted-foreground bg-muted/30",
+  "alarm.critical": "text-status-fault border-status-fault bg-status-fault/10",
+  "alarm.major":    "text-[#e67e22] border-[#e67e22] bg-[#e67e22]/10",
+  "alarm.minor":    "text-blue-400 border-blue-400 bg-blue-400/10",
+  "work_order.status":  "text-brand border-brand bg-brand/10",
+  "work_order.created": "text-brand border-brand bg-brand/10",
+  "device.offline": "text-muted-foreground border-border/50 bg-black/40",
 };
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return "JUST NOW";
+  if (mins < 60) return `T-${mins}M`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs < 24) return `T-${hrs}H`;
+  return `T-${Math.floor(hrs / 24)}D`;
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -100,16 +99,16 @@ export function NotificationBell({ className }: { className?: string }) {
     <div className="relative" ref={panelRef}>
       <button
         onClick={() => setOpen((o) => !o)}
-        title="Notifications"
-        className={`relative w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
+        title="SYSTEM ALERTS"
+        className={`relative w-8 h-8 border flex items-center justify-center transition-colors ${
           open
-            ? "text-primary bg-primary/20"
-            : "text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+            ? "border-brand text-brand bg-brand/10 shadow-[0_0_10px_rgba(0,255,170,0.2)]"
+            : "border-border/50 text-muted-foreground bg-black/40 hover:text-brand hover:border-brand/50"
         } ${className ?? ""}`}
       >
-        <Bell className="h-3.5 w-3.5" />
+        <Bell className="h-4 w-4" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] flex items-center justify-center rounded-full bg-status-fault text-[9px] font-bold text-white px-0.5">
+          <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] flex items-center justify-center bg-status-fault text-white text-[8px] font-mono font-bold px-1 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.8)]">
             {unread > 99 ? "99+" : unread}
           </span>
         )}
@@ -162,32 +161,33 @@ function NotificationPanel({ onClose }: { onClose: () => void }) {
 
   return (
     /* Fixed panel anchored to the sidebar — slides in from left edge */
-    <div className="absolute left-full top-0 ml-2 w-80 bg-popover border border-border rounded-xl shadow-2xl z-[200] flex flex-col max-h-[80vh] overflow-hidden">
+    <div className="absolute left-full top-0 ml-4 w-96 bg-black/95 border border-brand/50 shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] z-[200] flex flex-col max-h-[85vh] overflow-hidden backdrop-blur-xl">
+      <div className="absolute top-0 left-0 w-full h-1 bg-brand" />
+      
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <Bell className="h-4 w-4 text-primary" />
-          <span className="font-semibold text-sm">Notifications</span>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 flex-shrink-0 bg-black/80">
+        <div className="flex items-center gap-3">
+          <Bell className="h-4 w-4 text-brand" />
+          <span className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground">SYSTEM LOGS</span>
           {unreadCount > 0 && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-status-fault/15 text-status-fault">
-              {unreadCount} new
+            <span className="font-mono text-[8px] uppercase tracking-widest font-bold px-1.5 py-0.5 border border-status-fault text-status-fault bg-status-fault/10 animate-pulse">
+              {unreadCount} UNREAD
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           {unreadCount > 0 && (
-            <Button
-              size="sm" variant="ghost"
-              className="h-6 text-[10px] gap-1 px-2 text-muted-foreground"
+            <button
+              className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground hover:text-brand transition-colors flex items-center gap-1"
               onClick={() => markAll.mutate()}
               disabled={markAll.isPending}
             >
-              <CheckCheck className="h-3 w-3" /> Mark all read
-            </Button>
+              <CheckCheck className="h-3 w-3" /> ACK ALL
+            </button>
           )}
           <button
             onClick={onClose}
-            className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            className="p-1 text-muted-foreground hover:text-brand border border-transparent hover:border-brand/50 transition-colors"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -195,65 +195,69 @@ function NotificationPanel({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
         {isLoading ? (
-          <div className="p-4 space-y-2">
+          <div className="p-4 space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-14 bg-muted/30 animate-pulse rounded-lg" />
+              <div key={i} className="h-16 bg-black/60 border border-border/50 animate-pulse" />
             ))}
           </div>
         ) : notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-            <Bell className="h-8 w-8 text-muted-foreground/20 mb-3" />
-            <p className="text-sm text-muted-foreground">No notifications yet</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">
-              Critical alarms and work order updates will appear here
+          <div className="flex flex-col items-center justify-center py-16 text-center px-6">
+            <Bell className="h-10 w-10 text-muted-foreground/30 mb-4" />
+            <p className="font-mono text-[10px] uppercase tracking-widest font-bold text-muted-foreground">LOG BUFFER EMPTY</p>
+            <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground/60 mt-2">
+              AWAITING INCOMING EVENT TELEMETRY
             </p>
           </div>
         ) : (
-          <div className="py-1">
+          <div className="py-2 px-2 space-y-1">
             {notifications.map((notif) => {
               const IconComp = TYPE_ICON[notif.type] ?? Info;
-              const colorClass = TYPE_COLOR[notif.type] ?? "text-muted-foreground bg-muted/30";
+              const colorClass = TYPE_COLOR[notif.type] ?? "text-muted-foreground border-border/50 bg-black/40";
 
               return (
                 <div
                   key={notif.id}
-                  className={`px-4 py-3 border-b border-border/50 last:border-0 hover:bg-accent/30 transition-colors cursor-pointer ${
-                    !notif.isRead ? "bg-primary/5" : ""
+                  className={`p-4 border transition-colors cursor-pointer group ${
+                    !notif.isRead 
+                      ? "border-brand/50 bg-brand/5 hover:bg-brand/10 hover:border-brand" 
+                      : "border-border/30 bg-black/40 hover:border-brand/30 hover:bg-black/60"
                   }`}
                   onClick={() => {
                     if (!notif.isRead) markRead.mutate(notif.id);
                   }}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-4">
                     {/* Icon */}
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${colorClass}`}>
-                      <IconComp className="h-3.5 w-3.5" />
+                    <div className={`w-8 h-8 border flex items-center justify-center flex-shrink-0 ${colorClass}`}>
+                      <IconComp className="h-4 w-4" />
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className={`text-sm leading-tight ${!notif.isRead ? "font-semibold text-foreground" : "text-foreground/80"}`}>
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <p className={`font-mono text-[10px] uppercase tracking-widest leading-snug truncate ${!notif.isRead ? "font-bold text-foreground" : "text-foreground/70"}`}>
                           {notif.title}
                         </p>
                         {!notif.isRead && (
-                          <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1" />
+                          <span className="w-1.5 h-1.5 bg-brand flex-shrink-0 mt-1 shadow-[0_0_5px_rgba(0,255,170,0.8)] animate-pulse" />
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
-                      <div className="flex items-center justify-between mt-1.5">
-                        <span className="text-[10px] text-muted-foreground/60">
+                      <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground leading-relaxed line-clamp-2 mb-3">
+                        {notif.message}
+                      </p>
+                      <div className="flex items-center justify-between border-t border-border/30 pt-2">
+                        <span className="font-mono text-[8px] uppercase tracking-widest font-bold text-muted-foreground/60">
                           {relativeTime(notif.createdAt)}
                         </span>
                         {notif.resourceUrl && (
                           <Link
                             href={notif.resourceUrl}
                             onClick={(e: React.MouseEvent) => { e.stopPropagation(); onClose(); }}
-                            className="text-[10px] text-primary hover:underline flex items-center gap-0.5"
+                            className="font-mono text-[8px] uppercase tracking-widest font-bold text-brand hover:text-brand/80 flex items-center gap-1 group-hover:underline"
                           >
-                            View <ExternalLink className="h-2.5 w-2.5" />
+                            INSPECT <ExternalLink className="h-2.5 w-2.5" />
                           </Link>
                         )}
                       </div>

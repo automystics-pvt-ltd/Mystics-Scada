@@ -21,54 +21,61 @@ function ArrayCard({ plantId, zoneId, inverterId, inverterName, arrId, arrName, 
     : 0;
 
   const health = deviating > 0 ? "warning" : online < arrayStrings.length ? "fault" : "normal";
-  const healthColors: Record<string, string> = {
-    normal: "border-l-status-normal bg-status-normal/5",
-    warning: "border-l-[hsl(38,92%,50%)] bg-status-warning/5",
-    fault: "border-l-status-fault bg-status-fault/5",
-  };
+  const isWarning = health === "warning";
+  const isFault = health === "fault";
 
   return (
     <Link href={`/plants/${plantId}/zones/${zoneId}/arrays/${arrId}`}>
-      <div className={`bg-card border border-card-border border-l-4 ${healthColors[health]} rounded-xl p-4 hover:border-r-primary/30 cursor-pointer group transition-all`}>
-        <div className="flex items-start justify-between mb-2">
+      <div className={`border bg-black/60 p-4 hover:bg-brand/5 cursor-pointer group transition-all relative overflow-hidden ${
+        isFault ? "border-status-fault/50" : isWarning ? "border-status-warning/50" : "border-border/50 hover:border-brand/50"
+      }`}>
+        <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${
+          isFault ? "bg-status-fault shadow-[0_0_10px_rgba(239,68,68,0.5)]" : isWarning ? "bg-status-warning shadow-[0_0_10px_rgba(251,191,36,0.5)]" : "bg-border/50 group-hover:bg-brand"
+        }`} />
+        
+        <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-center gap-2">
-              <Layers className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="font-semibold text-sm group-hover:text-primary transition-colors">{arrName}</span>
+              <Layers className={`w-3.5 h-3.5 ${isFault ? "text-status-fault" : isWarning ? "text-status-warning" : "text-brand/50 group-hover:text-brand"}`} />
+              <span className="font-mono text-sm font-bold uppercase tracking-widest group-hover:text-brand transition-colors">{arrName}</span>
             </div>
-            <div className="text-[10px] text-muted-foreground mt-0.5 ml-5">
-              {inverterName} · Strings {startStr + 1}–{endStr + 1}
+            <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-1 ml-5">
+              {inverterName} // STRINGS {startStr + 1} TO {endStr + 1}
             </div>
           </div>
-          <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-            health === "normal" ? "bg-status-normal/15 text-status-normal"
-              : health === "warning" ? "bg-status-warning/15 text-status-warning"
-                : "bg-status-fault/15 text-status-fault"
+          <div className={`font-mono text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 border ${
+            health === "normal" ? "bg-status-normal/10 border-status-normal/50 text-status-normal"
+              : health === "warning" ? "bg-status-warning/10 border-status-warning/50 text-status-warning animate-pulse"
+                : "bg-status-fault/10 border-status-fault/50 text-status-fault animate-pulse"
           }`}>
-            {health.toUpperCase()}
+            {health === "normal" ? "NOMINAL" : health.toUpperCase()}
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 text-center mt-3">
-          <div className="bg-muted/30 rounded-lg p-2">
-            <div className="text-[10px] text-muted-foreground">Strings</div>
-            <div className="font-mono text-sm font-semibold">{online}/{arrayStrings.length}</div>
+        <div className="grid grid-cols-3 gap-px bg-border/50 border border-border/50">
+          <div className="bg-black p-2 text-center">
+            <div className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mb-1">STRINGS</div>
+            <div className={`font-mono text-sm font-bold ${online < arrayStrings.length ? "text-status-fault drop-shadow-[0_0_5px_rgba(239,68,68,0.5)]" : "text-foreground"}`}>
+              {online}/{arrayStrings.length}
+            </div>
           </div>
-          <div className="bg-muted/30 rounded-lg p-2">
-            <div className="text-[10px] text-muted-foreground">Avg Current</div>
-            <div className="font-mono text-sm font-semibold">{avgCurrent > 0 ? `${avgCurrent.toFixed(2)} A` : "--"}</div>
+          <div className="bg-black p-2 text-center">
+            <div className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mb-1">AVG CUR</div>
+            <div className="font-mono text-sm font-bold text-foreground">
+              {avgCurrent > 0 ? `${avgCurrent.toFixed(2)} A` : "--"}
+            </div>
           </div>
-          <div className="bg-muted/30 rounded-lg p-2">
-            <div className="text-[10px] text-muted-foreground">Deviating</div>
-            <div className={`font-mono text-sm font-semibold ${deviating > 0 ? "text-status-warning" : "text-status-normal"}`}>
+          <div className="bg-black p-2 text-center">
+            <div className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mb-1">DEVIATING</div>
+            <div className={`font-mono text-sm font-bold ${deviating > 0 ? "text-status-warning drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]" : "text-foreground"}`}>
               {deviating}
             </div>
           </div>
         </div>
 
-        <div className="mt-2 flex justify-end">
-          <span className="text-xs text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            View strings <ArrowRight className="w-3 h-3" />
+        <div className="mt-4 flex justify-end border-t border-border/50 pt-3">
+          <span className="font-mono text-[9px] uppercase tracking-widest font-bold text-brand flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            ACCESS STRINGS <ArrowRight className="w-3 h-3" />
           </span>
         </div>
       </div>
@@ -97,53 +104,67 @@ export default function PlantZoneArrays() {
     <AppLayout>
       <div className="flex flex-col space-y-6">
         {/* Breadcrumb */}
-        <div>
-          <div className="flex items-center mb-1 text-sm text-muted-foreground gap-2">
-            <Link href="/" className="hover:text-foreground">Portfolio</Link>
-            <span>/</span>
-            <Link href={`/plants/${pid}`} className="hover:text-foreground">{plant?.name ?? pid}</Link>
-            <span>/</span>
-            <Link href={`/plants/${pid}/zones`} className="hover:text-foreground">Zones</Link>
-            <span>/</span>
-            <Link href={`/plants/${pid}/zones/${zid}`} className="hover:text-foreground">{zone?.name ?? zid}</Link>
-            <span>/</span>
-            <span className="text-foreground">Arrays</span>
+        <div className="border border-border/50 bg-black/40 p-5 relative flex-shrink-0">
+          <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
+          
+          <div className="flex items-center mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            <Link href="/" className="hover:text-brand transition-colors">Portfolio</Link>
+            <span className="mx-2 text-border/50">/</span>
+            <Link href={`/plants/${pid}`} className="hover:text-brand transition-colors">{plant?.name ?? pid}</Link>
+            <span className="mx-2 text-border/50">/</span>
+            <Link href={`/plants/${pid}/zones`} className="hover:text-brand transition-colors">ZONES</Link>
+            <span className="mx-2 text-border/50">/</span>
+            <Link href={`/plants/${pid}/zones/${zid}`} className="hover:text-brand transition-colors">{zone?.name ?? zid}</Link>
+            <span className="mx-2 text-border/50">/</span>
+            <span className="text-foreground">ARRAYS</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href={`/plants/${pid}/zones/${zid}`} className="text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <h1 className="text-2xl font-bold tracking-tight">{zone?.name} — String Arrays</h1>
+
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-4 flex-wrap">
+                <Link href={`/plants/${pid}/zones/${zid}`} className="border border-border/50 bg-black/60 p-1.5 hover:text-brand hover:border-brand/50 transition-colors">
+                  <ArrowLeft className="w-4 h-4" />
+                </Link>
+                <h1 className="text-xl font-mono font-bold uppercase tracking-widest text-foreground">
+                  {zone?.name} // STRING ARRAYS
+                </h1>
+              </div>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mt-2 ml-[3.25rem]">
+                {plant?.name} · {zoneInvs.length} INVERTERS · STRING GROUPS OF 4
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            {plant?.name} · {zoneInvs.length} inverters · string groups of 4
-          </p>
         </div>
 
         {/* Arrays grouped by inverter */}
         {zoneInvs.length === 0 ? (
-          <div className="flex items-center justify-center h-40 text-muted-foreground">
-            Loading inverters…
+          <div className="flex items-center justify-center h-40 font-mono text-[10px] uppercase tracking-widest text-brand animate-pulse">
+            LOADING MATRIX VECTORS...
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-10">
             {zoneInvs.map((inv) => {
               const stringsPerInv = getStringsPerInverter(pid);
               const arrays = getInverterArrays(stringsPerInv, inv.id);
+              
+              const isInvFault = inv.status === "fault" || inv.status === "comm_lost";
+              const isInvWarning = inv.status === "standby";
+              
               return (
-                <div key={inv.id}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="text-sm font-semibold">{inv.name}</div>
-                    <div className="text-xs text-muted-foreground">{inv.id}</div>
-                    <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded ml-1 ${
-                      inv.status === "fault" ? "bg-status-fault/15 text-status-fault"
-                        : inv.status === "running" ? "bg-status-normal/15 text-status-normal"
-                          : "bg-muted text-muted-foreground"
+                <div key={inv.id} className="border border-border/50 bg-black/40 p-5">
+                  <div className="flex items-center gap-3 mb-5 pb-3 border-b border-border/50">
+                    <div className="font-mono text-base font-bold uppercase tracking-widest">{inv.name}</div>
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{inv.id}</div>
+                    <div className={`font-mono text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 border ml-auto ${
+                      isInvFault ? "bg-status-fault/10 border-status-fault/50 text-status-fault animate-pulse"
+                        : isInvWarning ? "bg-status-warning/10 border-status-warning/50 text-status-warning"
+                        : inv.status === "running" ? "bg-status-normal/10 border-status-normal/50 text-status-normal"
+                          : "bg-black/60 border-border/50 text-muted-foreground"
                     }`}>
                       {inv.status.toUpperCase().replace("_", " ")}
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                     {arrays.map((arr) => (
                       <ArrayCard
                         key={arr.id}

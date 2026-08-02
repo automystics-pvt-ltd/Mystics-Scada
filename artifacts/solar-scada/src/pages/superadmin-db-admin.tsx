@@ -80,34 +80,34 @@ function SchemaPanel({ table }: { table: string }) {
     <div className="space-y-4 p-4">
       {/* Columns */}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <p className="font-mono text-[9px] uppercase tracking-widest font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
           <Table2 className="h-3 w-3" /> Columns ({schema?.columns.length ?? 0})
         </p>
-        <div className="border border-border rounded-lg overflow-hidden">
-          <table className="w-full text-xs">
-            <thead className="bg-muted/50">
+        <div className="border border-border/50 rounded-none-none overflow-hidden">
+          <table className="w-full font-mono text-[9px] uppercase tracking-widest">
+            <thead className="bg-black/60">
               <tr>
                 {["Column", "Type", "Nullable", "Default", "Flags"].map(h => (
-                  <th key={h} className="px-3 py-1.5 text-left font-medium text-muted-foreground border-b border-border">{h}</th>
+                  <th key={h} className="px-3 py-1.5 text-left font-bold text-muted-foreground /50">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {schema?.columns.map(col => (
-                <tr key={col.name} className="border-b border-border/40 hover:bg-muted/20">
-                  <td className="px-3 py-1.5 font-mono font-medium text-foreground">{col.name}</td>
-                  <td className="px-3 py-1.5 font-mono text-primary text-[11px]">{col.dataType}</td>
+                <tr key={col.name} className="/40 hover:bg-white/5">
+                  <td className="px-3 py-1.5 font-mono font-bold text-foreground">{col.name}</td>
+                  <td className="px-3 py-1.5 font-mono text-accent-brand font-mono text-[9px] uppercase tracking-widest">{col.dataType}</td>
                   <td className="px-3 py-1.5">
-                    <span className={`text-[10px] font-medium ${col.isNullable === "YES" ? "text-muted-foreground" : "text-orange-400"}`}>
+                    <span className={`text-[10px] font-bold ${col.isNullable === "YES" ? "text-muted-foreground" : "text-orange-400"}`}>
                       {col.isNullable === "YES" ? "nullable" : "NOT NULL"}
                     </span>
                   </td>
-                  <td className="px-3 py-1.5 font-mono text-muted-foreground text-[11px] max-w-[140px] truncate">
+                  <td className="px-3 py-1.5 font-mono text-muted-foreground font-mono text-[9px] uppercase tracking-widest max-w-[140px] truncate">
                     {col.columnDefault ?? <span className="italic opacity-40">—</span>}
                   </td>
                   <td className="px-3 py-1.5">
                     <div className="flex gap-1">
-                      {col.isPrimaryKey && <Badge className="text-[9px] h-4 px-1 bg-primary/15 text-primary border-primary/30">PK</Badge>}
+                      {col.isPrimaryKey && <Badge className="text-[9px] h-4 px-1 bg-accent-brand/15 text-accent-brand border-accent-brand/30">PK</Badge>}
                       {fks.some(f => f.column === col.name) && <Badge className="text-[9px] h-4 px-1 bg-blue-500/15 text-blue-400 border-blue-500/30">FK</Badge>}
                     </div>
                   </td>
@@ -120,34 +120,34 @@ function SchemaPanel({ table }: { table: string }) {
 
       {/* Indexes */}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <p className="font-mono text-[9px] uppercase tracking-widest font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
           <Key className="h-3 w-3" /> Indexes ({indexLoading ? "…" : indexes.length})
         </p>
         {indexes.length === 0 && !indexLoading ? (
-          <p className="text-xs text-muted-foreground italic">No indexes</p>
+          <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground italic">No indexes</p>
         ) : (
-          <div className="border border-border rounded-lg overflow-hidden">
-            <table className="w-full text-xs">
-              <thead className="bg-muted/50">
+          <div className="border border-border/50 rounded-none-none overflow-hidden">
+            <table className="w-full font-mono text-[9px] uppercase tracking-widest">
+              <thead className="bg-black/60">
                 <tr>
                   {["Index Name", "Columns", "Type", "Size"].map(h => (
-                    <th key={h} className="px-3 py-1.5 text-left font-medium text-muted-foreground border-b border-border">{h}</th>
+                    <th key={h} className="px-3 py-1.5 text-left font-bold text-muted-foreground /50">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {indexes.map(idx => (
-                  <tr key={idx.indexName} className="border-b border-border/40 hover:bg-muted/20">
-                    <td className="px-3 py-1.5 font-mono text-[11px]">{idx.indexName}</td>
-                    <td className="px-3 py-1.5 font-mono text-primary text-[11px]">{idx.columns}</td>
+                  <tr key={idx.indexName} className="/40 hover:bg-white/5">
+                    <td className="px-3 py-1.5 font-mono font-mono text-[9px] uppercase tracking-widest">{idx.indexName}</td>
+                    <td className="px-3 py-1.5 font-mono text-accent-brand font-mono text-[9px] uppercase tracking-widest">{idx.columns}</td>
                     <td className="px-3 py-1.5">
                       <div className="flex gap-1">
-                        {idx.isPrimary && <Badge className="text-[9px] h-4 px-1 bg-primary/15 text-primary border-primary/30">PRIMARY</Badge>}
+                        {idx.isPrimary && <Badge className="text-[9px] h-4 px-1 bg-accent-brand/15 text-accent-brand border-accent-brand/30">PRIMARY</Badge>}
                         {idx.isUnique && !idx.isPrimary && <Badge className="text-[9px] h-4 px-1 bg-purple-500/15 text-purple-400 border-purple-500/30">UNIQUE</Badge>}
                         {!idx.isPrimary && !idx.isUnique && <Badge variant="outline" className="text-[9px] h-4 px-1">INDEX</Badge>}
                       </div>
                     </td>
-                    <td className="px-3 py-1.5 font-mono text-muted-foreground text-[11px]">{idx.size}</td>
+                    <td className="px-3 py-1.5 font-mono text-muted-foreground font-mono text-[9px] uppercase tracking-widest">{idx.size}</td>
                   </tr>
                 ))}
               </tbody>
@@ -159,29 +159,29 @@ function SchemaPanel({ table }: { table: string }) {
       {/* Foreign Keys */}
       {(fks.length > 0 || fkLoading) && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <p className="font-mono text-[9px] uppercase tracking-widest font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Link2 className="h-3 w-3" /> Foreign Keys ({fkLoading ? "…" : fks.length})
           </p>
-          <div className="border border-border rounded-lg overflow-hidden">
-            <table className="w-full text-xs">
-              <thead className="bg-muted/50">
+          <div className="border border-border/50 rounded-none-none overflow-hidden">
+            <table className="w-full font-mono text-[9px] uppercase tracking-widest">
+              <thead className="bg-black/60">
                 <tr>
                   {["Column", "References", "On Delete", "On Update"].map(h => (
-                    <th key={h} className="px-3 py-1.5 text-left font-medium text-muted-foreground border-b border-border">{h}</th>
+                    <th key={h} className="px-3 py-1.5 text-left font-bold text-muted-foreground /50">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {fks.map(fk => (
-                  <tr key={fk.constraintName} className="border-b border-border/40 hover:bg-muted/20">
-                    <td className="px-3 py-1.5 font-mono text-[11px] text-blue-400">{fk.column}</td>
-                    <td className="px-3 py-1.5 font-mono text-[11px]">
+                  <tr key={fk.constraintName} className="/40 hover:bg-white/5">
+                    <td className="px-3 py-1.5 font-mono font-mono text-[9px] uppercase tracking-widest text-blue-400">{fk.column}</td>
+                    <td className="px-3 py-1.5 font-mono font-mono text-[9px] uppercase tracking-widest">
                       <span className="text-foreground">{fk.referencedTable}</span>
                       <span className="text-muted-foreground">.</span>
-                      <span className="text-primary">{fk.referencedColumn}</span>
+                      <span className="text-accent-brand">{fk.referencedColumn}</span>
                     </td>
-                    <td className="px-3 py-1.5 text-[11px] text-muted-foreground">{fk.onDelete}</td>
-                    <td className="px-3 py-1.5 text-[11px] text-muted-foreground">{fk.onUpdate}</td>
+                    <td className="px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{fk.onDelete}</td>
+                    <td className="px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{fk.onUpdate}</td>
                   </tr>
                 ))}
               </tbody>
@@ -237,14 +237,14 @@ function EditModal({
   const pkCols = new Set(["id"]);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border flex-shrink-0">
+    <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div className="bg-black/40 border border-border/50 rounded-none-none shadow-[0_0_30px_rgba(0,195,255,0.15)] backdrop-blur-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-3.5 /50 flex-shrink-0">
           <div>
-            <h3 className="font-semibold text-sm">Edit Record</h3>
-            <p className="text-[11px] text-muted-foreground font-mono mt-0.5">{table} · id: {String(row["id"] ?? "—")}</p>
+            <h3 className="font-bold font-mono text-[10px] uppercase tracking-widest">Edit Record</h3>
+            <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground font-mono mt-0.5">{table} · id: {String(row["id"] ?? "—")}</p>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-muted text-muted-foreground">
+          <button onClick={onClose} className="p-1 rounded-none hover:bg-white/10 text-muted-foreground">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -255,10 +255,10 @@ function EditModal({
             const origVal = row[col] === null || row[col] === undefined ? "" : String(row[col]);
             const isLong = origVal.length > 80;
             return (
-              <div key={col} className={`rounded-lg border p-3 transition-colors ${isChanged ? "border-primary/50 bg-primary/5" : "border-border/60"}`}>
+              <div key={col} className={`rounded-none-none border p-3 transition-colors ${isChanged ? "border-accent-brand/50 bg-primary/5" : "border-border/60"}`}>
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span className="text-[11px] font-mono font-medium text-foreground">{col}</span>
-                  {isPk && <Badge className="text-[9px] h-3.5 px-1 bg-primary/10 text-primary border-primary/20">PK</Badge>}
+                  <span className="font-mono text-[9px] uppercase tracking-widest font-mono font-bold text-foreground">{col}</span>
+                  {isPk && <Badge className="text-[9px] h-3.5 px-1 bg-accent-brand/10 text-accent-brand border-accent-brand/30">PK</Badge>}
                   {isChanged && <Badge className="text-[9px] h-3.5 px-1 bg-amber-500/10 text-amber-400 border-amber-500/20">modified</Badge>}
                 </div>
                 {isLong ? (
@@ -267,7 +267,7 @@ function EditModal({
                     value={values[col]}
                     onChange={e => handleChange(col, e.target.value)}
                     disabled={isPk}
-                    className="w-full font-mono text-xs bg-background border border-border rounded px-2 py-1.5 resize-y disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full font-mono font-mono text-[9px] uppercase tracking-widest bg-black/50 border border-border/50 rounded-none px-2 py-1.5 focus-visible:ring-accent-brand resize-y disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 ) : (
                   <input
@@ -275,15 +275,15 @@ function EditModal({
                     value={values[col]}
                     onChange={e => handleChange(col, e.target.value)}
                     disabled={isPk}
-                    className="w-full font-mono text-xs bg-background border border-border rounded px-2 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full font-mono font-mono text-[9px] uppercase tracking-widest bg-black/50 border border-border/50 rounded-none px-2 py-1.5 focus-visible:ring-accent-brand disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 )}
               </div>
             );
           })}
         </div>
-        <div className="border-t border-border px-5 py-3 flex items-center justify-between flex-shrink-0 bg-muted/20">
-          <span className="text-xs text-muted-foreground">
+        <div className="border-t border-border/50 px-5 py-3 flex items-center justify-between flex-shrink-0 bg-white/5">
+          <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
             {changed.size > 0 ? <span className="text-amber-400">{changed.size} field(s) modified</span> : "No changes yet"}
           </span>
           <div className="flex gap-2">
@@ -537,14 +537,13 @@ export default function SuperAdminDbAdmin() {
       <SuperAdminLayout>
         <div className="space-y-4">
           {/* Header */}
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between /50 pb-4 relative"><div className="absolute bottom-0 left-0 w-1/4 h-[1px] bg-accent-brand shadow-[0_0_15px_rgba(0,195,255,0.8)]" />
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Database className="h-6 w-6 text-primary" />
-                Database Administration Console
+              <h1 className="font-mono text-2xl font-bold flex items-center gap-3 text-foreground uppercase tracking-widest">
+                <Database className="h-6 w-6 text-accent-brand" /> DATABASE CONSOLE
               </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Schema inspector · Record browser · SQL console · Connections · Integrity · Maintenance
+              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
+                SCHEMA INSPECTOR // RECORD BROWSER // SQL CONSOLE // CONNECTIONS // INTEGRITY // MAINTENANCE
               </p>
             </div>
             <Badge className="bg-status-fault text-white text-[10px] font-bold px-2 py-1 flex-shrink-0">
@@ -553,16 +552,16 @@ export default function SuperAdminDbAdmin() {
           </div>
 
           {/* Tab bar */}
-          <div className="border-b border-border">
+          <div className="/50">
             <nav className="flex gap-0 overflow-x-auto scrollbar-none">
               {TABS.map(t => (
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id)}
-                  className={`flex items-center gap-1.5 px-3.5 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                  className={`flex items-center gap-1.5 px-3.5 py-2.5 font-mono text-[10px] uppercase tracking-widest font-bold whitespace-nowrap border-b transition-colors ${
                     tab === t.id
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                      ? "border-accent-brand text-accent-brand"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/50"
                   }`}
                 >
                   <t.icon className="h-3.5 w-3.5" />
@@ -576,15 +575,15 @@ export default function SuperAdminDbAdmin() {
           {tab === "browser" && (
             <div className="flex gap-4" style={{ height: "calc(100vh - 300px)", minHeight: 520 }}>
               {/* Table sidebar */}
-              <div className="w-56 flex flex-col border border-border rounded-xl overflow-hidden bg-card flex-shrink-0">
-                <div className="p-2 border-b border-border flex items-center gap-1">
+              <div className="w-56 flex flex-col border border-border/50 rounded-none-none overflow-hidden bg-black/40 flex-shrink-0">
+                <div className="p-2 /50 flex items-center gap-1">
                   <Input placeholder="Filter tables…" value={tableFilter}
-                    onChange={e => setTableFilter(e.target.value)} className="h-7 text-xs" />
+                    onChange={e => setTableFilter(e.target.value)} className="h-7 font-mono text-[9px] uppercase tracking-widest" />
                   <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => void refetchTables()}>
                     <RefreshCw className="h-3.5 w-3.5" />
                   </Button>
                 </div>
-                <div className="px-2 py-1 border-b border-border/50 bg-muted/20">
+                <div className="px-2 py-1 /50 bg-white/5">
                   <span className="text-[10px] text-muted-foreground">{filteredTables.length} tables</span>
                 </div>
                 <div className="flex-1 overflow-y-auto">
@@ -592,10 +591,10 @@ export default function SuperAdminDbAdmin() {
                     <button
                       key={t.name}
                       onClick={() => { setSelectedTable(t.name); setPage(0); setBrowserView("data"); }}
-                      className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-left transition-colors ${
+                      className={`w-full flex items-center justify-between px-3 py-2 font-mono text-[9px] uppercase tracking-widest font-bold text-left transition-colors ${
                         selectedTable === t.name
-                          ? "bg-primary/10 text-primary border-l-2 border-l-primary"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                          ? "bg-accent-brand/10 text-accent-brand border-l-2 border-l-primary"
+                          : "text-muted-foreground hover:text-foreground hover:bg-black/60"
                       }`}
                     >
                       <span className="truncate">{t.name}</span>
@@ -606,34 +605,34 @@ export default function SuperAdminDbAdmin() {
               </div>
 
               {/* Main panel */}
-              <div className="flex-1 flex flex-col border border-border rounded-xl overflow-hidden bg-card min-w-0">
+              <div className="flex-1 flex flex-col border border-border/50 rounded-none-none overflow-hidden bg-black/40 min-w-0">
                 {!selectedTable ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
                     <Database className="h-12 w-12 opacity-20" />
-                    <p className="text-sm">Select a table to browse records or inspect its schema</p>
+                    <p className="font-mono text-[10px] uppercase tracking-widest">Select a table to browse records or inspect its schema</p>
                   </div>
                 ) : (
                   <>
                     {/* Panel header */}
-                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/30 flex-shrink-0">
+                    <div className="flex items-center justify-between px-4 py-2.5 /50 bg-black/40 flex-shrink-0">
                       <div className="flex items-center gap-3">
-                        <span className="font-mono font-semibold text-sm">{selectedTable}</span>
+                        <span className="font-mono font-bold font-mono text-[10px] uppercase tracking-widest">{selectedTable}</span>
                         {records && browserView === "data" && (
                           <span className="text-[10px] text-muted-foreground">
                             {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, records.total)} of {records.total.toLocaleString()} rows
                           </span>
                         )}
                         {/* Data / Schema toggle */}
-                        <div className="flex items-center border border-border rounded-md overflow-hidden bg-background">
+                        <div className="flex items-center border border-border/50 rounded-none-none overflow-hidden bg-background">
                           <button
                             onClick={() => setBrowserView("data")}
-                            className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium transition-colors ${browserView === "data" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                            className={`flex items-center gap-1 px-2.5 py-1 font-mono text-[9px] uppercase tracking-widest font-bold transition-colors ${browserView === "data" ? "bg-accent-brand text-accent-brand-foreground" : "text-muted-foreground hover:text-foreground"}`}
                           >
                             <Table2 className="h-3 w-3" /> Data
                           </button>
                           <button
                             onClick={() => setBrowserView("schema")}
-                            className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium transition-colors ${browserView === "schema" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                            className={`flex items-center gap-1 px-2.5 py-1 font-mono text-[9px] uppercase tracking-widest font-bold transition-colors ${browserView === "schema" ? "bg-accent-brand text-accent-brand-foreground" : "text-muted-foreground hover:text-foreground"}`}
                           >
                             <Eye className="h-3 w-3" /> Schema
                           </button>
@@ -663,21 +662,21 @@ export default function SuperAdminDbAdmin() {
                           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                         </div>
                       ) : records && records.records.length > 0 ? (
-                        <table className="w-full text-xs border-collapse">
-                          <thead className="bg-muted/50 sticky top-0 z-10">
+                        <table className="w-full font-mono text-[9px] uppercase tracking-widest border-collapse">
+                          <thead className="bg-black/60 sticky top-0 z-10">
                             <tr>
-                              <th className="px-2 py-1.5 text-left font-medium text-muted-foreground border-b border-border w-14">Act.</th>
+                              <th className="px-2 py-1.5 text-left font-bold text-muted-foreground /50 w-14">Act.</th>
                               {records.columns.map(col => (
                                 <th
                                   key={col}
                                   onClick={() => handleSort(col)}
-                                  className="px-3 py-1.5 text-left font-medium text-muted-foreground border-b border-border whitespace-nowrap cursor-pointer hover:text-foreground select-none group"
+                                  className="px-3 py-1.5 text-left font-bold text-muted-foreground /50 whitespace-nowrap cursor-pointer hover:text-foreground select-none group"
                                 >
                                   <span className="flex items-center gap-1">
                                     {col}
-                                    <ArrowUpDown className={`h-2.5 w-2.5 transition-opacity ${sortCol === col ? "opacity-100 text-primary" : "opacity-0 group-hover:opacity-40"}`} />
+                                    <ArrowUpDown className={`h-2.5 w-2.5 transition-opacity ${sortCol === col ? "opacity-100 text-accent-brand" : "opacity-0 group-hover:opacity-40"}`} />
                                     {sortCol === col && (
-                                      <span className="text-[9px] text-primary font-bold">
+                                      <span className="text-[9px] text-accent-brand font-bold">
                                         {sortDir === "asc" ? "↑" : "↓"}
                                       </span>
                                     )}
@@ -688,19 +687,19 @@ export default function SuperAdminDbAdmin() {
                           </thead>
                           <tbody>
                             {records.records.map((row, i) => (
-                              <tr key={i} className="border-b border-border/50 hover:bg-muted/20">
+                              <tr key={i} className="/50 hover:bg-white/5">
                                 <td className="px-2 py-1">
                                   <div className="flex items-center gap-0.5">
                                     <button
                                       onClick={() => setEditRow(row)}
-                                      className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                                      className="p-1 rounded-none hover:bg-white/10 text-muted-foreground hover:text-foreground"
                                       title="Edit record"
                                     >
                                       <Edit2 className="h-3 w-3" />
                                     </button>
                                     <button
                                       onClick={() => setDeleteId(String(row["id"] ?? i))}
-                                      className="p-1 rounded hover:bg-status-fault/10 text-muted-foreground hover:text-status-fault"
+                                      className="p-1 rounded-none hover:bg-status-fault/10 text-muted-foreground hover:text-status-fault"
                                       title="Delete record"
                                     >
                                       <Trash2 className="h-3 w-3" />
@@ -722,7 +721,7 @@ export default function SuperAdminDbAdmin() {
                           </tbody>
                         </table>
                       ) : (
-                        <div className="flex items-center justify-center h-full text-muted-foreground text-sm">No records</div>
+                        <div className="flex items-center justify-center h-full text-muted-foreground font-mono text-[10px] uppercase tracking-widest">No records</div>
                       )}
                     </div>
                   </>
@@ -738,14 +737,14 @@ export default function SuperAdminDbAdmin() {
               <div className="flex gap-1.5 flex-wrap">
                 {QUICK_TEMPLATES.map(tpl => (
                   <button key={tpl.label} onClick={() => setSqlInput(tpl.sql)}
-                    className="text-[11px] px-2.5 py-1 rounded-md bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 border border-border transition-colors">
+                    className="font-mono text-[9px] uppercase tracking-widest px-2.5 py-1 rounded-none-none bg-white/5 border border-border/50 hover:bg-white/10 text-muted-foreground hover:text-foreground rounded-none transition-colors">
                     {tpl.label}
                   </button>
                 ))}
                 {queryHistory.length > 0 && (
                   <button
                     onClick={() => setShowHistory(h => !h)}
-                    className="text-[11px] px-2.5 py-1 rounded-md bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 border border-border transition-colors flex items-center gap-1"
+                    className="font-mono text-[9px] uppercase tracking-widest px-2.5 py-1 rounded-none-none bg-white/5 border border-border/50 hover:bg-white/10 text-muted-foreground hover:text-foreground rounded-none transition-colors flex items-center gap-1"
                   >
                     <History className="h-3 w-3" /> History ({queryHistory.length})
                     {showHistory ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
@@ -755,8 +754,8 @@ export default function SuperAdminDbAdmin() {
 
               {/* Query history */}
               {showHistory && (
-                <div className="border border-border rounded-xl overflow-hidden">
-                  <div className="bg-muted/30 px-3 py-1.5 border-b border-border text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <div className="border border-border/50 rounded-none-none overflow-hidden">
+                  <div className="bg-black/40 px-3 py-1.5 /50 font-mono text-[9px] uppercase tracking-widest font-bold text-muted-foreground flex items-center gap-1.5">
                     <History className="h-3.5 w-3.5" /> Recent Queries
                   </div>
                   <div className="max-h-[200px] overflow-y-auto">
@@ -764,7 +763,7 @@ export default function SuperAdminDbAdmin() {
                       <button
                         key={i}
                         onClick={() => { setSqlInput(q); setShowHistory(false); }}
-                        className="w-full text-left px-3 py-2 text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-muted/30 border-b border-border/30 truncate transition-colors"
+                        className="w-full text-left px-3 py-2 font-mono text-[9px] uppercase tracking-widest font-mono text-muted-foreground hover:text-foreground hover:bg-black/40 /30 truncate transition-colors"
                       >
                         {q}
                       </button>
@@ -774,11 +773,11 @@ export default function SuperAdminDbAdmin() {
               )}
 
               {/* Editor */}
-              <div className="border border-border rounded-xl overflow-hidden">
-                <div className="bg-muted/30 px-3 py-1.5 border-b border-border flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="border border-border/50 rounded-none-none overflow-hidden">
+                <div className="bg-black/40 px-3 py-1.5 /50 flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
                   <Terminal className="h-3.5 w-3.5" />
                   <span className="font-mono flex-1">SQL Console — all statements permitted</span>
-                  <button onClick={() => copyToClipboard(sqlInput)} className="p-1 rounded hover:bg-muted" title="Copy">
+                  <button onClick={() => copyToClipboard(sqlInput)} className="p-1 rounded-none hover:bg-white/10" title="Copy">
                     <Copy className="h-3 w-3" />
                   </button>
                 </div>
@@ -787,22 +786,22 @@ export default function SuperAdminDbAdmin() {
                   onChange={e => setSqlInput(e.target.value)}
                   rows={8}
                   spellCheck={false}
-                  className="w-full bg-[#0d1117] text-[#e6edf3] font-mono text-sm p-4 resize-none outline-none"
+                  className="w-full bg-[#0d1117] text-[#e6edf3] font-mono font-mono text-[10px] uppercase tracking-widest p-4 resize-none outline-none"
                   placeholder="SELECT * FROM organizations LIMIT 10;"
                   onKeyDown={e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void runSql(); } }}
                 />
-                <div className="bg-muted/30 border-t border-border px-3 py-2 flex items-center gap-3">
+                <div className="bg-black/40 border-t border-border/50 px-3 py-2 flex items-center gap-3">
                   <Button size="sm" onClick={() => void runSql()} disabled={sqlRunning} className="gap-1.5 h-7">
                     {sqlRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
                     Run (Ctrl+Enter)
                   </Button>
                   {sqlResult && !sqlResult.error && (
-                    <span className="text-xs text-muted-foreground font-mono">
+                    <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground font-mono">
                       {sqlResult.rowCount} rows · {sqlResult.executionMs}ms
                     </span>
                   )}
                   {sqlResult && (
-                    <button onClick={() => setSqlResult(null)} className="ml-auto text-xs text-muted-foreground hover:text-foreground">
+                    <button onClick={() => setSqlResult(null)} className="ml-auto font-mono text-[9px] uppercase tracking-widest text-muted-foreground hover:text-foreground">
                       <X className="h-3.5 w-3.5" />
                     </button>
                   )}
@@ -811,39 +810,39 @@ export default function SuperAdminDbAdmin() {
 
               {/* Results */}
               {sqlResult && (
-                <div className="border border-border rounded-xl overflow-hidden">
+                <div className="border border-border/50 rounded-none-none overflow-hidden">
                   {sqlResult.error ? (
-                    <div className="p-4 bg-status-fault/5 text-status-fault text-sm font-mono">
+                    <div className="p-4 bg-status-fault/5 text-status-fault font-mono text-[10px] uppercase tracking-widest font-mono">
                       <div className="font-bold mb-1 flex items-center gap-1.5"><XCircle className="h-4 w-4" /> Error</div>
-                      <pre className="whitespace-pre-wrap text-xs">{sqlResult.error}</pre>
+                      <pre className="whitespace-pre-wrap font-mono text-[9px] uppercase tracking-widest">{sqlResult.error}</pre>
                     </div>
                   ) : sqlResult.rows.length === 0 ? (
-                    <div className="p-4 text-muted-foreground text-sm flex items-center gap-2">
+                    <div className="p-4 text-muted-foreground font-mono text-[10px] uppercase tracking-widest flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-status-normal" /> Query executed — 0 rows returned
                     </div>
                   ) : (
                     <>
-                      <div className="bg-muted/30 px-3 py-1.5 border-b border-border flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground font-mono">{sqlResult.rowCount} rows · {sqlResult.executionMs}ms</span>
+                      <div className="bg-black/40 px-3 py-1.5 /50 flex items-center justify-between">
+                        <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground font-mono">{sqlResult.rowCount} rows · {sqlResult.executionMs}ms</span>
                         <button
                           onClick={() => copyToClipboard(JSON.stringify(sqlResult.rows, null, 2))}
-                          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                          className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground hover:text-foreground flex items-center gap-1"
                         >
                           <Copy className="h-3 w-3" /> Copy JSON
                         </button>
                       </div>
                       <div className="overflow-auto max-h-[400px]">
-                        <table className="w-full text-xs border-collapse">
-                          <thead className="bg-muted/50 sticky top-0">
+                        <table className="w-full font-mono text-[9px] uppercase tracking-widest border-collapse">
+                          <thead className="bg-black/60 sticky top-0">
                             <tr>
                               {Object.keys(sqlResult.rows[0]!).map(col => (
-                                <th key={col} className="px-3 py-1.5 text-left font-medium text-muted-foreground border-b border-border whitespace-nowrap">{col}</th>
+                                <th key={col} className="px-3 py-1.5 text-left font-bold text-muted-foreground /50 whitespace-nowrap">{col}</th>
                               ))}
                             </tr>
                           </thead>
                           <tbody>
                             {sqlResult.rows.map((row, i) => (
-                              <tr key={i} className="border-b border-border/50 hover:bg-muted/20">
+                              <tr key={i} className="/50 hover:bg-white/5">
                                 {Object.values(row).map((v, j) => (
                                   <td key={j} className="px-3 py-1.5 font-mono text-foreground/80 max-w-[300px] truncate">
                                     {v === null ? <span className="text-muted-foreground/30 italic text-[10px]">null</span> : fmt(v)}
@@ -870,7 +869,7 @@ export default function SuperAdminDbAdmin() {
                   onKeyDown={e => e.key === "Enter" && void runGlobalSearch()}
                   className="flex-1" />
                 <select value={searchTable} onChange={e => setSearchTable(e.target.value)}
-                  className="border border-border rounded-md bg-background text-sm px-2">
+                  className="border border-border/50 rounded-none-none bg-background font-mono text-[10px] uppercase tracking-widest px-2">
                   <option value="all">All tables</option>
                   {tables.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
                 </select>
@@ -879,24 +878,24 @@ export default function SuperAdminDbAdmin() {
                   Search
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">Searches up to 8 tables (excludes high-volume telemetry tables). Results limited to 5 rows per table.</p>
+              <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Searches up to 8 tables (excludes high-volume telemetry tables). Results limited to 5 rows per table.</p>
               {searchResults.map(sr => (
-                <div key={sr.table} className="border border-border rounded-xl overflow-hidden">
-                  <div className="bg-muted/30 px-4 py-2 border-b border-border flex items-center gap-2">
-                    <Table2 className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-mono font-semibold">{sr.table}</span>
-                    <span className="text-xs text-muted-foreground">{sr.rows.length} match{sr.rows.length !== 1 ? "es" : ""}</span>
+                <div key={sr.table} className="border border-border/50 rounded-none-none overflow-hidden">
+                  <div className="bg-black/40 px-4 py-2 /50 flex items-center gap-2">
+                    <Table2 className="h-4 w-4 text-accent-brand" />
+                    <span className="font-mono text-[10px] uppercase tracking-widest font-mono font-bold">{sr.table}</span>
+                    <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{sr.rows.length} match{sr.rows.length !== 1 ? "es" : ""}</span>
                   </div>
                   <div className="overflow-auto max-h-[250px]">
-                    <table className="w-full text-xs border-collapse">
-                      <thead className="bg-muted/50 sticky top-0">
+                    <table className="w-full font-mono text-[9px] uppercase tracking-widest border-collapse">
+                      <thead className="bg-black/60 sticky top-0">
                         <tr>{Object.keys(sr.rows[0] ?? {}).slice(0, 8).map(c => (
-                          <th key={c} className="px-3 py-1.5 text-left text-muted-foreground border-b border-border">{c}</th>
+                          <th key={c} className="px-3 py-1.5 text-left text-muted-foreground /50">{c}</th>
                         ))}</tr>
                       </thead>
                       <tbody>
                         {sr.rows.map((row, i) => (
-                          <tr key={i} className="border-b border-border/50 hover:bg-muted/20">
+                          <tr key={i} className="/50 hover:bg-white/5">
                             {Object.values(row).slice(0, 8).map((v, j) => (
                               <td key={j} className="px-3 py-1.5 font-mono text-foreground/80 max-w-[200px] truncate">{fmt(v)}</td>
                             ))}
@@ -908,7 +907,7 @@ export default function SuperAdminDbAdmin() {
                 </div>
               ))}
               {searchResults.length === 0 && searchTerm && !searching && (
-                <p className="text-muted-foreground text-sm text-center py-8">No results found for "{searchTerm}"</p>
+                <p className="text-muted-foreground font-mono text-[10px] uppercase tracking-widest text-center py-8">No results found for "{searchTerm}"</p>
               )}
             </div>
           )}
@@ -916,18 +915,18 @@ export default function SuperAdminDbAdmin() {
           {/* ── BULK OPERATIONS ─────────────────────────────────────────────── */}
           {tab === "bulk" && (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">Execute bulk data operations. All operations are immediate and irreversible.</p>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Execute bulk data operations. All operations are immediate and irreversible.</p>
               {BULK_OPS.map(op => (
-                <div key={op.id} className={`border rounded-xl p-4 ${op.danger ? "border-status-fault/30 bg-status-fault/3" : "border-border"}`}>
+                <div key={op.id} className={`border rounded-none-none p-4 ${op.danger ? "border-status-fault/30 bg-status-fault/3" : "border-border/50"}`}>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <p className={`font-semibold text-sm ${op.danger ? "text-status-fault" : "text-status-warning"}`}>{op.label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{op.description}</p>
-                      <code className="text-[10px] text-muted-foreground/50 font-mono mt-1.5 block bg-muted/30 px-2 py-1 rounded truncate">{op.sql}</code>
+                      <p className={`font-bold font-mono text-[10px] uppercase tracking-widest ${op.danger ? "text-status-fault" : "text-status-warning"}`}>{op.label}</p>
+                      <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-0.5">{op.description}</p>
+                      <code className="text-[10px] text-muted-foreground/50 font-mono mt-1.5 block bg-black/40 px-2 py-1 rounded-none truncate">{op.sql}</code>
                     </div>
                     {bulkConfirm === op.id ? (
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-xs text-muted-foreground">Confirm?</span>
+                        <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Confirm?</span>
                         <Button size="sm" variant="destructive" className="h-7" onClick={() => void runBulkOp(op)} disabled={bulkRunning}>
                           {bulkRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Execute"}
                         </Button>
@@ -948,23 +947,23 @@ export default function SuperAdminDbAdmin() {
           {/* ── IMPORT / EXPORT ─────────────────────────────────────────────── */}
           {tab === "io" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="border border-border rounded-xl p-5 space-y-4">
-                <h3 className="font-semibold flex items-center gap-2"><Download className="h-4 w-4 text-primary" />Export</h3>
+              <div className="border border-border/50 rounded-none-none p-5 space-y-4">
+                <h3 className="font-bold flex items-center gap-2"><Download className="h-4 w-4 text-accent-brand" />Export</h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Table</label>
+                    <label className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-1 block">Table</label>
                     <select value={exportTable} onChange={e => setExportTable(e.target.value)}
-                      className="w-full border border-border rounded-md bg-background text-sm px-3 py-2">
+                      className="w-full border border-border/50 rounded-none-none bg-background font-mono text-[10px] uppercase tracking-widest px-3 py-2">
                       <option value="">Select table…</option>
                       {tables.map(t => <option key={t.name} value={t.name}>{t.name} ({t.row_count ?? 0} rows)</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Format</label>
+                    <label className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-1 block">Format</label>
                     <div className="flex gap-2">
                       {(["json", "csv"] as const).map(f => (
                         <button key={f} onClick={() => setExportFmt(f)}
-                          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded border text-sm transition-colors ${exportFmt === f ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}>
+                          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-none border font-mono text-[10px] uppercase tracking-widest transition-colors ${exportFmt === f ? "border-accent-brand bg-accent-brand/10 text-accent-brand" : "border-border/50 text-muted-foreground hover:border-accent-brand/50"}`}>
                           {f === "json" ? <FileJson className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
                           {f.toUpperCase()}
                         </button>
@@ -977,23 +976,23 @@ export default function SuperAdminDbAdmin() {
                     <Download className="h-4 w-4" /> Download {exportFmt.toUpperCase()}
                   </Button>
                   {exportTable && (
-                    <p className="text-xs text-muted-foreground">
-                      Up to 50,000 rows will be exported from <code className="font-mono bg-muted px-1 rounded">{exportTable}</code>
+                    <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                      Up to 50,000 rows will be exported from <code className="font-mono bg-white/10 px-1 rounded-none">{exportTable}</code>
                     </p>
                   )}
                 </div>
               </div>
-              <div className="border border-border rounded-xl p-5 space-y-4">
-                <h3 className="font-semibold flex items-center gap-2"><Upload className="h-4 w-4 text-primary" />Import</h3>
-                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center text-muted-foreground">
+              <div className="border border-border/50 rounded-none-none p-5 space-y-4">
+                <h3 className="font-bold flex items-center gap-2"><Upload className="h-4 w-4 text-accent-brand" />Import</h3>
+                <div className="border-2 border-dashed border-border/50 rounded-none-none p-8 text-center text-muted-foreground">
                   <Upload className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">CSV import coming soon</p>
-                  <p className="text-xs mt-1 opacity-60">Use the SQL Console with COPY or INSERT statements</p>
+                  <p className="font-mono text-[10px] uppercase tracking-widest">CSV import coming soon</p>
+                  <p className="font-mono text-[9px] uppercase tracking-widest mt-1 opacity-60">Use the SQL Console with COPY or INSERT statements</p>
                 </div>
-                <div className="bg-muted/30 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
-                  <p className="font-medium text-foreground">Import via SQL Console:</p>
-                  <code className="block font-mono text-[11px] opacity-80">INSERT INTO table_name (col1, col2) VALUES (...);</code>
-                  <code className="block font-mono text-[11px] opacity-80">COPY table_name FROM STDIN WITH CSV HEADER;</code>
+                <div className="bg-black/40 rounded-none-none p-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground space-y-1">
+                  <p className="font-bold text-foreground">Import via SQL Console:</p>
+                  <code className="block font-mono font-mono text-[9px] uppercase tracking-widest opacity-80">INSERT INTO table_name (col1, col2) VALUES (...);</code>
+                  <code className="block font-mono font-mono text-[9px] uppercase tracking-widest opacity-80">COPY table_name FROM STDIN WITH CSV HEADER;</code>
                 </div>
               </div>
             </div>
@@ -1009,10 +1008,10 @@ export default function SuperAdminDbAdmin() {
                 </Button>
                 {integrityResult && (
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm font-semibold ${integrityResult.passedAll ? "text-status-normal" : "text-status-warning"}`}>
+                    <span className={`font-mono text-[10px] uppercase tracking-widest font-bold ${integrityResult.passedAll ? "text-status-normal" : "text-status-warning"}`}>
                       {integrityResult.passedAll ? "✓ All checks passed" : `⚠ ${integrityResult.checks.filter(c => c.status !== "ok").length} issues found`}
                     </span>
-                    <span className="text-xs text-muted-foreground">Checked at {new Date(integrityResult.checkedAt).toLocaleTimeString()}</span>
+                    <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Checked at {new Date(integrityResult.checkedAt).toLocaleTimeString()}</span>
                   </div>
                 )}
               </div>
@@ -1020,7 +1019,7 @@ export default function SuperAdminDbAdmin() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {integrityResult.checks.map(check => (
                     <div key={check.name}
-                      className={`border rounded-xl p-4 flex items-start gap-3 ${
+                      className={`border rounded-none-none p-4 flex items-start gap-3 ${
                         check.status === "ok"
                           ? "border-status-normal/20 bg-status-normal/5"
                           : "border-status-warning/30 bg-status-warning/5"
@@ -1029,10 +1028,10 @@ export default function SuperAdminDbAdmin() {
                         ? <CheckCircle2 className="h-4 w-4 text-status-normal mt-0.5 flex-shrink-0" />
                         : <AlertTriangle className="h-4 w-4 text-status-warning mt-0.5 flex-shrink-0" />}
                       <div>
-                        <p className="text-sm font-semibold">{check.name}</p>
-                        <p className="text-xs text-muted-foreground">{check.description}</p>
+                        <p className="font-mono text-[10px] uppercase tracking-widest font-bold">{check.name}</p>
+                        <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{check.description}</p>
                         {check.count > 0 && (
-                          <p className="text-xs font-mono text-status-warning mt-1">{check.count} issue{check.count !== 1 ? "s" : ""} found</p>
+                          <p className="font-mono text-[9px] uppercase tracking-widest font-mono text-status-warning mt-1">{check.count} issue{check.count !== 1 ? "s" : ""} found</p>
                         )}
                       </div>
                     </div>
@@ -1046,22 +1045,22 @@ export default function SuperAdminDbAdmin() {
           {tab === "stats" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Refreshes every 30 seconds</p>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Refreshes every 30 seconds</p>
                 <Button size="sm" variant="outline" className="gap-1.5 h-7" onClick={() => void refetchStats()}>
                   <RefreshCw className="h-3.5 w-3.5" /> Refresh
                 </Button>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: "Database Size",      value: dbStats?.dbSize ?? "—",                        icon: Database,  color: "text-primary" },
+                  { label: "Database Size",      value: dbStats?.dbSize ?? "—",                        icon: Database,  color: "text-accent-brand" },
                   { label: "Active Connections",  value: String(dbStats?.activeConnections ?? "—"),      icon: Activity,  color: "text-status-normal" },
                   { label: "Tables",              value: String(tables.length),                           icon: Table2,    color: "text-blue-400" },
                   { label: "Total Rows (est.)",   value: tables.reduce((s,t) => s + (t.row_count ?? 0), 0).toLocaleString(), icon: BarChart3, color: "text-purple-400" },
                 ].map(kpi => (
-                  <div key={kpi.label} className="border border-border rounded-xl p-4 bg-card">
+                  <div key={kpi.label} className="border border-border/50 rounded-none-none p-4 bg-black/40">
                     <div className="flex items-center gap-2 mb-2">
                       <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
-                      <p className="text-xs text-muted-foreground">{kpi.label}</p>
+                      <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{kpi.label}</p>
                     </div>
                     <p className="text-2xl font-bold font-mono">{kpi.value}</p>
                   </div>
@@ -1070,20 +1069,20 @@ export default function SuperAdminDbAdmin() {
 
               {/* Table sizes with visual bars */}
               {dbStats?.tables && Array.isArray(dbStats.tables) && (
-                <div className="border border-border rounded-xl overflow-hidden">
-                  <div className="bg-muted/30 px-4 py-2.5 border-b border-border flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-semibold">Table Sizes (top 20)</span>
+                <div className="border border-border/50 rounded-none-none overflow-hidden">
+                  <div className="bg-black/40 px-4 py-2.5 /50 flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-accent-brand" />
+                    <span className="font-mono text-[10px] uppercase tracking-widest font-bold">Table Sizes (top 20)</span>
                   </div>
                   <div className="overflow-auto max-h-[480px]">
-                    <table className="w-full text-xs border-collapse">
-                      <thead className="bg-muted/50 sticky top-0">
+                    <table className="w-full font-mono text-[9px] uppercase tracking-widest border-collapse">
+                      <thead className="bg-black/60 sticky top-0">
                         <tr>
-                          <th className="px-4 py-2 text-left font-medium text-muted-foreground border-b border-border">Table</th>
-                          <th className="px-4 py-2 text-left font-medium text-muted-foreground border-b border-border">Size</th>
-                          <th className="px-4 py-2 text-left font-medium text-muted-foreground border-b border-border">Live Rows</th>
-                          <th className="px-4 py-2 text-left font-medium text-muted-foreground border-b border-border">Dead Rows</th>
-                          <th className="px-4 py-2 text-left font-medium text-muted-foreground border-b border-border w-40">Size bar</th>
+                          <th className="px-4 py-2 text-left font-bold text-muted-foreground /50">Table</th>
+                          <th className="px-4 py-2 text-left font-bold text-muted-foreground /50">Size</th>
+                          <th className="px-4 py-2 text-left font-bold text-muted-foreground /50">Live Rows</th>
+                          <th className="px-4 py-2 text-left font-bold text-muted-foreground /50">Dead Rows</th>
+                          <th className="px-4 py-2 text-left font-bold text-muted-foreground /50 w-40">Size bar</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1091,17 +1090,17 @@ export default function SuperAdminDbAdmin() {
                           const pct = maxTableBytes > 0 ? Math.max(2, (Number(row["pg_total_relation_size"] ?? 0) / maxTableBytes) * 100) : 2;
                           const deadRows = Number(row["dead_rows"] ?? 0);
                           return (
-                            <tr key={i} className="border-b border-border/50 hover:bg-muted/20">
-                              <td className="px-4 py-2 font-mono font-medium">{String(row["name"] ?? "")}</td>
-                              <td className="px-4 py-2 font-mono text-primary">{String(row["size"] ?? "")}</td>
+                            <tr key={i} className="/50 hover:bg-white/5">
+                              <td className="px-4 py-2 font-mono font-bold">{String(row["name"] ?? "")}</td>
+                              <td className="px-4 py-2 font-mono text-accent-brand">{String(row["size"] ?? "")}</td>
                               <td className="px-4 py-2 font-mono">{Number(row["rows"] ?? 0).toLocaleString()}</td>
                               <td className={`px-4 py-2 font-mono ${deadRows > 1000 ? "text-status-warning" : "text-muted-foreground"}`}>
                                 {deadRows.toLocaleString()}
                                 {deadRows > 1000 && <span className="ml-1 text-[10px]">⚠</span>}
                               </td>
                               <td className="px-4 py-2">
-                                <div className="h-2.5 bg-muted rounded-full overflow-hidden w-36">
-                                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
+                                <div className="h-2.5 bg-white/10 rounded-none-none overflow-hidden w-36">
+                                  <div className="h-full bg-accent-brand rounded-none-none transition-all" style={{ width: `${pct}%` }} />
                                 </div>
                               </td>
                             </tr>
@@ -1119,7 +1118,7 @@ export default function SuperAdminDbAdmin() {
           {tab === "connections" && (
             <div className="space-y-5">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Live connections · refreshes every 10 seconds</p>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Live connections · refreshes every 10 seconds</p>
                 <Button size="sm" variant="outline" className="gap-1.5 h-7" onClick={() => { void refetchConns(); void refetchSlow(); }}>
                   <RefreshCw className="h-3.5 w-3.5" /> Refresh
                 </Button>
@@ -1129,12 +1128,12 @@ export default function SuperAdminDbAdmin() {
               {connData?.summary && (
                 <div className="flex gap-2 flex-wrap">
                   {connData.summary.map(s => (
-                    <div key={s.state ?? "null"} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium ${
+                    <div key={s.state ?? "null"} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none-none border font-mono text-[9px] uppercase tracking-widest font-bold ${
                       s.state === "active" ? "border-status-normal/40 bg-status-normal/10 text-status-normal"
-                      : s.state === "idle" ? "border-border bg-muted/30 text-muted-foreground"
+                      : s.state === "idle" ? "border-border/50 bg-black/40 text-muted-foreground"
                       : "border-status-warning/40 bg-status-warning/10 text-status-warning"
                     }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${s.state === "active" ? "bg-status-normal" : s.state === "idle" ? "bg-muted-foreground" : "bg-status-warning"}`} />
+                      <span className={`w-1.5 h-1.5 rounded-none-none ${s.state === "active" ? "bg-status-normal" : s.state === "idle" ? "bg-white/10-foreground" : "bg-status-warning"}`} />
                       {s.state ?? "null"}: <span className="font-bold ml-0.5">{s.count}</span>
                     </div>
                   ))}
@@ -1143,26 +1142,26 @@ export default function SuperAdminDbAdmin() {
 
               {/* Slow queries section */}
               <div>
-                <h3 className="text-sm font-semibold flex items-center gap-2 mb-2">
+                <h3 className="font-mono text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 mb-2">
                   <Zap className="h-4 w-4 text-status-warning" /> Active / Slow Queries
                 </h3>
                 {slowQueries.length === 0 ? (
-                  <div className="border border-border rounded-xl p-4 text-sm text-muted-foreground flex items-center gap-2">
+                  <div className="border border-border/50 rounded-none-none p-4 font-mono text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-status-normal" /> No active queries detected
                   </div>
                 ) : (
-                  <div className="border border-border rounded-xl overflow-hidden">
-                    <table className="w-full text-xs border-collapse">
-                      <thead className="bg-muted/50">
+                  <div className="border border-border/50 rounded-none-none overflow-hidden">
+                    <table className="w-full font-mono text-[9px] uppercase tracking-widest border-collapse">
+                      <thead className="bg-black/60">
                         <tr>
                           {["PID", "User", "Duration", "State", "Wait", "Query"].map(h => (
-                            <th key={h} className="px-3 py-1.5 text-left font-medium text-muted-foreground border-b border-border">{h}</th>
+                            <th key={h} className="px-3 py-1.5 text-left font-bold text-muted-foreground /50">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {slowQueries.map(q => (
-                          <tr key={q.pid} className="border-b border-border/50 hover:bg-muted/20">
+                          <tr key={q.pid} className="/50 hover:bg-white/5">
                             <td className="px-3 py-2 font-mono">{q.pid}</td>
                             <td className="px-3 py-2">{q.user}</td>
                             <td className={`px-3 py-2 font-mono font-bold ${q.durationSecs > 5 ? "text-status-fault" : q.durationSecs > 1 ? "text-status-warning" : "text-muted-foreground"}`}>
@@ -1181,32 +1180,32 @@ export default function SuperAdminDbAdmin() {
 
               {/* All connections */}
               <div>
-                <h3 className="text-sm font-semibold flex items-center gap-2 mb-2">
-                  <Server className="h-4 w-4 text-primary" />
+                <h3 className="font-mono text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 mb-2">
+                  <Server className="h-4 w-4 text-accent-brand" />
                   All Connections ({connLoading ? "…" : connData?.connections.length ?? 0})
                 </h3>
-                <div className="border border-border rounded-xl overflow-hidden">
+                <div className="border border-border/50 rounded-none-none overflow-hidden">
                   {connLoading ? (
                     <div className="flex items-center justify-center h-24"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
                   ) : (
                     <div className="overflow-auto max-h-[360px]">
-                      <table className="w-full text-xs border-collapse">
-                        <thead className="bg-muted/50 sticky top-0">
+                      <table className="w-full font-mono text-[9px] uppercase tracking-widest border-collapse">
+                        <thead className="bg-black/60 sticky top-0">
                           <tr>
                             {["PID","User","App","Client","State","Age","Query"].map(h => (
-                              <th key={h} className="px-3 py-1.5 text-left font-medium text-muted-foreground border-b border-border whitespace-nowrap">{h}</th>
+                              <th key={h} className="px-3 py-1.5 text-left font-bold text-muted-foreground /50 whitespace-nowrap">{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {(connData?.connections ?? []).map(c => (
-                            <tr key={c.pid} className="border-b border-border/50 hover:bg-muted/20">
+                            <tr key={c.pid} className="/50 hover:bg-white/5">
                               <td className="px-3 py-1.5 font-mono">{c.pid}</td>
                               <td className="px-3 py-1.5">{c.user}</td>
                               <td className="px-3 py-1.5 text-muted-foreground max-w-[100px] truncate">{c.app}</td>
                               <td className="px-3 py-1.5 font-mono text-muted-foreground">{c.clientAddr ?? "local"}</td>
                               <td className="px-3 py-1.5">
-                                <span className={`text-[10px] font-medium ${
+                                <span className={`text-[10px] font-bold ${
                                   c.state === "active" ? "text-status-normal"
                                   : c.state === "idle" ? "text-muted-foreground"
                                   : "text-status-warning"
@@ -1236,9 +1235,9 @@ export default function SuperAdminDbAdmin() {
           {tab === "maintain" && (
             <div className="space-y-4">
               {/* VACUUM */}
-              <div className="border border-border rounded-xl p-5">
-                <h3 className="font-semibold mb-1 flex items-center gap-2"><Wrench className="h-4 w-4 text-primary" /> VACUUM ANALYZE</h3>
-                <p className="text-sm text-muted-foreground mb-3">Reclaims storage from dead tuples and updates planner statistics for the entire database.</p>
+              <div className="border border-border/50 rounded-none-none p-5">
+                <h3 className="font-bold mb-1 flex items-center gap-2"><Wrench className="h-4 w-4 text-accent-brand" /> VACUUM ANALYZE</h3>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-3">Reclaims storage from dead tuples and updates planner statistics for the entire database.</p>
                 <Button onClick={() => void runVacuum()} disabled={maintRunning} className="gap-2">
                   {maintRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
                   Run VACUUM ANALYZE
@@ -1246,12 +1245,12 @@ export default function SuperAdminDbAdmin() {
               </div>
 
               {/* Per-table REINDEX */}
-              <div className="border border-border rounded-xl p-5">
-                <h3 className="font-semibold mb-1 flex items-center gap-2"><Key className="h-4 w-4 text-primary" /> REINDEX Table</h3>
-                <p className="text-sm text-muted-foreground mb-3">Rebuilds all indexes on the selected table. Use when index bloat or corruption is suspected.</p>
+              <div className="border border-border/50 rounded-none-none p-5">
+                <h3 className="font-bold mb-1 flex items-center gap-2"><Key className="h-4 w-4 text-accent-brand" /> REINDEX Table</h3>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-3">Rebuilds all indexes on the selected table. Use when index bloat or corruption is suspected.</p>
                 <div className="flex gap-2 items-center">
                   <select value={reindexTable} onChange={e => setReindexTable(e.target.value)}
-                    className="flex-1 border border-border rounded-md bg-background text-sm px-3 py-2">
+                    className="flex-1 border border-border/50 rounded-none-none bg-background font-mono text-[10px] uppercase tracking-widest px-3 py-2">
                     <option value="">Select table…</option>
                     {tables.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
                   </select>
@@ -1264,12 +1263,12 @@ export default function SuperAdminDbAdmin() {
 
               {/* Operation log */}
               {maintLog.length > 0 && (
-                <div className="border border-border rounded-xl overflow-hidden">
-                  <div className="bg-muted/30 px-4 py-2 border-b border-border flex items-center justify-between">
-                    <span className="text-sm font-medium flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Operation Log</span>
-                    <button onClick={() => setMaintLog([])} className="text-xs text-muted-foreground hover:text-foreground">Clear</button>
+                <div className="border border-border/50 rounded-none-none overflow-hidden">
+                  <div className="bg-black/40 px-4 py-2 /50 flex items-center justify-between">
+                    <span className="font-mono text-[10px] uppercase tracking-widest font-bold flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Operation Log</span>
+                    <button onClick={() => setMaintLog([])} className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground hover:text-foreground">Clear</button>
                   </div>
-                  <div className="p-3 space-y-1 font-mono text-xs">
+                  <div className="p-3 space-y-1 font-mono font-mono text-[9px] uppercase tracking-widest">
                     {maintLog.map((line, i) => (
                       <p key={i} className="text-status-normal">{line}</p>
                     ))}
@@ -1282,29 +1281,29 @@ export default function SuperAdminDbAdmin() {
           {/* ── DANGER ZONE ─────────────────────────────────────────────────── */}
           {tab === "danger" && (
             <div className="space-y-4">
-              <div className="flex items-start gap-3 bg-status-fault/5 border border-status-fault/30 rounded-xl p-4">
+              <div className="flex items-start gap-3 bg-status-fault/5 border border-status-fault/30 rounded-none-none p-4">
                 <AlertTriangle className="h-5 w-5 text-status-fault flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-status-fault">Danger Zone</p>
-                  <p className="text-sm text-muted-foreground mt-1">Operations here are irreversible. All data loss is permanent. Proceed with extreme caution.</p>
+                  <p className="font-bold text-status-fault">Danger Zone</p>
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mt-1">Operations here are irreversible. All data loss is permanent. Proceed with extreme caution.</p>
                 </div>
               </div>
 
-              <div className="border border-status-fault/30 rounded-xl p-5 space-y-4">
-                <h3 className="font-semibold text-status-fault flex items-center gap-2">
+              <div className="border border-status-fault/30 rounded-none-none p-5 space-y-4">
+                <h3 className="font-bold text-status-fault flex items-center gap-2">
                   <Trash2 className="h-4 w-4" /> Truncate Table
                 </h3>
-                <p className="text-sm text-muted-foreground">Removes ALL rows from the selected table. Identity sequences are reset. Cascades to dependent tables.</p>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Removes ALL rows from the selected table. Identity sequences are reset. Cascades to dependent tables.</p>
                 <div className="space-y-3">
                   <select value={truncateTable} onChange={e => { setTruncateTable(e.target.value); setTruncateConfirmInput(""); }}
-                    className="w-full border border-border rounded-md bg-background text-sm px-3 py-2">
+                    className="w-full border border-border/50 rounded-none-none bg-background font-mono text-[10px] uppercase tracking-widest px-3 py-2">
                     <option value="">Select table…</option>
                     {tables.map(t => <option key={t.name} value={t.name}>{t.name} ({t.row_count ?? 0} rows)</option>)}
                   </select>
                   {truncateTable && (
                     <>
-                      <p className="text-sm text-muted-foreground">
-                        Type <code className="bg-muted px-1 rounded font-mono text-xs">{truncateTable}</code> to confirm:
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Type <code className="bg-white/10 px-1 rounded-none font-mono font-mono text-[9px] uppercase tracking-widest">{truncateTable}</code> to confirm:
                       </p>
                       <Input value={truncateConfirmInput} onChange={e => setTruncateConfirmInput(e.target.value)}
                         placeholder={`Type "${truncateTable}" to confirm`} className="border-status-fault/30 font-mono" />
@@ -1334,17 +1333,17 @@ export default function SuperAdminDbAdmin() {
 
         {/* ── Delete confirm ──────────────────────────────────────────────────── */}
         {deleteId && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
+          <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="bg-black/40 border border-border/50 rounded-none-none shadow-[0_0_30px_rgba(239,68,68,0.15)] backdrop-blur-xl w-full max-w-sm p-6 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-status-fault/10 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-none-none bg-status-fault/10 flex items-center justify-center flex-shrink-0">
                   <Trash2 className="h-5 w-5 text-status-fault" />
                 </div>
-                <h3 className="font-semibold">Delete Record?</h3>
+                <h3 className="font-bold">Delete Record?</h3>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                 This will permanently delete record{" "}
-                <code className="font-mono bg-muted px-1 rounded text-xs">{deleteId}</code> from{" "}
+                <code className="font-mono bg-white/10 px-1 rounded-none font-mono text-[9px] uppercase tracking-widest">{deleteId}</code> from{" "}
                 <strong>{selectedTable}</strong>. This action cannot be undone.
               </p>
               <div className="flex gap-2">

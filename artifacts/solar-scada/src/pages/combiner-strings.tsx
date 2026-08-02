@@ -149,7 +149,7 @@ const INV_STATUS_CLASS: Record<string, string> = {
   running:   "bg-status-normal/10 text-status-normal border-status-normal/20",
   standby:   "bg-status-warning/10 text-status-warning border-status-warning/20",
   fault:     "bg-status-fault/10  text-status-fault  border-status-fault/20",
-  comm_lost: "bg-muted text-muted-foreground border-border",
+  comm_lost: "bg-white/10 text-muted-foreground border-border/50",
 };
 
 /* ── String card ──────────────────────────────────────────────────────── */
@@ -158,28 +158,28 @@ function StringCard({ str }: { str: StringRow }) {
   return (
     <div
       className={cn(
-        "bg-card rounded-lg p-4 border relative overflow-hidden transition-all",
+        "bg-black/40 rounded-none-none p-4 border relative overflow-hidden transition-all",
         str.isDeviating
           ? "border-status-fault shadow-[0_0_8px_rgba(239,68,68,0.15)]"
           : str.status === "off"
             ? "border-border/50 opacity-60"
-            : "border-card-border hover:border-primary/40",
+            : "border-card-border hover:border-accent-brand/40",
       )}
     >
       {str.isDeviating && (
-        <div className="absolute top-0 right-0 bg-status-fault text-white px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded-bl-lg flex items-center gap-1">
+        <div className="absolute top-0 right-0 bg-status-fault text-white px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded-none-bl-lg flex items-center gap-1">
           <AlertTriangle className="w-3 h-3" /> Fault
         </div>
       )}
 
       <div className="flex justify-between items-center mb-3">
-        <span className="font-semibold text-sm">{str.label}</span>
+        <span className="font-semibold font-mono text-[9px] uppercase tracking-widest">{str.label}</span>
         <span
           className={cn(
-            "text-[10px] px-2 py-0.5 rounded-full border font-medium",
+            "text-[10px] px-2 py-0.5 rounded-none-none border font-medium",
             str.status === "on"
               ? "bg-status-normal/10 text-status-normal border-status-normal/20"
-              : "bg-muted text-muted-foreground border-border",
+              : "bg-white/10 text-muted-foreground border-border/50",
           )}
         >
           {str.status.toUpperCase()}
@@ -232,11 +232,11 @@ function InverterGroupSection({
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <Cpu className="w-4 h-4 text-muted-foreground" />
-          <span className="font-semibold text-sm">{group.inverterName}</span>
+          <span className="font-semibold font-mono text-[9px] uppercase tracking-widest">{group.inverterName}</span>
         </div>
         <span
           className={cn(
-            "text-[10px] px-2 py-0.5 rounded-full border font-medium capitalize",
+            "text-[10px] px-2 py-0.5 rounded-none-none border font-medium capitalize",
             INV_STATUS_CLASS[group.inverterStatus] ?? INV_STATUS_CLASS["comm_lost"],
           )}
         >
@@ -271,7 +271,7 @@ function InverterGroupSection({
       <div className="text-right">
         <Link
           href={`/plants/${group.inverterId.split("-inv-")[0]}/inverters/${group.inverterId}/strings`}
-          className="text-xs text-primary hover:underline"
+          className="font-mono text-[8px] uppercase tracking-widest text-accent-brand hover:underline"
         >
           Open {group.inverterName} strings in full →
         </Link>
@@ -300,15 +300,15 @@ function Toolbar({
   visibleStrings: number;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-card-border bg-card px-4 py-2.5">
+    <div className="flex flex-wrap items-center gap-2 rounded-none-none border border-card-border bg-black/40 px-4 py-2.5">
       <SlidersHorizontal className="w-4 h-4 text-muted-foreground flex-shrink-0" />
 
       {/* Filter toggle */}
-      <div className="flex items-center gap-1 rounded-md border border-border p-0.5 bg-muted/50">
+      <div className="flex items-center gap-1 rounded-none-none border border-border/50 p-0.5 bg-black/60">
         <button
           onClick={() => onFilter("all")}
           className={cn(
-            "flex items-center gap-1.5 rounded px-3 py-1 text-xs font-medium transition-all",
+            "flex items-center gap-1.5 rounded-none px-3 py-1 font-mono text-[8px] uppercase tracking-widest font-medium transition-all",
             filter === "all"
               ? "bg-background shadow text-foreground"
               : "text-muted-foreground hover:text-foreground",
@@ -323,7 +323,7 @@ function Toolbar({
         <button
           onClick={() => onFilter("faulting")}
           className={cn(
-            "flex items-center gap-1.5 rounded px-3 py-1 text-xs font-medium transition-all",
+            "flex items-center gap-1.5 rounded-none px-3 py-1 font-mono text-[8px] uppercase tracking-widest font-medium transition-all",
             filter === "faulting"
               ? "bg-status-fault/10 shadow text-status-fault"
               : "text-muted-foreground hover:text-foreground",
@@ -345,11 +345,11 @@ function Toolbar({
       </div>
 
       {/* Sort toggle */}
-      <div className="flex items-center gap-1 rounded-md border border-border p-0.5 bg-muted/50 ml-auto">
+      <div className="flex items-center gap-1 rounded-none-none border border-border/50 p-0.5 bg-black/60 ml-auto">
         <button
           onClick={() => onSort("default")}
           className={cn(
-            "flex items-center gap-1.5 rounded px-3 py-1 text-xs font-medium transition-all",
+            "flex items-center gap-1.5 rounded-none px-3 py-1 font-mono text-[8px] uppercase tracking-widest font-medium transition-all",
             sort === "default"
               ? "bg-background shadow text-foreground"
               : "text-muted-foreground hover:text-foreground",
@@ -360,7 +360,7 @@ function Toolbar({
         <button
           onClick={() => onSort("deviation")}
           className={cn(
-            "flex items-center gap-1.5 rounded px-3 py-1 text-xs font-medium transition-all",
+            "flex items-center gap-1.5 rounded-none px-3 py-1 font-mono text-[8px] uppercase tracking-widest font-medium transition-all",
             sort === "deviation"
               ? "bg-background shadow text-foreground"
               : "text-muted-foreground hover:text-foreground",
@@ -417,7 +417,7 @@ export default function CombinerStrings() {
       <div className="flex flex-col space-y-6">
         {/* Breadcrumb */}
         <div>
-          <div className="flex items-center mb-2 text-sm text-muted-foreground flex-wrap gap-1">
+          <div className="flex items-center mb-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground flex-wrap gap-1">
             <Link href="/" className="hover:text-foreground transition-colors">
               Portfolio
             </Link>
@@ -444,11 +444,11 @@ export default function CombinerStrings() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                <Server className="w-6 h-6 text-primary" />
+                <Server className="w-6 h-6 text-accent-brand" />
                 {isLoading ? "Loading…" : (data?.combinerLabel ?? combinerId)}
                 <span className="text-muted-foreground font-normal">— String Diagnostics</span>
               </h1>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-1">
                 All strings across every inverter in this combiner box · auto-refreshes every 5 s
               </p>
             </div>
@@ -456,19 +456,19 @@ export default function CombinerStrings() {
             {/* Summary chips */}
             {data && (
               <div className="flex items-center gap-3 flex-shrink-0">
-                <div className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm bg-card border-card-border">
+                <div className="flex items-center gap-1.5 rounded-none-none border px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest bg-black/40 border-card-border">
                   <Layers className="w-4 h-4 text-muted-foreground" />
                   <span className="font-mono font-semibold">{data.totalStrings}</span>
                   <span className="text-muted-foreground">strings</span>
                 </div>
                 {data.faultingStrings > 0 ? (
-                  <div className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm bg-status-fault/10 border-status-fault/30 text-status-fault">
+                  <div className="flex items-center gap-1.5 rounded-none-none border px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest bg-status-fault/10 border-status-fault/30 text-status-fault">
                     <AlertTriangle className="w-4 h-4" />
                     <span className="font-mono font-semibold">{data.faultingStrings}</span>
                     <span>faulting</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm bg-status-normal/10 border-status-normal/30 text-status-normal">
+                  <div className="flex items-center gap-1.5 rounded-none-none border px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest bg-status-normal/10 border-status-normal/30 text-status-normal">
                     <CheckCircle2 className="w-4 h-4" />
                     All nominal
                   </div>
@@ -496,10 +496,10 @@ export default function CombinerStrings() {
           <div className="space-y-8">
             {Array.from({ length: 2 }).map((_, g) => (
               <div key={g} className="space-y-3">
-                <div className="h-5 w-32 bg-muted animate-pulse rounded" />
+                <div className="h-5 w-32 bg-white/10 animate-pulse rounded-none" />
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                   {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="h-28 bg-card border border-card-border rounded-lg animate-pulse" />
+                    <div key={i} className="h-28 bg-black/40 border border-card-border rounded-none-none animate-pulse" />
                   ))}
                 </div>
               </div>
@@ -508,16 +508,16 @@ export default function CombinerStrings() {
         )}
 
         {isError && (
-          <div className="rounded-lg border border-status-fault/30 bg-status-fault/10 text-status-fault p-6 text-sm">
+          <div className="rounded-none-none border border-status-fault/30 bg-status-fault/10 text-status-fault p-6 font-mono text-[9px] uppercase tracking-widest">
             Failed to load combiner string data. Check that the combiner ID is valid.
           </div>
         )}
 
         {data && visibleGroups.length === 0 && filter === "faulting" && (
-          <div className="rounded-lg border border-status-normal/30 bg-status-normal/10 text-status-normal p-8 text-center">
+          <div className="rounded-none-none border border-status-normal/30 bg-status-normal/10 text-status-normal p-8 text-center">
             <CheckCircle2 className="w-8 h-8 mx-auto mb-2" />
             <p className="font-semibold">No faulting strings</p>
-            <p className="text-sm mt-1 text-status-normal/70">
+            <p className="font-mono text-[9px] uppercase tracking-widest mt-1 text-status-normal/70">
               All {data.totalStrings} strings in this combiner are operating nominally.
             </p>
           </div>

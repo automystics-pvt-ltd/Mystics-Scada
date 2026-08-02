@@ -55,25 +55,25 @@ function ChannelRow({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border border-border rounded-xl overflow-hidden bg-card">
+    <div className="border border-border/50 rounded-none-none overflow-hidden bg-black/40">
       <div
-        className="flex items-center gap-3 px-5 py-4 cursor-pointer hover:bg-muted/20 transition-colors"
+        className="flex items-center gap-3 px-5 py-4 cursor-pointer hover:bg-white/5 transition-colors"
         onClick={() => setOpen((o) => !o)}
       >
-        <div className={`p-2 rounded-lg ${enabled ? "bg-primary/10" : "bg-muted/40"}`}>
-          <Icon className={`h-4 w-4 ${enabled ? "text-primary" : "text-muted-foreground"}`} />
+        <div className={`p-2 rounded-none-none ${enabled ? "bg-accent-brand/10" : "bg-black/60"}`}>
+          <Icon className={`h-4 w-4 ${enabled ? "text-accent-brand" : "text-muted-foreground"}`} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium">{title}</span>
+            <span className="font-mono text-[9px] uppercase tracking-widest font-bold text-foreground">{title}</span>
             <StatusBadge enabled={enabled} label={badge} />
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+          <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mt-0.5">{description}</p>
         </div>
-        <span className="text-muted-foreground text-xs">{open ? "▲" : "▼"}</span>
+        <span className="text-muted-foreground font-mono text-[8px] uppercase tracking-widest">{open ? "▲" : "▼"}</span>
       </div>
       {open && children && (
-        <div className="border-t border-border px-5 py-4 bg-muted/10 space-y-3">
+        <div className="border-t border-border/50 px-5 py-4 bg-white/5 space-y-3">
           {children}
         </div>
       )}
@@ -133,13 +133,13 @@ export default function SuperAdminNotifications() {
         <div className="space-y-6">
 
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between border-b border-border/50 pb-4 relative"><div className="absolute bottom-0 left-0 w-1/4 h-[1px] bg-accent-brand shadow-[0_0_15px_rgba(0,195,255,0.8)]" />
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Bell className="h-6 w-6 text-primary" />
+              <h1 className="font-mono text-2xl font-bold flex items-center gap-3 text-foreground uppercase tracking-widest">
+                <Bell className="h-6 w-6 text-accent-brand" />
                 Notification Services
               </h1>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-1">
                 Platform notification channels, delivery status, and test tools
               </p>
             </div>
@@ -151,8 +151,8 @@ export default function SuperAdminNotifications() {
           {/* Delivery stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {stats.map(({ label, value, color }) => (
-              <div key={label} className="border border-border rounded-xl p-4 bg-card">
-                <p className="text-xs text-muted-foreground mb-1">{label}</p>
+              <div key={label} className="border border-border/50 rounded-none-none p-4 bg-black/40">
+                <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
                 <p className={`text-2xl font-bold font-mono ${color}`}>{value}</p>
               </div>
             ))}
@@ -160,7 +160,7 @@ export default function SuperAdminNotifications() {
 
           {/* Channels */}
           <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Notification Channels</h2>
+            <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground text-muted-foreground uppercase tracking-wider">Notification Channels</h2>
 
             {/* In-App (SSE) */}
             <ChannelRow
@@ -170,7 +170,7 @@ export default function SuperAdminNotifications() {
               enabled={true}
               badge="Always On"
             >
-              <div className="text-xs text-muted-foreground space-y-1">
+              <div className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground space-y-1">
                 <p>SSE streams are maintained per organisation. Notifications are pushed instantly with no polling.</p>
                 <p className="text-status-normal flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> No configuration required</p>
               </div>
@@ -184,22 +184,22 @@ export default function SuperAdminNotifications() {
               enabled={smtpEnabled}
             >
               {isLoading ? (
-                <div className="h-8 bg-muted animate-pulse rounded" />
+                <div className="h-8 bg-white/10 animate-pulse rounded-none" />
               ) : (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="bg-muted/30 rounded px-3 py-2">
+                  <div className="grid grid-cols-2 gap-2 font-mono text-[8px] uppercase tracking-widest">
+                    <div className="bg-black/40 rounded-none px-3 py-2">
                       <p className="text-muted-foreground mb-0.5">Host</p>
                       <p className="font-mono">{config?.smtp.host ?? "—"}</p>
                     </div>
-                    <div className="bg-muted/30 rounded px-3 py-2">
+                    <div className="bg-black/40 rounded-none px-3 py-2">
                       <p className="text-muted-foreground mb-0.5">From address</p>
                       <p className="font-mono truncate">{config?.smtp.from ?? "—"}</p>
                     </div>
                   </div>
 
                   <div>
-                    <p className="text-xs font-medium mb-2">Send test email</p>
+                    <p className="font-mono text-[8px] uppercase tracking-widest font-medium mb-2">Send test email</p>
                     <div className="flex gap-2">
                       <Input
                         type="email"
@@ -207,7 +207,7 @@ export default function SuperAdminNotifications() {
                         onChange={(e) => setTestEmail(e.target.value)}
                         placeholder="recipient@example.com"
                         disabled={!smtpEnabled}
-                        className="text-sm h-8"
+                        className="font-mono text-[9px] uppercase tracking-widest h-8"
                         onKeyDown={(e) => e.key === "Enter" && void sendTestEmail()}
                       />
                       <Button
@@ -223,7 +223,7 @@ export default function SuperAdminNotifications() {
                       </Button>
                     </div>
                     {!smtpEnabled && (
-                      <p className="text-xs text-status-warning mt-1 flex items-center gap-1">
+                      <p className="font-mono text-[8px] uppercase tracking-widest text-status-warning mt-1 flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3" />
                         Set SMTP_HOST in server .env and restart the API to enable email delivery
                       </p>
@@ -240,11 +240,11 @@ export default function SuperAdminNotifications() {
               description="Text message delivery via Twilio, AWS SNS, or compatible provider"
               enabled={false}
             >
-              <div className="text-xs space-y-2">
+              <div className="font-mono text-[8px] uppercase tracking-widest space-y-2">
                 <p className="text-muted-foreground">SMS delivery requires an SMS provider integration. Add your provider credentials to enable this channel.</p>
                 <div className="flex flex-wrap gap-2">
                   {["Twilio", "AWS SNS", "Vonage", "MessageBird"].map((p) => (
-                    <span key={p} className="px-2 py-1 rounded border border-border text-muted-foreground">{p}</span>
+                    <span key={p} className="px-2 py-1 rounded-none border border-border/50 text-muted-foreground">{p}</span>
                   ))}
                 </div>
                 <p className="text-muted-foreground flex items-center gap-1">
@@ -260,9 +260,9 @@ export default function SuperAdminNotifications() {
               description="Post alarm and event notifications to Slack channels via Incoming Webhooks"
               enabled={false}
             >
-              <div className="text-xs space-y-2 text-muted-foreground">
+              <div className="font-mono text-[8px] uppercase tracking-widest space-y-2 text-muted-foreground">
                 <p>Create a Slack Incoming Webhook and add the URL to your environment:</p>
-                <code className="block bg-muted/50 px-3 py-2 rounded font-mono">SLACK_WEBHOOK_URL=https://hooks.slack.com/services/…</code>
+                <code className="block bg-black/60 px-3 py-2 rounded-none font-mono">SLACK_WEBHOOK_URL=https://hooks.slack.com/services/…</code>
                 <p>Restart the API service after adding the variable.</p>
               </div>
             </ChannelRow>
@@ -274,7 +274,7 @@ export default function SuperAdminNotifications() {
               description="HTTP POST to external endpoints on alarm and event triggers"
               enabled={false}
             >
-              <div className="text-xs space-y-2 text-muted-foreground">
+              <div className="font-mono text-[8px] uppercase tracking-widest space-y-2 text-muted-foreground">
                 <p>Webhook delivery is configured per-organisation under Org Settings → Notifications → Channels.</p>
                 <p>Platform-wide webhook endpoints (for all orgs) are not yet supported — they are on the roadmap.</p>
               </div>
@@ -287,19 +287,19 @@ export default function SuperAdminNotifications() {
               description="Post to Teams channels via Power Automate or Incoming Webhooks"
               enabled={false}
             >
-              <div className="text-xs space-y-2 text-muted-foreground">
+              <div className="font-mono text-[8px] uppercase tracking-widest space-y-2 text-muted-foreground">
                 <p>Configure via environment variable:</p>
-                <code className="block bg-muted/50 px-3 py-2 rounded font-mono">TEAMS_WEBHOOK_URL=https://outlook.office.com/webhook/…</code>
+                <code className="block bg-black/60 px-3 py-2 rounded-none font-mono">TEAMS_WEBHOOK_URL=https://outlook.office.com/webhook/…</code>
               </div>
             </ChannelRow>
           </div>
 
           {/* Platform Banner section (kept from communications page) */}
-          <div className="border border-border rounded-xl p-5 bg-card space-y-4">
-            <h2 className="text-sm font-semibold flex items-center gap-2">
-              <Megaphone className="h-4 w-4 text-primary" /> Platform Announcement Banner
+          <div className="border border-border/50 rounded-none-none p-5 bg-black/40 space-y-4">
+            <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
+              <Megaphone className="h-4 w-4 text-accent-brand" /> Platform Announcement Banner
             </h2>
-            <p className="text-xs text-muted-foreground">
+            <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground">
               Display a dismissible banner to all logged-in users across every organisation.
             </p>
 
@@ -308,12 +308,12 @@ export default function SuperAdminNotifications() {
                 <button
                   key={t}
                   onClick={() => setBannerType(t)}
-                  className={`px-3 py-1.5 rounded border text-sm font-medium capitalize transition-colors ${
+                  className={`px-3 py-1.5 rounded-none border font-mono text-[9px] uppercase tracking-widest font-bold text-foreground capitalize transition-colors ${
                     bannerType === t
                       ? t === "critical" ? "bg-status-fault/10 border-status-fault/30 text-status-fault"
                         : t === "warning" ? "bg-status-warning/10 border-status-warning/30 text-status-warning"
                         : "bg-blue-500/10 border-blue-500/30 text-blue-400"
-                      : "border-border text-muted-foreground hover:border-primary/40"
+                      : "border-border/50 text-muted-foreground hover:border-accent-brand/40"
                   }`}
                 >
                   {t}
@@ -325,7 +325,7 @@ export default function SuperAdminNotifications() {
               value={bannerMsg}
               onChange={(e) => setBannerMsg(e.target.value)}
               placeholder="Enter announcement message for all users…"
-              className="text-sm"
+              className="font-mono text-[9px] uppercase tracking-widest"
             />
 
             <div className="flex gap-2">
@@ -345,7 +345,7 @@ export default function SuperAdminNotifications() {
             </div>
 
             {bannerActive && (
-              <div className={`rounded-lg px-4 py-3 border flex items-center gap-3 text-sm ${
+              <div className={`rounded-none-none px-4 py-3 border flex items-center gap-3 font-mono text-[9px] uppercase tracking-widest ${
                 bannerType === "critical" ? "bg-status-fault/10 border-status-fault/30 text-status-fault"
                 : bannerType === "warning" ? "bg-status-warning/10 border-status-warning/30 text-status-warning"
                 : "bg-blue-500/10 border-blue-500/30 text-blue-400"
