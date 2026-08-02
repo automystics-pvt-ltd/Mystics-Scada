@@ -201,7 +201,7 @@ export interface BarSpec  { key: string; name: string; color: string }
 export interface LineSeries { key: string; name: string; color: string; dashed?: boolean }
 
 export function SvgComposedChart({
-  data, xKey, bars = [], lines = [], height = 280, yFmt,
+  data, xKey, bars = [], lines = [], height = 280, yFmt, partialDataKey,
 }: {
   data: Record<string, unknown>[];
   xKey: string;
@@ -209,6 +209,9 @@ export function SvgComposedChart({
   lines?: LineSeries[];
   height?: number;
   yFmt?: (v: number) => string;
+  /** Name of a boolean field in each data row — when truthy that bar is rendered
+   *  with a diagonal stripe to indicate an in-progress (partial) period. */
+  partialDataKey?: string;
 }) {
   const H      = VH;
   const pad    = FULL_PAD;
@@ -264,20 +267,38 @@ export function SvgComposedChart({
       onMouseLeave={() => setHoveredIdx(null)}>
       <defs>
         {bars.map((b) => <AreaGrad key={b.key} id={`bar-grd-${b.key}`} color={b.color} />)}
+        {/* Diagonal stripe pattern for partial (in-progress) bars */}
+        {bars.map((b) => (
+          <pattern key={`stripe-${b.key}`} id={`stripe-${b.key}`}
+            patternUnits="userSpaceOnUse" width={6} height={6}
+            patternTransform="rotate(45 0 0)">
+            <rect width={3} height={6} fill={b.color} opacity={0.55} />
+            <rect x={3} width={3} height={6} fill={b.color} opacity={0.2} />
+          </pattern>
+        ))}
       </defs>
       <Axes pad={pad} labels={labels} lo={lo} hi={hi} yFmt={yFmt} />
 
       {/* Bars */}
       {bars.map((b) =>
         data.map((d, i) => {
-          const val = Number(d[b.key] ?? 0);
-          const bx  = barX(i, data.length, x0, w, barW);
-          const by  = mapY(val, lo, hi, y0, h);
-          const bh  = (y0 + h) - by;
+          const val     = Number(d[b.key] ?? 0);
+          const bx      = barX(i, data.length, x0, w, barW);
+          const by      = mapY(val, lo, hi, y0, h);
+          const bh      = (y0 + h) - by;
+          const isPartial = partialDataKey ? Boolean(d[partialDataKey]) : false;
+          const baseOpacity = hoveredIdx === i ? 1 : 0.85;
           return (
-            <rect key={`${b.key}-${i}`}
-              x={bx} y={by} width={barW} height={Math.max(0, bh)}
-              fill={b.color} rx={1} opacity={hoveredIdx === i ? 1 : 0.85} />
+            <g key={`${b.key}-${i}`}>
+              <rect x={bx} y={by} width={barW} height={Math.max(0, bh)}
+                fill={isPartial ? `url(#stripe-${b.key})` : b.color}
+                rx={1} opacity={isPartial ? 1 : baseOpacity} />
+              {/* Thin top border on partial bars to make them clearly visible */}
+              {isPartial && bh > 1 && (
+                <line x1={bx} x2={bx + barW} y1={by} y2={by}
+                  stroke={b.color} strokeWidth={1.5} strokeOpacity={0.9} />
+              )}
+            </g>
           );
         })
       )}

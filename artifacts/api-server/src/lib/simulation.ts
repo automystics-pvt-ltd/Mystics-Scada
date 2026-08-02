@@ -516,7 +516,13 @@ export interface YieldPoint {
   actualKwh: number;
   expectedKwh: number;
   specificYieldKwhPerKwp: number;
+  /** True when this point represents an in-progress (partial) period, e.g. today. */
+  partial?: boolean;
 }
+
+/** Solar day sunrise/sunset constants — must match solarCurve(). */
+const SOLAR_SUNRISE = 6;
+const SOLAR_SUNSET  = 18.3;
 
 export function plantYieldSeries(plant: PlantConfig, period: "daily" | "weekly" | "monthly" | "yearly", now: Date): YieldPoint[] {
   const spec = {
@@ -534,12 +540,31 @@ export function plantYieldSeries(plant: PlantConfig, period: "daily" | "weekly" 
     const seasonFactor = 0.85 + 0.3 * Math.max(0, Math.sin((d.getUTCMonth() / 12) * Math.PI * 2 + 1.2));
     const dayFactor = 0.75 + seededRandom(`${plant.id}:yield`, bucket) * 0.4 - plant.cloudinessSeed * 0.3;
     const expectedKwh = capacityKw * 5.2 * spec.stepDays * seasonFactor;
-    const actualKwh = expectedKwh * Math.max(0.4, Math.min(1.05, dayFactor));
+    let actualKwh = expectedKwh * Math.max(0.4, Math.min(1.05, dayFactor));
+    let partial: boolean | undefined;
+
+    // ── Special-case: today's point in the daily view ────────────────────────
+    // Instead of using the full-day random yield (which yields near-zero at
+    // night), scale by the actual fraction of the solar day elapsed so the bar
+    // reflects accumulated energy rather than looking like a fault.
+    if (period === "daily" && i === 0) {
+      const hour = localHour(plant, now);
+      // After sunset the full day's energy has been collected → fraction = 1.
+      // Before sunrise nothing has been collected yet → fraction = 0.
+      const dayFraction = hour >= SOLAR_SUNSET
+        ? 1
+        : Math.max(0, Math.min(1, (hour - SOLAR_SUNRISE) / (SOLAR_SUNSET - SOLAR_SUNRISE)));
+      actualKwh = actualKwh * dayFraction;
+      // Mark as partial while the solar day is still in progress.
+      partial = hour < SOLAR_SUNSET;
+    }
+
     points.push({
       date: spec.label(d),
       actualKwh: Math.round(actualKwh),
       expectedKwh: Math.round(expectedKwh),
       specificYieldKwhPerKwp: Math.round((actualKwh / capacityKw) * 100) / 100,
+      ...(partial !== undefined ? { partial } : {}),
     });
   }
   return points;

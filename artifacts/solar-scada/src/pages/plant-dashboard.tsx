@@ -241,6 +241,7 @@ export default function PlantDashboard() {
       label: p.label ?? p.date ?? "",
       actualKwh: p.actualKwh ?? 0,
       expectedKwh: p.expectedKwh ?? 0,
+      partial: p.partial ?? false,
     }));
   }, [period, trendData, yieldData]);
 
@@ -565,6 +566,7 @@ export default function PlantDashboard() {
                   ]}
                   height={260}
                   yFmt={(v) => v >= 1_000_000 ? `${(v/1_000_000).toFixed(1)}GWH` : v >= 1000 ? `${(v/1000).toFixed(1)}MWH` : `${v.toFixed(0)}KWH`}
+                  partialDataKey="partial"
                 />
               )
             )}

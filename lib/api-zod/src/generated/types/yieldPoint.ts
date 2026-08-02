@@ -11,4 +11,6 @@ export interface YieldPoint {
   actualKwh: number;
   expectedKwh: number;
   deviationPct: number;
+  /** True when this point represents a period still in progress (e.g. today). */
+  partial?: boolean;
 }

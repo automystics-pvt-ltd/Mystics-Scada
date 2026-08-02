@@ -100,6 +100,7 @@ export default function AnalyticsView() {
                   lines={[{ key: "expectedKwh", name: "EXPECTED", color: "hsl(var(--status-warning))", dashed: true }]}
                   height={280}
                   yFmt={(v) => `${Math.round(v / 1000)}K`}
+                  partialDataKey="partial"
                 />
               ) : (
                 <div className="h-full flex items-center justify-center font-mono text-[10px] uppercase tracking-widest text-brand animate-pulse">QUERYING DATA...</div>

@@ -207,6 +207,7 @@ export function yieldSeries(plant: PlantConfig, period: "daily" | "weekly" | "mo
       actualKwh: p.actualKwh,
       expectedKwh: p.expectedKwh,
       deviationPct: p.expectedKwh > 0 ? Math.round(((p.actualKwh - p.expectedKwh) / p.expectedKwh) * 1000) / 10 : 0,
+      partial: p.partial ?? false,
     })),
   };
 }

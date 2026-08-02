@@ -296,7 +296,8 @@ export const GetPlantYieldResponse = zod.object({
   "label": zod.string(),
   "actualKwh": zod.number(),
   "expectedKwh": zod.number(),
-  "deviationPct": zod.number()
+  "deviationPct": zod.number(),
+  "partial": zod.boolean().optional()
 }))
 })
 
