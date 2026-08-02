@@ -117,7 +117,7 @@ function SourceCard({ source, canManage, onEdit, onDelete, onTest }: {
       </div>
 
       {expanded && (
-        <div className="border-t border-border/50 px-4 py-3 bg-black/40 grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs font-mono">
+        <div className="border-t border-border/50 px-4 py-3 bg-card/40 grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs font-mono">
           <div>
             <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Remote Path</span>
             <p className="mt-1 truncate text-brand/80">{source.remotePath}</p>
@@ -312,7 +312,7 @@ export default function FtpSourcesPage() {
           <div className="space-y-6 py-4">
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Pipeline Designation <span className="text-status-fault">*</span></Label>
-              <Input className="rounded-none font-mono text-sm border-border/50 focus-visible:border-brand/50 focus-visible:ring-0 bg-black/40" placeholder="e.g. SUNGROW_LOGGER_01"
+              <Input className="rounded-none font-mono text-sm border-border/50 focus-visible:border-brand/50 focus-visible:ring-0 bg-card/40" placeholder="e.g. SUNGROW_LOGGER_01"
                 value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -322,7 +322,7 @@ export default function FtpSourcesPage() {
                   const p = v as "ftp" | "ftps" | "sftp";
                   setForm((f) => ({ ...f, protocol: p, port: p === "sftp" ? "22" : "21" }));
                 }}>
-                  <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-card/40"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-none border-border/50 font-mono text-sm">
                     <SelectItem value="ftp">FTP</SelectItem>
                     <SelectItem value="ftps">FTPS (SSL)</SelectItem>
@@ -332,43 +332,43 @@ export default function FtpSourcesPage() {
               </div>
               <div>
                 <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Port</Label>
-                <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40" type="number" value={form.port}
+                <Input className="rounded-none font-mono text-sm border-border/50 bg-card/40" type="number" value={form.port}
                   onChange={(e) => setForm((f) => ({ ...f, port: e.target.value }))} />
               </div>
               <div className="sm:col-span-2">
                 <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Target Host <span className="text-status-fault">*</span></Label>
-                <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40" placeholder="ftp.domain.com"
+                <Input className="rounded-none font-mono text-sm border-border/50 bg-card/40" placeholder="ftp.domain.com"
                   value={form.host} onChange={(e) => setForm((f) => ({ ...f, host: e.target.value }))} />
               </div>
               <div>
                 <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Username <span className="text-status-fault">*</span></Label>
-                <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40" value={form.username}
+                <Input className="rounded-none font-mono text-sm border-border/50 bg-card/40" value={form.username}
                   onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))} />
               </div>
               <div>
                 <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Authentication {editId && <span className="opacity-50">(Blank to keep)</span>}</Label>
-                <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40" type="password" value={form.password}
+                <Input className="rounded-none font-mono text-sm border-border/50 bg-card/40" type="password" value={form.password}
                   onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
               </div>
               <div>
                 <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Remote Path</Label>
-                <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40" placeholder="/export/data"
+                <Input className="rounded-none font-mono text-sm border-border/50 bg-card/40" placeholder="/export/data"
                   value={form.remotePath} onChange={(e) => setForm((f) => ({ ...f, remotePath: e.target.value }))} />
               </div>
               <div>
                 <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">File Mask</Label>
-                <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40" placeholder="*.csv"
+                <Input className="rounded-none font-mono text-sm border-border/50 bg-card/40" placeholder="*.csv"
                   value={form.filePattern} onChange={(e) => setForm((f) => ({ ...f, filePattern: e.target.value }))} />
               </div>
               <div>
                 <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Poll Interval (Min)</Label>
-                <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40" type="number" min={1} max={1440} value={form.intervalMinutes}
+                <Input className="rounded-none font-mono text-sm border-border/50 bg-card/40" type="number" min={1} max={1440} value={form.intervalMinutes}
                   onChange={(e) => setForm((f) => ({ ...f, intervalMinutes: e.target.value }))} />
               </div>
               <div>
                 <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Target Device Link</Label>
                 <Select value={form.deviceId || "none"} onValueChange={(v) => setForm((f) => ({ ...f, deviceId: v === "none" ? "" : v }))}>
-                  <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40"><SelectValue placeholder="UNLINKED" /></SelectTrigger>
+                  <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-card/40"><SelectValue placeholder="UNLINKED" /></SelectTrigger>
                   <SelectContent className="rounded-none border-border/50 font-mono text-sm">
                     <SelectItem value="none">UNLINKED</SelectItem>
                     {devices.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}

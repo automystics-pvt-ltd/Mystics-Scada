@@ -49,7 +49,7 @@ export default function SuperAdminOperations() {
               { label: "OPEN ALERTS",    value: stats ? stats.alerts.critical + stats.alerts.major : "—",      icon: AlertTriangle,  color: stats?.alerts.critical ? "text-status-fault" : "text-status-warning" },
               { label: "WORK ORDERS",    value: stats?.activeWorkOrders ?? "—",                                 icon: Wrench,         color: "text-orange-400" },
             ].map(({ label, value, icon: Icon, color }) => (
-              <div key={label} className="border border-border/50 bg-black/40 p-4 relative group transition-colors hover:border-border">
+              <div key={label} className="border border-border/50 bg-card/40 p-4 relative group transition-colors hover:border-border">
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-border/30 group-hover:bg-border/60 transition-colors" />
                 <div className="flex items-center justify-between mb-3">
                   <p className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{label}</p>
@@ -64,8 +64,8 @@ export default function SuperAdminOperations() {
 
           {/* Alert breakdown */}
           {stats && (
-            <div className="border border-border/50 bg-black/40">
-              <div className="px-4 py-3 border-b border-border/50 bg-black/60 flex items-center justify-between">
+            <div className="border border-border/50 bg-card/40">
+              <div className="px-4 py-3 border-b border-border/50 bg-card/60 flex items-center justify-between">
                 <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
                   <AlertTriangle className="h-3.5 w-3.5 text-accent-brand" />
                   ACTIVE ALERT DISTRIBUTION
@@ -74,7 +74,7 @@ export default function SuperAdminOperations() {
               <div className="p-5">
                 <div className="grid grid-cols-4 gap-4">
                   {(["critical", "major", "minor", "informational"] as const).map(sev => (
-                    <div key={sev} className="text-center bg-black/60 p-4 border border-border/30">
+                    <div key={sev} className="text-center bg-card/60 p-4 border border-border/30">
                       <p className={`text-4xl font-bold font-mono ${
                         sev === "critical" ? "text-status-fault drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]"
                         : sev === "major"  ? "text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]"
@@ -90,8 +90,8 @@ export default function SuperAdminOperations() {
           )}
 
           {/* Quick ops */}
-          <div className="border border-border/50 bg-black/40">
-            <div className="px-4 py-3 border-b border-border/50 bg-black/60 flex items-center justify-between">
+          <div className="border border-border/50 bg-card/40">
+            <div className="px-4 py-3 border-b border-border/50 bg-card/60 flex items-center justify-between">
               <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground">QUICK ACTIONS</h2>
             </div>
             <div className="p-5">
@@ -103,7 +103,7 @@ export default function SuperAdminOperations() {
                   { label: "DATABASE ADMIN CONSOLE",  href: "/superadmin/db",             icon: Settings2  },
                 ].map(({ label, href, icon: Icon }) => (
                   <a key={href} href={href}
-                    className="flex items-center gap-3 px-4 py-4 border border-border/50 bg-black/60 hover:border-accent-brand hover:bg-accent-brand/5 transition-all group relative overflow-hidden">
+                    className="flex items-center gap-3 px-4 py-4 border border-border/50 bg-card/60 hover:border-accent-brand hover:bg-accent-brand/5 transition-all group relative overflow-hidden">
                     <div className="absolute left-0 top-0 w-1 h-full bg-border/50 group-hover:bg-accent-brand transition-colors" />
                     <Icon className="h-4 w-4 text-muted-foreground group-hover:text-accent-brand transition-colors ml-1" />
                     <span className="font-mono text-[10px] font-bold group-hover:text-accent-brand transition-colors uppercase tracking-widest">{label}</span>

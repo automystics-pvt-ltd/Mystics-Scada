@@ -166,7 +166,7 @@ export default function SuperAdminConfig() {
               {/* ── Security Policy ── */}
               {tab === "security" && sec && (
                 <div className="space-y-4">
-                  <div className="border border-border/50 rounded-none-none p-5 bg-black/40 space-y-5">
+                  <div className="border border-border/50 rounded-none-none p-5 bg-card/40 space-y-5">
                     <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
                       <Lock className="h-4 w-4 text-accent-brand" /> Session &amp; Authentication
                     </h2>
@@ -197,7 +197,7 @@ export default function SuperAdminConfig() {
                     ))}
                   </div>
 
-                  <div className="border border-border/50 rounded-none-none p-5 bg-black/40 space-y-4">
+                  <div className="border border-border/50 rounded-none-none p-5 bg-card/40 space-y-4">
                     <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
                       <Shield className="h-4 w-4 text-accent-brand" /> Advanced Security
                     </h2>
@@ -233,7 +233,7 @@ export default function SuperAdminConfig() {
               {tab === "smtp" && (
                 <div className="space-y-4">
                   {/* Status card */}
-                  <div className="border border-border/50 rounded-none-none p-5 bg-black/40">
+                  <div className="border border-border/50 rounded-none-none p-5 bg-card/40">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
                         <Mail className="h-4 w-4 text-accent-brand" /> SMTP Configuration
@@ -257,7 +257,7 @@ export default function SuperAdminConfig() {
                         { label: "From",     value: smtp?.from },
                         { label: "User",     value: showSmtpUser ? smtp?.user : smtp?.user ? "••••••••" : null },
                       ].map(({ label, value }) => (
-                        <div key={label} className="bg-black/40 rounded-none-none px-3 py-2">
+                        <div key={label} className="bg-card/40 rounded-none-none px-3 py-2">
                           <p className="text-[10px] text-muted-foreground mb-0.5">{label}</p>
                           <p className="font-mono text-[9px] uppercase tracking-widest font-mono truncate">{value ?? <span className="text-muted-foreground italic">not set</span>}</p>
                         </div>
@@ -273,7 +273,7 @@ export default function SuperAdminConfig() {
                     </div>
                   </div>
 
-                  <div className="border border-border/50 rounded-none-none p-5 bg-black/40 space-y-3">
+                  <div className="border border-border/50 rounded-none-none p-5 bg-card/40 space-y-3">
                     <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground">Send Test Email</h2>
                     <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground">
                       Verifies end-to-end SMTP delivery. Sends a test message to the specified address.
@@ -291,7 +291,7 @@ export default function SuperAdminConfig() {
 
               {/* ── Rate Limits ── */}
               {tab === "rate-limits" && rl && (
-                <div className="border border-border/50 rounded-none-none p-5 bg-black/40 space-y-5">
+                <div className="border border-border/50 rounded-none-none p-5 bg-card/40 space-y-5">
                   <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
                     <Gauge className="h-4 w-4 text-accent-brand" /> API Rate Limiting
                   </h2>
@@ -330,7 +330,7 @@ export default function SuperAdminConfig() {
               {/* ── IP Whitelist ── */}
               {tab === "ip-whitelist" && (
                 <div className="space-y-4">
-                  <div className="border border-border/50 rounded-none-none p-5 bg-black/40 space-y-4">
+                  <div className="border border-border/50 rounded-none-none p-5 bg-card/40 space-y-4">
                     <div className="flex items-center justify-between border-b border-border/50 pb-4 relative"><div className="absolute bottom-0 left-0 w-1/4 h-[1px] bg-accent-brand shadow-[0_0_15px_rgba(0,195,255,0.8)]" />
                       <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
                         <Network className="h-4 w-4 text-accent-brand" /> IP Whitelist
@@ -367,7 +367,7 @@ export default function SuperAdminConfig() {
                     ) : (
                       <div className="space-y-2">
                         {ipList.map((ip) => (
-                          <div key={ip} className="flex items-center justify-between px-3 py-2 rounded-none-none bg-black/40 border border-border/50">
+                          <div key={ip} className="flex items-center justify-between px-3 py-2 rounded-none-none bg-card/40 border border-border/50">
                             <div className="flex items-center gap-2">
                               <CheckCircle2 className="h-3.5 w-3.5 text-status-normal" />
                               <span className="font-mono text-[9px] uppercase tracking-widest font-mono">{ip}</span>

@@ -85,7 +85,7 @@ function SchemaPanel({ table }: { table: string }) {
         </p>
         <div className="border border-border/50 rounded-none-none overflow-hidden">
           <table className="w-full font-mono text-[9px] uppercase tracking-widest">
-            <thead className="bg-black/60">
+            <thead className="bg-card/60">
               <tr>
                 {["Column", "Type", "Nullable", "Default", "Flags"].map(h => (
                   <th key={h} className="px-3 py-1.5 text-left font-bold text-muted-foreground /50">{h}</th>
@@ -128,7 +128,7 @@ function SchemaPanel({ table }: { table: string }) {
         ) : (
           <div className="border border-border/50 rounded-none-none overflow-hidden">
             <table className="w-full font-mono text-[9px] uppercase tracking-widest">
-              <thead className="bg-black/60">
+              <thead className="bg-card/60">
                 <tr>
                   {["Index Name", "Columns", "Type", "Size"].map(h => (
                     <th key={h} className="px-3 py-1.5 text-left font-bold text-muted-foreground /50">{h}</th>
@@ -164,7 +164,7 @@ function SchemaPanel({ table }: { table: string }) {
           </p>
           <div className="border border-border/50 rounded-none-none overflow-hidden">
             <table className="w-full font-mono text-[9px] uppercase tracking-widest">
-              <thead className="bg-black/60">
+              <thead className="bg-card/60">
                 <tr>
                   {["Column", "References", "On Delete", "On Update"].map(h => (
                     <th key={h} className="px-3 py-1.5 text-left font-bold text-muted-foreground /50">{h}</th>
@@ -237,8 +237,8 @@ function EditModal({
   const pkCols = new Set(["id"]);
 
   return (
-    <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="bg-black/40 border border-border/50 rounded-none-none shadow-[0_0_30px_rgba(0,195,255,0.15)] backdrop-blur-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 bg-card/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div className="bg-card/40 border border-border/50 rounded-none-none shadow-[0_0_30px_rgba(0,195,255,0.15)] backdrop-blur-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-3.5 /50 flex-shrink-0">
           <div>
             <h3 className="font-bold font-mono text-[10px] uppercase tracking-widest">Edit Record</h3>
@@ -267,7 +267,7 @@ function EditModal({
                     value={values[col]}
                     onChange={e => handleChange(col, e.target.value)}
                     disabled={isPk}
-                    className="w-full font-mono font-mono text-[9px] uppercase tracking-widest bg-black/50 border border-border/50 rounded-none px-2 py-1.5 focus-visible:ring-accent-brand resize-y disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full font-mono font-mono text-[9px] uppercase tracking-widest bg-card/50 border border-border/50 rounded-none px-2 py-1.5 focus-visible:ring-accent-brand resize-y disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 ) : (
                   <input
@@ -275,7 +275,7 @@ function EditModal({
                     value={values[col]}
                     onChange={e => handleChange(col, e.target.value)}
                     disabled={isPk}
-                    className="w-full font-mono font-mono text-[9px] uppercase tracking-widest bg-black/50 border border-border/50 rounded-none px-2 py-1.5 focus-visible:ring-accent-brand disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full font-mono font-mono text-[9px] uppercase tracking-widest bg-card/50 border border-border/50 rounded-none px-2 py-1.5 focus-visible:ring-accent-brand disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 )}
               </div>
@@ -575,7 +575,7 @@ export default function SuperAdminDbAdmin() {
           {tab === "browser" && (
             <div className="flex gap-4" style={{ height: "calc(100vh - 300px)", minHeight: 520 }}>
               {/* Table sidebar */}
-              <div className="w-56 flex flex-col border border-border/50 rounded-none-none overflow-hidden bg-black/40 flex-shrink-0">
+              <div className="w-56 flex flex-col border border-border/50 rounded-none-none overflow-hidden bg-card/40 flex-shrink-0">
                 <div className="p-2 /50 flex items-center gap-1">
                   <Input placeholder="Filter tables…" value={tableFilter}
                     onChange={e => setTableFilter(e.target.value)} className="h-7 font-mono text-[9px] uppercase tracking-widest" />
@@ -594,7 +594,7 @@ export default function SuperAdminDbAdmin() {
                       className={`w-full flex items-center justify-between px-3 py-2 font-mono text-[9px] uppercase tracking-widest font-bold text-left transition-colors ${
                         selectedTable === t.name
                           ? "bg-accent-brand/10 text-accent-brand border-l-2 border-l-primary"
-                          : "text-muted-foreground hover:text-foreground hover:bg-black/60"
+                          : "text-muted-foreground hover:text-foreground hover:bg-card/60"
                       }`}
                     >
                       <span className="truncate">{t.name}</span>
@@ -605,7 +605,7 @@ export default function SuperAdminDbAdmin() {
               </div>
 
               {/* Main panel */}
-              <div className="flex-1 flex flex-col border border-border/50 rounded-none-none overflow-hidden bg-black/40 min-w-0">
+              <div className="flex-1 flex flex-col border border-border/50 rounded-none-none overflow-hidden bg-card/40 min-w-0">
                 {!selectedTable ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
                     <Database className="h-12 w-12 opacity-20" />
@@ -614,7 +614,7 @@ export default function SuperAdminDbAdmin() {
                 ) : (
                   <>
                     {/* Panel header */}
-                    <div className="flex items-center justify-between px-4 py-2.5 /50 bg-black/40 flex-shrink-0">
+                    <div className="flex items-center justify-between px-4 py-2.5 /50 bg-card/40 flex-shrink-0">
                       <div className="flex items-center gap-3">
                         <span className="font-mono font-bold font-mono text-[10px] uppercase tracking-widest">{selectedTable}</span>
                         {records && browserView === "data" && (
@@ -663,7 +663,7 @@ export default function SuperAdminDbAdmin() {
                         </div>
                       ) : records && records.records.length > 0 ? (
                         <table className="w-full font-mono text-[9px] uppercase tracking-widest border-collapse">
-                          <thead className="bg-black/60 sticky top-0 z-10">
+                          <thead className="bg-card/60 sticky top-0 z-10">
                             <tr>
                               <th className="px-2 py-1.5 text-left font-bold text-muted-foreground /50 w-14">Act.</th>
                               {records.columns.map(col => (
@@ -755,7 +755,7 @@ export default function SuperAdminDbAdmin() {
               {/* Query history */}
               {showHistory && (
                 <div className="border border-border/50 rounded-none-none overflow-hidden">
-                  <div className="bg-black/40 px-3 py-1.5 /50 font-mono text-[9px] uppercase tracking-widest font-bold text-muted-foreground flex items-center gap-1.5">
+                  <div className="bg-card/40 px-3 py-1.5 /50 font-mono text-[9px] uppercase tracking-widest font-bold text-muted-foreground flex items-center gap-1.5">
                     <History className="h-3.5 w-3.5" /> Recent Queries
                   </div>
                   <div className="max-h-[200px] overflow-y-auto">
@@ -763,7 +763,7 @@ export default function SuperAdminDbAdmin() {
                       <button
                         key={i}
                         onClick={() => { setSqlInput(q); setShowHistory(false); }}
-                        className="w-full text-left px-3 py-2 font-mono text-[9px] uppercase tracking-widest font-mono text-muted-foreground hover:text-foreground hover:bg-black/40 /30 truncate transition-colors"
+                        className="w-full text-left px-3 py-2 font-mono text-[9px] uppercase tracking-widest font-mono text-muted-foreground hover:text-foreground hover:bg-card/40 /30 truncate transition-colors"
                       >
                         {q}
                       </button>
@@ -774,7 +774,7 @@ export default function SuperAdminDbAdmin() {
 
               {/* Editor */}
               <div className="border border-border/50 rounded-none-none overflow-hidden">
-                <div className="bg-black/40 px-3 py-1.5 /50 flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                <div className="bg-card/40 px-3 py-1.5 /50 flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
                   <Terminal className="h-3.5 w-3.5" />
                   <span className="font-mono flex-1">SQL Console — all statements permitted</span>
                   <button onClick={() => copyToClipboard(sqlInput)} className="p-1 rounded-none hover:bg-white/10" title="Copy">
@@ -790,7 +790,7 @@ export default function SuperAdminDbAdmin() {
                   placeholder="SELECT * FROM organizations LIMIT 10;"
                   onKeyDown={e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void runSql(); } }}
                 />
-                <div className="bg-black/40 border-t border-border/50 px-3 py-2 flex items-center gap-3">
+                <div className="bg-card/40 border-t border-border/50 px-3 py-2 flex items-center gap-3">
                   <Button size="sm" onClick={() => void runSql()} disabled={sqlRunning} className="gap-1.5 h-7">
                     {sqlRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
                     Run (Ctrl+Enter)
@@ -822,7 +822,7 @@ export default function SuperAdminDbAdmin() {
                     </div>
                   ) : (
                     <>
-                      <div className="bg-black/40 px-3 py-1.5 /50 flex items-center justify-between">
+                      <div className="bg-card/40 px-3 py-1.5 /50 flex items-center justify-between">
                         <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground font-mono">{sqlResult.rowCount} rows · {sqlResult.executionMs}ms</span>
                         <button
                           onClick={() => copyToClipboard(JSON.stringify(sqlResult.rows, null, 2))}
@@ -833,7 +833,7 @@ export default function SuperAdminDbAdmin() {
                       </div>
                       <div className="overflow-auto max-h-[400px]">
                         <table className="w-full font-mono text-[9px] uppercase tracking-widest border-collapse">
-                          <thead className="bg-black/60 sticky top-0">
+                          <thead className="bg-card/60 sticky top-0">
                             <tr>
                               {Object.keys(sqlResult.rows[0]!).map(col => (
                                 <th key={col} className="px-3 py-1.5 text-left font-bold text-muted-foreground /50 whitespace-nowrap">{col}</th>
@@ -881,14 +881,14 @@ export default function SuperAdminDbAdmin() {
               <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Searches up to 8 tables (excludes high-volume telemetry tables). Results limited to 5 rows per table.</p>
               {searchResults.map(sr => (
                 <div key={sr.table} className="border border-border/50 rounded-none-none overflow-hidden">
-                  <div className="bg-black/40 px-4 py-2 /50 flex items-center gap-2">
+                  <div className="bg-card/40 px-4 py-2 /50 flex items-center gap-2">
                     <Table2 className="h-4 w-4 text-accent-brand" />
                     <span className="font-mono text-[10px] uppercase tracking-widest font-mono font-bold">{sr.table}</span>
                     <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{sr.rows.length} match{sr.rows.length !== 1 ? "es" : ""}</span>
                   </div>
                   <div className="overflow-auto max-h-[250px]">
                     <table className="w-full font-mono text-[9px] uppercase tracking-widest border-collapse">
-                      <thead className="bg-black/60 sticky top-0">
+                      <thead className="bg-card/60 sticky top-0">
                         <tr>{Object.keys(sr.rows[0] ?? {}).slice(0, 8).map(c => (
                           <th key={c} className="px-3 py-1.5 text-left text-muted-foreground /50">{c}</th>
                         ))}</tr>
@@ -922,7 +922,7 @@ export default function SuperAdminDbAdmin() {
                     <div className="flex-1 min-w-0">
                       <p className={`font-bold font-mono text-[10px] uppercase tracking-widest ${op.danger ? "text-status-fault" : "text-status-warning"}`}>{op.label}</p>
                       <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-0.5">{op.description}</p>
-                      <code className="text-[10px] text-muted-foreground/50 font-mono mt-1.5 block bg-black/40 px-2 py-1 rounded-none truncate">{op.sql}</code>
+                      <code className="text-[10px] text-muted-foreground/50 font-mono mt-1.5 block bg-card/40 px-2 py-1 rounded-none truncate">{op.sql}</code>
                     </div>
                     {bulkConfirm === op.id ? (
                       <div className="flex items-center gap-2 flex-shrink-0">
@@ -989,7 +989,7 @@ export default function SuperAdminDbAdmin() {
                   <p className="font-mono text-[10px] uppercase tracking-widest">CSV import coming soon</p>
                   <p className="font-mono text-[9px] uppercase tracking-widest mt-1 opacity-60">Use the SQL Console with COPY or INSERT statements</p>
                 </div>
-                <div className="bg-black/40 rounded-none-none p-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground space-y-1">
+                <div className="bg-card/40 rounded-none-none p-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground space-y-1">
                   <p className="font-bold text-foreground">Import via SQL Console:</p>
                   <code className="block font-mono font-mono text-[9px] uppercase tracking-widest opacity-80">INSERT INTO table_name (col1, col2) VALUES (...);</code>
                   <code className="block font-mono font-mono text-[9px] uppercase tracking-widest opacity-80">COPY table_name FROM STDIN WITH CSV HEADER;</code>
@@ -1057,7 +1057,7 @@ export default function SuperAdminDbAdmin() {
                   { label: "Tables",              value: String(tables.length),                           icon: Table2,    color: "text-blue-400" },
                   { label: "Total Rows (est.)",   value: tables.reduce((s,t) => s + (t.row_count ?? 0), 0).toLocaleString(), icon: BarChart3, color: "text-purple-400" },
                 ].map(kpi => (
-                  <div key={kpi.label} className="border border-border/50 rounded-none-none p-4 bg-black/40">
+                  <div key={kpi.label} className="border border-border/50 rounded-none-none p-4 bg-card/40">
                     <div className="flex items-center gap-2 mb-2">
                       <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
                       <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{kpi.label}</p>
@@ -1070,13 +1070,13 @@ export default function SuperAdminDbAdmin() {
               {/* Table sizes with visual bars */}
               {dbStats?.tables && Array.isArray(dbStats.tables) && (
                 <div className="border border-border/50 rounded-none-none overflow-hidden">
-                  <div className="bg-black/40 px-4 py-2.5 /50 flex items-center gap-2">
+                  <div className="bg-card/40 px-4 py-2.5 /50 flex items-center gap-2">
                     <BarChart3 className="h-4 w-4 text-accent-brand" />
                     <span className="font-mono text-[10px] uppercase tracking-widest font-bold">Table Sizes (top 20)</span>
                   </div>
                   <div className="overflow-auto max-h-[480px]">
                     <table className="w-full font-mono text-[9px] uppercase tracking-widest border-collapse">
-                      <thead className="bg-black/60 sticky top-0">
+                      <thead className="bg-card/60 sticky top-0">
                         <tr>
                           <th className="px-4 py-2 text-left font-bold text-muted-foreground /50">Table</th>
                           <th className="px-4 py-2 text-left font-bold text-muted-foreground /50">Size</th>
@@ -1130,7 +1130,7 @@ export default function SuperAdminDbAdmin() {
                   {connData.summary.map(s => (
                     <div key={s.state ?? "null"} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none-none border font-mono text-[9px] uppercase tracking-widest font-bold ${
                       s.state === "active" ? "border-status-normal/40 bg-status-normal/10 text-status-normal"
-                      : s.state === "idle" ? "border-border/50 bg-black/40 text-muted-foreground"
+                      : s.state === "idle" ? "border-border/50 bg-card/40 text-muted-foreground"
                       : "border-status-warning/40 bg-status-warning/10 text-status-warning"
                     }`}>
                       <span className={`w-1.5 h-1.5 rounded-none-none ${s.state === "active" ? "bg-status-normal" : s.state === "idle" ? "bg-white/10-foreground" : "bg-status-warning"}`} />
@@ -1152,7 +1152,7 @@ export default function SuperAdminDbAdmin() {
                 ) : (
                   <div className="border border-border/50 rounded-none-none overflow-hidden">
                     <table className="w-full font-mono text-[9px] uppercase tracking-widest border-collapse">
-                      <thead className="bg-black/60">
+                      <thead className="bg-card/60">
                         <tr>
                           {["PID", "User", "Duration", "State", "Wait", "Query"].map(h => (
                             <th key={h} className="px-3 py-1.5 text-left font-bold text-muted-foreground /50">{h}</th>
@@ -1190,7 +1190,7 @@ export default function SuperAdminDbAdmin() {
                   ) : (
                     <div className="overflow-auto max-h-[360px]">
                       <table className="w-full font-mono text-[9px] uppercase tracking-widest border-collapse">
-                        <thead className="bg-black/60 sticky top-0">
+                        <thead className="bg-card/60 sticky top-0">
                           <tr>
                             {["PID","User","App","Client","State","Age","Query"].map(h => (
                               <th key={h} className="px-3 py-1.5 text-left font-bold text-muted-foreground /50 whitespace-nowrap">{h}</th>
@@ -1264,7 +1264,7 @@ export default function SuperAdminDbAdmin() {
               {/* Operation log */}
               {maintLog.length > 0 && (
                 <div className="border border-border/50 rounded-none-none overflow-hidden">
-                  <div className="bg-black/40 px-4 py-2 /50 flex items-center justify-between">
+                  <div className="bg-card/40 px-4 py-2 /50 flex items-center justify-between">
                     <span className="font-mono text-[10px] uppercase tracking-widest font-bold flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> Operation Log</span>
                     <button onClick={() => setMaintLog([])} className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground hover:text-foreground">Clear</button>
                   </div>
@@ -1333,8 +1333,8 @@ export default function SuperAdminDbAdmin() {
 
         {/* ── Delete confirm ──────────────────────────────────────────────────── */}
         {deleteId && (
-          <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-black/40 border border-border/50 rounded-none-none shadow-[0_0_30px_rgba(239,68,68,0.15)] backdrop-blur-xl w-full max-w-sm p-6 space-y-4">
+          <div className="fixed inset-0 bg-card/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="bg-card/40 border border-border/50 rounded-none-none shadow-[0_0_30px_rgba(239,68,68,0.15)] backdrop-blur-xl w-full max-w-sm p-6 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-none-none bg-status-fault/10 flex items-center justify-center flex-shrink-0">
                   <Trash2 className="h-5 w-5 text-status-fault" />

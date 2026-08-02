@@ -137,7 +137,7 @@ function StepIndicator({ current }: { current: number }) {
             <div className={`flex items-center justify-center h-8 w-8 rounded-none border text-[10px] font-mono transition-all ${
               i < current   ? "bg-brand border-brand text-black shadow-[0_0_10px_rgba(0,255,170,0.3)]"
               : i === current ? "border-brand text-brand bg-brand/10 shadow-[inset_0_0_10px_rgba(0,255,170,0.2)]"
-              : "border-border/50 text-muted-foreground bg-black/40"
+              : "border-border/50 text-muted-foreground bg-card/40"
             }`}>
               {i < current ? <CheckCircle2 className="h-4 w-4" /> : `0${i + 1}`}
             </div>
@@ -179,7 +179,7 @@ function Step1({ state, update }: { state: WizardState; update: (p: Partial<Wiza
             className={`border p-5 text-left transition-all relative group overflow-hidden ${
               state.sourceType === value
                 ? "border-brand bg-brand/5 shadow-[0_0_15px_rgba(0,255,170,0.1)]"
-                : "border-border/50 bg-black/40 hover:border-brand/50 hover:bg-brand/5"
+                : "border-border/50 bg-card/40 hover:border-brand/50 hover:bg-brand/5"
             }`}
           >
             <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${state.sourceType === value ? "bg-brand" : "bg-border/50 group-hover:bg-brand/50"}`} />
@@ -229,7 +229,7 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
         <InfoBox>
           UPON ENERGIZATION (PHASE 5), A UNIQUE INGEST URL WILL BE GENERATED. CONFIGURE THE HARDWARE TARGET TO HTTP POST TO THIS URL. THE URL ITSELF AUTHORIZES THE INGEST.
         </InfoBox>
-        <div className="border border-border/50 bg-black/40 p-5 relative">
+        <div className="border border-border/50 bg-card/40 p-5 relative">
           <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
           <p className="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-4">TARGET CONFIGURATION EXAMPLE (TELTONIKA TRB)</p>
           <div className="space-y-3">
@@ -267,10 +267,10 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
         <InfoBox>
           HEADER ROW REQUIRED. INDEX 0 MUST BE <code className="bg-brand/20 text-brand px-1">timestamp</code> (ISO-8601 OR UNIX EPOCH). SUBSEQUENT COLUMNS REPRESENT TELEMETRY VECTORS.
         </InfoBox>
-        <div className="border border-border/50 bg-black/40 p-5 relative">
+        <div className="border border-border/50 bg-card/40 p-5 relative">
           <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
           <p className="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-4">VALIDATED STRUCTURE EXAMPLE</p>
-          <pre className="text-[10px] font-mono text-brand/80 whitespace-pre-wrap bg-black/60 p-4 border border-border/30">
+          <pre className="text-[10px] font-mono text-brand/80 whitespace-pre-wrap bg-card/60 p-4 border border-border/30">
 {`timestamp,ac_power_w,daily_yield_kwh,grid_voltage_v,temperature_c
 2024-01-15T08:00:00Z,45000,12.5,230.1,42.3
 2024-01-15T08:00:30Z,45500,12.6,230.2,42.5
@@ -297,12 +297,12 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
         <InfoBox>
           SCADA INGEST NODE WILL MAINTAIN PERSISTENT SUBSCRIPTION. VERIFY NETWORK TOPOLOGY AND BROKER ACLS PERMIT INBOUND TRAFFIC.
         </InfoBox>
-        <div className="space-y-5 border border-border/50 bg-black/40 p-6 relative">
+        <div className="space-y-5 border border-border/50 bg-card/40 p-6 relative">
           <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
           <div>
             <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><Globe className="h-3.5 w-3.5 text-brand" /> Broker Address <span className="text-status-fault">*</span></Label>
             <Input
-              className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-foreground"
+              className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 text-foreground"
               placeholder="mqtt://192.168.1.50:1883  or  mqtts://broker.hivemq.com:8883"
               value={state.brokerUrl}
               onChange={(e) => update({ brokerUrl: e.target.value })}
@@ -312,7 +312,7 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
           <div>
             <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><Tag className="h-3.5 w-3.5 text-brand" /> Topic Vector <span className="text-status-fault">*</span></Label>
             <Input
-              className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-brand"
+              className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 text-brand"
               placeholder="solar/plant/+/inverter/data"
               value={state.topic}
               onChange={(e) => update({ topic: e.target.value })}
@@ -322,7 +322,7 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
           <div className="sm:w-64">
             <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><Clock className="h-3.5 w-3.5 text-brand" /> Keep-Alive Ping (Sec)</Label>
             <Input
-              className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
+              className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50"
               type="number" min={5} max={3600}
               value={state.pollIntervalSec}
               onChange={(e) => update({ pollIntervalSec: Number(e.target.value) || 30 })}
@@ -332,13 +332,13 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
             <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2 block flex items-center gap-2"><Key className="h-3.5 w-3.5 text-brand" /> Broker Authentication <span className="opacity-50 ml-2">(IF REQUIRED)</span></Label>
             <div className="grid grid-cols-2 gap-4">
               <Input
-                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
+                className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50"
                 placeholder="USERNAME"
                 value={state.mqttUsername}
                 onChange={(e) => update({ mqttUsername: e.target.value })}
               />
               <Input
-                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
+                className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50"
                 type="password"
                 placeholder="PASSWORD"
                 value={state.mqttPassword}
@@ -375,7 +375,7 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
         }
       </InfoBox>
 
-      <div className="space-y-5 border border-border/50 bg-black/40 p-6 relative">
+      <div className="space-y-5 border border-border/50 bg-card/40 p-6 relative">
         <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
         
         <div>
@@ -383,7 +383,7 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
             {isWS ? "WebSocket Target" : "Endpoint Target"} <span className="text-status-fault">*</span>
           </Label>
           <Input
-            className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-brand"
+            className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 text-brand"
             placeholder={isWS ? "wss://device.example.com:8080/live" : "https://api.solarcloud.com/v1/readings"}
             value={state.url}
             onChange={(e) => update({ url: e.target.value })}
@@ -397,7 +397,7 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
           <div className="sm:w-64">
             <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><Clock className="h-3.5 w-3.5 text-brand" /> Polling Cycle (Sec)</Label>
             <Input
-              className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
+              className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50"
               type="number" min={5} max={3600}
               value={state.pollIntervalSec}
               onChange={(e) => update({ pollIntervalSec: Number(e.target.value) || 30 })}
@@ -408,7 +408,7 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
         <div className="pt-4 border-t border-border/50">
           <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2 block flex items-center gap-2"><Key className="h-3.5 w-3.5 text-brand" /> Authentication Strategy</Label>
           <Select value={state.authMethod} onValueChange={(v) => update({ authMethod: v as AuthMethod })}>
-            <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 uppercase tracking-widest"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-card/40 uppercase tracking-widest"><SelectValue /></SelectTrigger>
             <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
               <SelectItem value="none">PUBLIC — NO AUTH</SelectItem>
               <SelectItem value="bearer">BEARER TOKEN (AUTHORIZATION HEADER)</SelectItem>
@@ -423,13 +423,13 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Header Identifier</Label>
-              <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50" placeholder="X-API-Key"
+              <Input className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50" placeholder="X-API-Key"
                 value={state.apiKeyHeader}
                 onChange={(e) => update({ apiKeyHeader: e.target.value })} />
             </div>
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Key Secret</Label>
-              <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50" type="password" placeholder="••••••••"
+              <Input className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50" type="password" placeholder="••••••••"
                 value={state.authValue}
                 onChange={(e) => update({ authValue: e.target.value })} />
             </div>
@@ -439,7 +439,7 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
         {state.authMethod === "bearer" && (
           <div>
             <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Bearer Token</Label>
-            <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50" type="password" placeholder="eyJhbGciOiJ…"
+            <Input className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50" type="password" placeholder="eyJhbGciOiJ…"
               value={state.authValue}
               onChange={(e) => update({ authValue: e.target.value })} />
           </div>
@@ -448,7 +448,7 @@ function Step2({ state, update }: { state: WizardState; update: (p: Partial<Wiza
         {state.authMethod === "basic" && (
           <div>
             <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Basic Credentials</Label>
-            <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50" type="password" placeholder="USER:PASS"
+            <Input className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50" type="password" placeholder="USER:PASS"
               value={state.authValue}
               onChange={(e) => update({ authValue: e.target.value })} />
             <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-2">INPUT RAW USER:PASS, ENCODER HANDLES BASE64 TRANSFORMATION.</p>
@@ -546,7 +546,7 @@ function Step3({
           {isCSV ? "CSV Header/Data Sample" : "JSON Response Payload Sample"}
         </Label>
         <textarea
-          className="w-full h-56 rounded-none border border-border/50 bg-black/60 px-4 py-3 font-mono text-xs text-brand/80 resize-y focus:outline-none focus:border-brand/50 placeholder:text-muted-foreground/30 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]"
+          className="w-full h-56 rounded-none border border-border/50 bg-card/60 px-4 py-3 font-mono text-xs text-brand/80 resize-y focus:outline-none focus:border-brand/50 placeholder:text-muted-foreground/30 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]"
           placeholder={isCSV
             ? `timestamp,ac_power_w,daily_yield_kwh,grid_voltage_v\n2024-01-15T08:00:00Z,45000,12.5,230.1\n2024-01-15T08:00:30Z,45500,12.6,230.2`
             : `{\n  "ac_power":      45000,\n  "daily_energy":  125.3,\n  "temperature":   42.1,\n  "grid_voltage":  230.5,\n  "pf":            0.98\n}`}

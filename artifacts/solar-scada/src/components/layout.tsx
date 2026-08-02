@@ -287,7 +287,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <ControlRoomOverlay />
-      <div className="flex h-screen overflow-hidden bg-black text-foreground selection:bg-accent-brand/30">
+      <div className="flex h-screen overflow-hidden bg-background text-foreground selection:bg-accent-brand/30">
 
         {/* ── Sidebar: Rail + Panel ── */}
         <aside className="hidden md:flex flex-shrink-0 border-r border-border/50 bg-card/40 backdrop-blur-xl z-20">
@@ -470,7 +470,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
               {/* Tick sparkline */}
               {connected && (
-                <div className="flex gap-1 px-4 py-3 h-8 items-end border-b border-border/30 bg-black/20">
+                <div className="flex gap-1 px-4 py-3 h-8 items-end border-b border-border/30 bg-card/20">
                   {Array.from({ length: 24 }).map((_, i) => (
                     <div
                       key={i}

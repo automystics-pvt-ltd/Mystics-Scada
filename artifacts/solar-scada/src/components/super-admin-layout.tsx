@@ -74,14 +74,14 @@ export function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-black text-foreground">
+    <div className="flex h-[100dvh] overflow-hidden bg-background text-foreground">
 
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-      <aside className="flex flex-col w-64 bg-black/90 border-r border-accent-brand/50 flex-shrink-0 relative">
+      <aside className="flex flex-col w-64 bg-card/90 border-r border-accent-brand/50 flex-shrink-0 relative">
         <div className="absolute top-0 right-0 w-[1px] h-full bg-accent-brand shadow-[0_0_15px_rgba(0,195,255,0.8)]" />
 
         {/* Brand header */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-border/50 bg-black/60 relative">
+        <div className="flex items-center gap-3 px-5 py-5 border-b border-border/50 bg-card/60 relative">
           <div className="absolute bottom-0 left-0 w-1/2 h-[1px] bg-accent-brand shadow-[0_0_10px_rgba(0,195,255,0.6)]" />
           <div className="flex items-center justify-center w-8 h-8 bg-accent-brand/10 text-accent-brand border border-accent-brand/50 shadow-[inset_0_0_10px_rgba(0,195,255,0.2)] flex-shrink-0">
             <ShieldAlert className="h-4 w-4" />
@@ -125,7 +125,7 @@ export function SuperAdminLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* User footer */}
-        <div className="border-t border-border/50 p-4 bg-black/60">
+        <div className="border-t border-border/50 p-4 bg-card/60">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-8 h-8 bg-white/5 text-muted-foreground border border-border/50 text-[9px] font-mono font-bold flex-shrink-0">
               {user?.email?.slice(0, 2).toUpperCase() ?? "SA"}
@@ -135,7 +135,7 @@ export function SuperAdminLayout({ children }: { children: React.ReactNode }) {
               <div className="font-mono text-[8px] text-muted-foreground truncate uppercase tracking-widest mt-0.5">{user?.email}</div>
             </div>
             <Link href="/">
-              <div title="BACK TO SCADA" className="p-2 border border-border/50 bg-black/40 hover:border-accent-brand hover:text-accent-brand text-muted-foreground transition-colors cursor-pointer rounded-none">
+              <div title="BACK TO SCADA" className="p-2 border border-border/50 bg-card/40 hover:border-accent-brand hover:text-accent-brand text-muted-foreground transition-colors cursor-pointer rounded-none">
                 <ArrowLeft className="h-3 w-3" />
               </div>
             </Link>
@@ -144,7 +144,7 @@ export function SuperAdminLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* ── Main area ────────────────────────────────────────────────────── */}
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden bg-black/95 relative">
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden bg-card/95 relative">
         <div className="absolute inset-0 pointer-events-none opacity-[0.015] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
         {/* Impersonation banner */}

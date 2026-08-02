@@ -88,11 +88,11 @@ function InsightCard({
   const sevColor = insight.severity === "critical" ? "border-status-fault shadow-[0_0_15px_rgba(239,68,68,0.2)]" : insight.severity === "warning" ? "border-status-warning shadow-[0_0_15px_rgba(251,191,36,0.1)]" : "border-brand shadow-[0_0_15px_rgba(0,255,170,0.1)]";
 
   return (
-    <div className={`border bg-black/60 relative overflow-hidden group ${sevColor}`}>
+    <div className={`border bg-card/60 relative overflow-hidden group ${sevColor}`}>
       <div className={`absolute top-0 left-0 w-1 h-full ${insight.severity === "critical" ? "bg-status-fault" : insight.severity === "warning" ? "bg-status-warning" : "bg-brand"}`} />
       
       {/* Header */}
-      <div className="p-4 border-b border-border/50 bg-black/40">
+      <div className="p-4 border-b border-border/50 bg-card/40">
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`font-mono text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 border ${insight.severity === "critical" ? "border-status-fault text-status-fault bg-status-fault/10" : insight.severity === "warning" ? "border-status-warning text-status-warning bg-status-warning/10" : "border-brand text-brand bg-brand/10"}`}>
@@ -117,7 +117,7 @@ function InsightCard({
         </div>
 
         <div className="flex items-start gap-3">
-          <div className={`w-8 h-8 border flex items-center justify-center flex-shrink-0 ${insight.severity === "critical" ? "border-status-fault/50 text-status-fault bg-black" : insight.severity === "warning" ? "border-status-warning/50 text-status-warning bg-black" : "border-brand/50 text-brand bg-black"}`}>
+          <div className={`w-8 h-8 border flex items-center justify-center flex-shrink-0 ${insight.severity === "critical" ? "border-status-fault/50 text-status-fault bg-card" : insight.severity === "warning" ? "border-status-warning/50 text-status-warning bg-card" : "border-brand/50 text-brand bg-card"}`}>
             <TypeIcon className="w-4 h-4" />
           </div>
           <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-foreground leading-snug mt-1">{insight.title}</h3>
@@ -146,7 +146,7 @@ function InsightCard({
             <span>{insight.energyImpactKwhPerDay.toLocaleString()} KWH/DAY DELTA</span>
           </div>
         )}
-        <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground border border-border/50 px-2 py-1 bg-black/40">
+        <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground border border-border/50 px-2 py-1 bg-card/40">
           <span className="font-bold text-foreground">{insight.confidencePct}%</span> CONFIDENCE INDEX
         </div>
       </div>
@@ -189,7 +189,7 @@ function InsightCard({
           </button>
           {insight.deviceId && (
             <Link href={`/plants/${insight.plantId}/inverters/${insight.deviceId}`}>
-              <button className="flex-1 font-mono text-[9px] uppercase tracking-widest font-bold border border-border/50 bg-black/40 text-muted-foreground hover:text-foreground hover:border-brand/50 px-3 py-2 transition-colors text-center">
+              <button className="flex-1 font-mono text-[9px] uppercase tracking-widest font-bold border border-border/50 bg-card/40 text-muted-foreground hover:text-foreground hover:border-brand/50 px-3 py-2 transition-colors text-center">
                 INSPECT DEVICE →
               </button>
             </Link>
@@ -300,7 +300,7 @@ export default function InsightsPage() {
       <div className="flex flex-col space-y-6">
 
         {/* Header */}
-        <div className="border border-border/50 bg-black/40 p-5 relative flex-shrink-0">
+        <div className="border border-border/50 bg-card/40 p-5 relative flex-shrink-0">
           <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
           <h1 className="text-xl font-mono font-bold uppercase tracking-widest text-foreground flex items-center gap-3">
             <Brain className="w-5 h-5 text-brand" />
@@ -326,7 +326,7 @@ export default function InsightsPage() {
         </div>
 
         {/* Filter bar */}
-        <div className="border border-border/50 bg-black/60 p-3 flex flex-wrap items-center gap-3">
+        <div className="border border-border/50 bg-card/60 p-3 flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground border-r border-border/50 pr-3">
             <Filter className="w-3.5 h-3.5" />
             {activeFilters > 0 ? <span className="text-brand font-bold">{activeFilters} ACTIVE</span> : "FILTERS"}
@@ -344,7 +344,7 @@ export default function InsightsPage() {
                       : s === "critical" ? "bg-status-fault/20 text-status-fault border-status-fault shadow-[0_0_5px_rgba(239,68,68,0.3)]"
                       : s === "warning" ? "bg-status-warning/20 text-status-warning border-status-warning shadow-[0_0_5px_rgba(251,191,36,0.3)]"
                       : "bg-primary/20 text-primary border-primary"
-                    : "bg-black/40 text-muted-foreground border-border/50 hover:border-brand/50 hover:text-brand"
+                    : "bg-card/40 text-muted-foreground border-border/50 hover:border-brand/50 hover:text-brand"
                 }`}
               >
                 {s === "all" ? "ALL SEVERITY" : s}
@@ -357,7 +357,7 @@ export default function InsightsPage() {
             <select
               value={plantFilter}
               onChange={e => setPlantFilter(e.target.value)}
-              className="font-mono text-[9px] uppercase tracking-widest bg-black/40 border border-border/50 px-2 py-1.5 text-foreground focus:border-brand/50 focus:outline-none focus:ring-0"
+              className="font-mono text-[9px] uppercase tracking-widest bg-card/40 border border-border/50 px-2 py-1.5 text-foreground focus:border-brand/50 focus:outline-none focus:ring-0"
             >
               <option value="all">ALL ZONES</option>
               {plantList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -368,7 +368,7 @@ export default function InsightsPage() {
           <select
             value={typeFilter}
             onChange={e => setTypeFilter(e.target.value)}
-            className="font-mono text-[9px] uppercase tracking-widest bg-black/40 border border-border/50 px-2 py-1.5 text-foreground focus:border-brand/50 focus:outline-none focus:ring-0"
+            className="font-mono text-[9px] uppercase tracking-widest bg-card/40 border border-border/50 px-2 py-1.5 text-foreground focus:border-brand/50 focus:outline-none focus:ring-0"
           >
             <option value="all">ALL TYPES</option>
             {Object.entries(TYPE_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
@@ -388,11 +388,11 @@ export default function InsightsPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="border border-border/50 bg-black/60 h-64 animate-pulse" />
+              <div key={i} className="border border-border/50 bg-card/60 h-64 animate-pulse" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 border border-border/50 bg-black/40 text-center">
+          <div className="flex flex-col items-center justify-center h-64 border border-border/50 bg-card/40 text-center">
             <Brain className="w-12 h-12 text-status-normal mb-4 shadow-[0_0_15px_rgba(34,197,94,0.3)] animate-pulse" />
             <h3 className="font-mono text-sm uppercase tracking-widest font-bold text-status-normal">
               {insights.length === 0 ? "SYSTEMS NOMINAL // NO ANOMALIES" : "NO INSIGHTS MATCH PARAMETERS"}

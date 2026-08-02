@@ -72,7 +72,7 @@ export default function SuperAdminSystemHealth() {
               { label: "PLATFORM",     value: data?.platform ?? "—",                  icon: Cpu,        color: "text-muted-foreground" },
               { label: "ENVIRONMENT",  value: data?.env ?? "—",                        icon: Activity,   color: data?.env === "production" ? "text-status-normal" : "text-status-warning" },
             ].map(({ label, value, icon: Icon, color }) => (
-              <div key={label} className="border border-border/50 bg-black/40 p-4 relative group hover:border-accent-brand/50 transition-colors">
+              <div key={label} className="border border-border/50 bg-card/40 p-4 relative group hover:border-accent-brand/50 transition-colors">
                 <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-accent-brand transition-colors" />
                 <div className="flex items-center justify-between mb-3 pl-2">
                   <p className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{label}</p>
@@ -86,8 +86,8 @@ export default function SuperAdminSystemHealth() {
           </div>
 
           {/* Memory */}
-          <div className="border border-border/50 bg-black/40 flex flex-col relative overflow-hidden">
-            <div className="px-4 py-3 border-b border-border/50 bg-black/60 flex items-center justify-between">
+          <div className="border border-border/50 bg-card/40 flex flex-col relative overflow-hidden">
+            <div className="px-4 py-3 border-b border-border/50 bg-card/60 flex items-center justify-between">
               <h3 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
                 <HardDrive className="h-3.5 w-3.5 text-accent-brand" />
                 MEMORY ALLOCATION
@@ -102,7 +102,7 @@ export default function SuperAdminSystemHealth() {
                     { label: "HEAP TOTAL", value: fmtBytes(data.memory.heapTotal), sub: "V8 HEAP ALLOCATED" },
                     { label: "EXTERNAL",   value: fmtBytes(data.memory.external),  sub: "C++ BINDINGS" },
                   ].map(({ label, value, sub, className }) => (
-                    <div key={label} className="bg-black/60 p-4 border border-border/30">
+                    <div key={label} className="bg-card/60 p-4 border border-border/30">
                       <p className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-2">{label}</p>
                       <p className={`font-mono text-xl font-bold uppercase ${className ?? "text-foreground"}`}>{value}</p>
                       <p className="font-mono text-[8px] text-muted-foreground uppercase tracking-widest mt-1">{sub}</p>
@@ -130,8 +130,8 @@ export default function SuperAdminSystemHealth() {
           </div>
 
           {/* Database */}
-          <div className="border border-border/50 bg-black/40 flex flex-col">
-            <div className="px-4 py-3 border-b border-border/50 bg-black/60 flex items-center justify-between">
+          <div className="border border-border/50 bg-card/40 flex flex-col">
+            <div className="px-4 py-3 border-b border-border/50 bg-card/60 flex items-center justify-between">
               <h3 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
                 <Database className="h-3.5 w-3.5 text-accent-brand" />
                 DATABASE CONNECTIVITY
@@ -170,8 +170,8 @@ export default function SuperAdminSystemHealth() {
 
           {/* Process info */}
           {data && (
-            <div className="border border-border/50 bg-black/40 flex flex-col">
-              <div className="px-4 py-3 border-b border-border/50 bg-black/60 flex items-center justify-between">
+            <div className="border border-border/50 bg-card/40 flex flex-col">
+              <div className="px-4 py-3 border-b border-border/50 bg-card/60 flex items-center justify-between">
                 <h3 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
                   <Cpu className="h-3.5 w-3.5 text-accent-brand" />
                   RUNTIME CONTEXT
@@ -187,7 +187,7 @@ export default function SuperAdminSystemHealth() {
                     ["UPTIME",    fmtUptime(data.uptime)],
                     ["HEAP %",    `${heapPct}%`],
                   ].map(([k, v]) => (
-                    <div key={k} className="bg-black/60 px-4 py-3 border border-border/30 flex items-center justify-between hover:border-accent-brand/30 transition-colors">
+                    <div key={k} className="bg-card/60 px-4 py-3 border border-border/30 flex items-center justify-between hover:border-accent-brand/30 transition-colors">
                       <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{k}</span>
                       <span className="font-mono text-[10px] font-bold text-accent-brand uppercase tracking-widest">{v}</span>
                     </div>

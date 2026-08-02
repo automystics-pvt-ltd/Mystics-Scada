@@ -61,7 +61,7 @@ export default function SuperAdminBilling() {
 
           {/* MRR + plan summary */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="lg:col-span-2 border border-accent-brand/50 bg-black/40 p-5 relative group transition-colors hover:border-accent-brand">
+            <div className="lg:col-span-2 border border-accent-brand/50 bg-card/40 p-5 relative group transition-colors hover:border-accent-brand">
               <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-accent-brand transition-colors" />
               <p className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-2 pl-2">MONTHLY RECURRING REVENUE</p>
               {isLoading ? <div className="h-10 bg-white/5 animate-pulse w-32 ml-2" /> : (
@@ -77,7 +77,7 @@ export default function SuperAdminBilling() {
               { label: "STARTER",       value: data?.summary.starter      ?? 0, color: "text-zinc-400",   price: "$99" },
               { label: "SUSPENDED",     value: data?.summary.suspended    ?? 0, color: "text-status-fault", price: "$0" },
             ].map(({ label, value, color, price }) => (
-              <div key={label} className="border border-border/50 bg-black/40 p-4 relative group hover:border-border transition-colors">
+              <div key={label} className="border border-border/50 bg-card/40 p-4 relative group hover:border-border transition-colors">
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-border/30 group-hover:bg-border/60 transition-colors" />
                 <p className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{label}</p>
                 <p className={`text-3xl font-bold font-mono mt-2 ${color}`}>{isLoading ? "—" : value}</p>
@@ -88,7 +88,7 @@ export default function SuperAdminBilling() {
 
           {/* MRR breakdown bar */}
           {data && totalMrr > 0 && (
-            <div className="border border-border/50 bg-black/40 p-5">
+            <div className="border border-border/50 bg-card/40 p-5">
               <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground mb-4 flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-accent-brand" />
                 MRR BREAKDOWN
@@ -119,14 +119,14 @@ export default function SuperAdminBilling() {
           )}
 
           {/* Org table */}
-          <div className="border border-border/50 bg-black/40">
-            <div className="px-4 py-3 border-b border-border/50 bg-black/60 flex items-center justify-between">
+          <div className="border border-border/50 bg-card/40">
+            <div className="px-4 py-3 border-b border-border/50 bg-card/60 flex items-center justify-between">
               <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground">ALL ORGANISATIONS</h2>
               <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{data?.orgs.length ?? 0} TOTAL</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-black/60 border-b border-border/50">
+                <thead className="bg-card/60 border-b border-border/50">
                   <tr>
                     <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">ORGANISATION</th>
                     <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">PLAN</th>

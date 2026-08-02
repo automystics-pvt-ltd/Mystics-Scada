@@ -39,14 +39,14 @@ export function BottomNav() {
       {/* Backdrop */}
       {moreOpen && (
         <div
-          className="md:hidden fixed inset-0 z-40 bg-black/80 backdrop-blur-sm"
+          className="md:hidden fixed inset-0 z-40 bg-card/80 backdrop-blur-sm"
           onClick={() => setMoreOpen(false)}
         />
       )}
 
       {/* More drawer — slides up from bottom */}
       <div
-        className={`md:hidden fixed bottom-[57px] left-0 right-0 z-50 bg-black/95 border-t border-brand/50 shadow-[0_-10px_30px_rgba(0,255,170,0.1)] transition-transform duration-300 ${
+        className={`md:hidden fixed bottom-[57px] left-0 right-0 z-50 bg-card/95 border-t border-brand/50 shadow-[0_-10px_30px_rgba(0,255,170,0.1)] transition-transform duration-300 ${
           moreOpen ? "translate-y-0" : "translate-y-full"
         }`}
       >
@@ -69,7 +69,7 @@ export function BottomNav() {
                 <div className={`flex items-center gap-2 px-3 py-3 border transition-colors ${
                   isActive
                     ? "bg-brand/10 border-brand text-brand shadow-[inset_0_0_10px_rgba(0,255,170,0.2)]"
-                    : "bg-black/40 border-border/50 text-muted-foreground group-hover:bg-brand/5 group-hover:border-brand/50 group-hover:text-brand"
+                    : "bg-card/40 border-border/50 text-muted-foreground group-hover:bg-brand/5 group-hover:border-brand/50 group-hover:text-brand"
                 }`}>
                   <item.icon className="h-4 w-4 flex-shrink-0" />
                   <span className="font-mono text-[9px] font-bold tracking-widest uppercase">{item.name}</span>
@@ -81,7 +81,7 @@ export function BottomNav() {
       </div>
 
       {/* Bottom bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/95 border-t border-brand/50 backdrop-blur-md">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 border-t border-brand/50 backdrop-blur-md">
         <div className="flex items-stretch">
           {PRIMARY_NAV.map((item) => {
             const isActive =

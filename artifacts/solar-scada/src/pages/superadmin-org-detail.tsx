@@ -262,7 +262,7 @@ export default function SuperAdminOrgDetail() {
           {/* Alert summary */}
           <div className="grid grid-cols-4 gap-4">
             {(["critical", "major", "minor", "informational"] as const).map((sev) => (
-              <div key={sev} className="border border-border/50 bg-black/40 text-center py-4 relative group hover:border-accent-brand/50 transition-colors">
+              <div key={sev} className="border border-border/50 bg-card/40 text-center py-4 relative group hover:border-accent-brand/50 transition-colors">
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-border/30 group-hover:bg-accent-brand/50 transition-colors" />
                 <p className={`font-mono text-3xl font-bold ${
                   sev === "critical" ? "text-status-fault"
@@ -277,8 +277,8 @@ export default function SuperAdminOrgDetail() {
 
           <div className="grid grid-cols-2 gap-6">
             {/* Plants */}
-            <div className="border border-border/50 bg-black/40 flex flex-col">
-              <div className="px-4 py-3 border-b border-border/50 bg-black/60 flex items-center justify-between">
+            <div className="border border-border/50 bg-card/40 flex flex-col">
+              <div className="px-4 py-3 border-b border-border/50 bg-card/60 flex items-center justify-between">
                 <h3 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
                   <Zap className="h-3.5 w-3.5 text-accent-brand" />
                   PLANTS ({plants.length})
@@ -304,8 +304,8 @@ export default function SuperAdminOrgDetail() {
             </div>
 
             {/* Audit log */}
-            <div className="border border-border/50 bg-black/40 flex flex-col">
-              <div className="px-4 py-3 border-b border-border/50 bg-black/60 flex items-center justify-between">
+            <div className="border border-border/50 bg-card/40 flex flex-col">
+              <div className="px-4 py-3 border-b border-border/50 bg-card/60 flex items-center justify-between">
                 <h3 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
                   <FileText className="h-3.5 w-3.5 text-accent-brand" />
                   RECENT AUDIT LOG
@@ -335,8 +335,8 @@ export default function SuperAdminOrgDetail() {
           </div>
 
           {/* Users table */}
-          <div className="border border-border/50 bg-black/40">
-            <div className="px-4 py-3 border-b border-border/50 bg-black/60 flex items-center justify-between">
+          <div className="border border-border/50 bg-card/40">
+            <div className="px-4 py-3 border-b border-border/50 bg-card/60 flex items-center justify-between">
               <h3 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
                 <Users className="h-3.5 w-3.5 text-accent-brand" />
                 USERS ({users.length})
@@ -344,7 +344,7 @@ export default function SuperAdminOrgDetail() {
             </div>
             <div className="p-0 overflow-x-auto">
               <Table>
-                <TableHeader className="bg-black/60 border-b border-border/50">
+                <TableHeader className="bg-card/60 border-b border-border/50">
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="pl-4 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">NAME</TableHead>
                     <TableHead className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">EMAIL</TableHead>
@@ -390,14 +390,14 @@ export default function SuperAdminOrgDetail() {
 
         {/* Change Plan Dialog */}
         <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
-          <DialogContent className="max-w-xs bg-black/95 border border-accent-brand/50 rounded-none shadow-[0_0_30px_rgba(0,195,255,0.15)] backdrop-blur-xl">
+          <DialogContent className="max-w-xs bg-card/95 border border-accent-brand/50 rounded-none shadow-[0_0_30px_rgba(0,195,255,0.15)] backdrop-blur-xl">
             <DialogHeader className="border-b border-border/50 pb-4">
               <DialogTitle className="font-mono text-sm uppercase tracking-widest text-accent-brand">CHANGE PLAN</DialogTitle>
             </DialogHeader>
             <div className="space-y-3 py-4">
               <Label className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">PLAN TIER</Label>
               <Select value={newPlan} onValueChange={setNewPlan}>
-                <SelectTrigger className="font-mono text-xs uppercase tracking-widest bg-black/50 border-border/50 rounded-none focus:ring-accent-brand">
+                <SelectTrigger className="font-mono text-xs uppercase tracking-widest bg-card/50 border-border/50 rounded-none focus:ring-accent-brand">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest">

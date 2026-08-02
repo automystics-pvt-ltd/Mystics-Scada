@@ -201,7 +201,7 @@ function GenerateModal({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg rounded-none border border-brand/50 bg-black/90 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] p-0 gap-0">
+      <DialogContent className="max-w-lg rounded-none border border-brand/50 bg-card/90 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] p-0 gap-0">
         <DialogHeader className="p-5 border-b border-border/50">
           <DialogTitle className="flex items-center gap-3 font-mono text-base uppercase tracking-widest text-brand">
             <Icon className="h-5 w-5" />
@@ -218,7 +218,7 @@ function GenerateModal({
               </Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar">
                 {plants.map((p) => (
-                  <label key={p.id} className={`flex items-center gap-3 p-2 border cursor-pointer transition-colors ${selectedPlants.includes(p.id) ? "border-brand bg-brand/10 text-brand" : "border-border/50 bg-black/40 text-muted-foreground hover:border-brand/50 hover:bg-brand/5"}`}>
+                  <label key={p.id} className={`flex items-center gap-3 p-2 border cursor-pointer transition-colors ${selectedPlants.includes(p.id) ? "border-brand bg-brand/10 text-brand" : "border-border/50 bg-card/40 text-muted-foreground hover:border-brand/50 hover:bg-brand/5"}`}>
                     <input
                       type="checkbox"
                       checked={selectedPlants.includes(p.id)}
@@ -247,7 +247,7 @@ function GenerateModal({
                     <button
                       key={p.label}
                       onClick={() => { setDateFrom(range.from); setDateTo(range.to); }}
-                      className={`font-mono text-[9px] uppercase tracking-widest px-3 py-1.5 border transition-colors ${active ? "bg-brand/20 text-brand border-brand shadow-[0_0_5px_rgba(0,255,170,0.3)]" : "border-border/50 bg-black/40 text-muted-foreground hover:border-brand/50 hover:text-brand"}`}
+                      className={`font-mono text-[9px] uppercase tracking-widest px-3 py-1.5 border transition-colors ${active ? "bg-brand/20 text-brand border-brand shadow-[0_0_5px_rgba(0,255,170,0.3)]" : "border-border/50 bg-card/40 text-muted-foreground hover:border-brand/50 hover:text-brand"}`}
                     >
                       {p.label}
                     </button>
@@ -257,11 +257,11 @@ function GenerateModal({
               <div className="flex gap-4">
                 <div className="flex-1">
                   <Label className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">FROM</Label>
-                  <Input type="date" className="mt-1 h-10 rounded-none border-border/50 bg-black/40 font-mono text-[10px] uppercase tracking-widest focus-visible:border-brand/50 focus-visible:ring-0 text-brand" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                  <Input type="date" className="mt-1 h-10 rounded-none border-border/50 bg-card/40 font-mono text-[10px] uppercase tracking-widest focus-visible:border-brand/50 focus-visible:ring-0 text-brand" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
                 </div>
                 <div className="flex-1">
                   <Label className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">TO</Label>
-                  <Input type="date" className="mt-1 h-10 rounded-none border-border/50 bg-black/40 font-mono text-[10px] uppercase tracking-widest focus-visible:border-brand/50 focus-visible:ring-0 text-brand" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                  <Input type="date" className="mt-1 h-10 rounded-none border-border/50 bg-card/40 font-mono text-[10px] uppercase tracking-widest focus-visible:border-brand/50 focus-visible:ring-0 text-brand" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
                 </div>
               </div>
             </div>
@@ -276,7 +276,7 @@ function GenerateModal({
                   <button
                     key={f}
                     onClick={() => setFormat(f)}
-                    className={`font-mono text-[10px] uppercase tracking-widest px-5 py-2 border transition-colors ${format === f ? "bg-brand/20 text-brand border-brand shadow-[0_0_5px_rgba(0,255,170,0.3)]" : "border-border/50 bg-black/40 text-muted-foreground hover:border-brand/50 hover:text-brand"}`}
+                    className={`font-mono text-[10px] uppercase tracking-widest px-5 py-2 border transition-colors ${format === f ? "bg-brand/20 text-brand border-brand shadow-[0_0_5px_rgba(0,255,170,0.3)]" : "border-border/50 bg-card/40 text-muted-foreground hover:border-brand/50 hover:text-brand"}`}
                   >
                     {f}
                   </button>
@@ -294,7 +294,7 @@ function GenerateModal({
           </div>
         )}
 
-        <DialogFooter className="p-5 border-t border-border/50 bg-black/40 sm:justify-between flex-row">
+        <DialogFooter className="p-5 border-t border-border/50 bg-card/40 sm:justify-between flex-row">
           <button className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-brand transition-colors flex items-center gap-2" onClick={onClose}>
             <X className="h-3.5 w-3.5" /> {generatedId ? "CLOSE" : "ABORT"}
           </button>
@@ -378,7 +378,7 @@ function ScheduleModal({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md rounded-none border border-brand/50 bg-black/90 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] p-0 gap-0">
+      <DialogContent className="max-w-md rounded-none border border-brand/50 bg-card/90 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] p-0 gap-0">
         <DialogHeader className="p-5 border-b border-border/50">
           <DialogTitle className="flex items-center gap-3 font-mono text-base uppercase tracking-widest text-brand">
             <Calendar className="h-5 w-5" />
@@ -386,7 +386,7 @@ function ScheduleModal({
           </DialogTitle>
         </DialogHeader>
         <div className="p-5 space-y-6">
-          <div className="flex items-start gap-3 p-3 border border-border/50 bg-black/40 relative">
+          <div className="flex items-start gap-3 p-3 border border-border/50 bg-card/40 relative">
             <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
             <Icon className="h-4 w-4 text-brand mt-0.5 flex-shrink-0" />
             <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground leading-relaxed">{type.description}</p>
@@ -398,7 +398,7 @@ function ScheduleModal({
             </Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar">
               {plants.map((p) => (
-                <label key={p.id} className={`flex items-center gap-3 p-2 border cursor-pointer transition-colors ${selectedPlants.includes(p.id) ? "border-brand bg-brand/10 text-brand" : "border-border/50 bg-black/40 text-muted-foreground hover:border-brand/50 hover:bg-brand/5"}`}>
+                <label key={p.id} className={`flex items-center gap-3 p-2 border cursor-pointer transition-colors ${selectedPlants.includes(p.id) ? "border-brand bg-brand/10 text-brand" : "border-border/50 bg-card/40 text-muted-foreground hover:border-brand/50 hover:bg-brand/5"}`}>
                   <input type="checkbox" checked={selectedPlants.includes(p.id)} onChange={() => togglePlant(p.id)} className="accent-brand" />
                   <span className="font-mono text-[10px] uppercase tracking-widest font-bold">{p.name}</span>
                 </label>
@@ -412,8 +412,8 @@ function ScheduleModal({
                 <span className="w-1.5 h-1.5 bg-brand inline-block" /> CRON FREQUENCY
               </Label>
               <Select value={frequency} onValueChange={(v: "daily" | "weekly" | "monthly") => setFrequency(v)}>
-                <SelectTrigger className="h-10 rounded-none border-border/50 bg-black/40 font-mono text-[10px] uppercase tracking-widest text-foreground focus:border-brand/50"><SelectValue /></SelectTrigger>
-                <SelectContent className="rounded-none border-border/50 bg-black/90 font-mono text-[10px] uppercase tracking-widest text-foreground">
+                <SelectTrigger className="h-10 rounded-none border-border/50 bg-card/40 font-mono text-[10px] uppercase tracking-widest text-foreground focus:border-brand/50"><SelectValue /></SelectTrigger>
+                <SelectContent className="rounded-none border-border/50 bg-card/90 font-mono text-[10px] uppercase tracking-widest text-foreground">
                   <SelectItem value="daily">DAILY</SelectItem>
                   <SelectItem value="weekly">WEEKLY</SelectItem>
                   <SelectItem value="monthly">MONTHLY</SelectItem>
@@ -425,8 +425,8 @@ function ScheduleModal({
                 <span className="w-1.5 h-1.5 bg-brand inline-block" /> ENCODING
               </Label>
               <Select value={format} onValueChange={(v: "pdf" | "csv") => setFormat(v)}>
-                <SelectTrigger className="h-10 rounded-none border-border/50 bg-black/40 font-mono text-[10px] uppercase tracking-widest text-foreground focus:border-brand/50"><SelectValue /></SelectTrigger>
-                <SelectContent className="rounded-none border-border/50 bg-black/90 font-mono text-[10px] uppercase tracking-widest text-foreground">
+                <SelectTrigger className="h-10 rounded-none border-border/50 bg-card/40 font-mono text-[10px] uppercase tracking-widest text-foreground focus:border-brand/50"><SelectValue /></SelectTrigger>
+                <SelectContent className="rounded-none border-border/50 bg-card/90 font-mono text-[10px] uppercase tracking-widest text-foreground">
                   <SelectItem value="pdf">PDF FORMAT</SelectItem>
                   <SelectItem value="csv">CSV FORMAT</SelectItem>
                 </SelectContent>
@@ -440,8 +440,8 @@ function ScheduleModal({
                 <span className="w-1.5 h-1.5 bg-brand inline-block" /> TRIGGER DAY
               </Label>
               <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
-                <SelectTrigger className="h-10 rounded-none border-border/50 bg-black/40 font-mono text-[10px] uppercase tracking-widest text-foreground focus:border-brand/50"><SelectValue /></SelectTrigger>
-                <SelectContent className="rounded-none border-border/50 bg-black/90 font-mono text-[10px] uppercase tracking-widest text-foreground">
+                <SelectTrigger className="h-10 rounded-none border-border/50 bg-card/40 font-mono text-[10px] uppercase tracking-widest text-foreground focus:border-brand/50"><SelectValue /></SelectTrigger>
+                <SelectContent className="rounded-none border-border/50 bg-card/90 font-mono text-[10px] uppercase tracking-widest text-foreground">
                   {["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"].map((d, i) => (
                     <SelectItem key={i} value={String(i)}>{d}</SelectItem>
                   ))}
@@ -454,18 +454,18 @@ function ScheduleModal({
             <Label className="font-mono text-[10px] uppercase tracking-widest text-brand flex items-center gap-2 mb-2">
               <span className="w-1.5 h-1.5 bg-brand inline-block" /> TRIGGER TIME (UTC)
             </Label>
-            <Input type="time" className="h-10 rounded-none border-border/50 bg-black/40 font-mono text-[10px] uppercase tracking-widest text-brand focus-visible:border-brand/50" value={timeUtc} onChange={(e) => setTimeUtc(e.target.value)} />
+            <Input type="time" className="h-10 rounded-none border-border/50 bg-card/40 font-mono text-[10px] uppercase tracking-widest text-brand focus-visible:border-brand/50" value={timeUtc} onChange={(e) => setTimeUtc(e.target.value)} />
           </div>
 
           <div>
             <Label className="font-mono text-[10px] uppercase tracking-widest text-brand flex items-center gap-2 mb-2">
               <span className="w-1.5 h-1.5 bg-brand inline-block" /> DELIVERY TARGETS
             </Label>
-            <Input className="h-10 rounded-none border-border/50 bg-black/40 font-mono text-[10px] uppercase tracking-widest text-foreground focus-visible:border-brand/50" placeholder="OPS@CORP.COM, ADMIN@CORP.COM" value={recipients} onChange={(e) => setRecipients(e.target.value)} />
+            <Input className="h-10 rounded-none border-border/50 bg-card/40 font-mono text-[10px] uppercase tracking-widest text-foreground focus-visible:border-brand/50" placeholder="OPS@CORP.COM, ADMIN@CORP.COM" value={recipients} onChange={(e) => setRecipients(e.target.value)} />
             <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mt-2">COMMA-SEPARATED. LEAVE BLANK TO SKIP EMAIL DELIVERY.</p>
           </div>
         </div>
-        <DialogFooter className="p-5 border-t border-border/50 bg-black/40 sm:justify-between flex-row">
+        <DialogFooter className="p-5 border-t border-border/50 bg-card/40 sm:justify-between flex-row">
           <button className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-brand transition-colors" onClick={onClose}>ABORT</button>
           <button onClick={() => mutation.mutate()} disabled={mutation.isPending || selectedPlants.length === 0} className="font-mono text-[10px] uppercase tracking-widest font-bold border border-brand bg-brand/10 text-brand hover:bg-brand/20 px-4 py-2 flex items-center gap-2 transition-colors shadow-[0_0_10px_rgba(0,255,170,0.2)] disabled:opacity-50">
             <Calendar className="h-3.5 w-3.5" />
@@ -575,7 +575,7 @@ export default function ReportsPage() {
     <AppLayout>
       <div className="flex flex-col h-[calc(100vh-100px)] space-y-6">
         {/* Header */}
-        <div className="border border-border/50 bg-black/40 p-5 relative flex-shrink-0">
+        <div className="border border-border/50 bg-card/40 p-5 relative flex-shrink-0">
           <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
           <h1 className="text-xl font-mono font-bold uppercase tracking-widest text-foreground flex items-center gap-3">
             <FileText className="h-5 w-5 text-brand" />
@@ -594,7 +594,7 @@ export default function ReportsPage() {
                 <button
                   key={cat}
                   onClick={() => setFilterCategory(cat)}
-                  className={`font-mono text-[9px] uppercase tracking-widest px-3 py-1.5 transition-colors ${filterCategory === cat ? "border border-brand text-brand bg-brand/10 shadow-[0_0_10px_rgba(0,255,170,0.2)]" : "border border-border/50 text-muted-foreground bg-black/40 hover:text-foreground hover:bg-brand/5 hover:border-brand/30"}`}
+                  className={`font-mono text-[9px] uppercase tracking-widest px-3 py-1.5 transition-colors ${filterCategory === cat ? "border border-brand text-brand bg-brand/10 shadow-[0_0_10px_rgba(0,255,170,0.2)]" : "border border-border/50 text-muted-foreground bg-card/40 hover:text-foreground hover:bg-brand/5 hover:border-brand/30"}`}
                 >
                   {cat}
                 </button>
@@ -608,13 +608,13 @@ export default function ReportsPage() {
                 return (
                   <div
                     key={type.id}
-                    className="border border-border/50 bg-black/60 p-4 relative group hover:border-brand/50 transition-colors"
+                    className="border border-border/50 bg-card/60 p-4 relative group hover:border-brand/50 transition-colors"
                   >
                     <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-brand transition-colors" />
                     
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 border border-border/50 bg-black flex items-center justify-center flex-shrink-0 group-hover:border-brand/50 group-hover:text-brand transition-colors">
+                        <div className="w-8 h-8 border border-border/50 bg-card flex items-center justify-center flex-shrink-0 group-hover:border-brand/50 group-hover:text-brand transition-colors">
                           <Icon className="h-4 w-4" />
                         </div>
                         <div className="font-mono text-xs font-bold uppercase tracking-widest group-hover:text-brand transition-colors">{type.name}</div>
@@ -626,7 +626,7 @@ export default function ReportsPage() {
                     </p>
                     
                     <div className="flex items-center justify-between border-t border-border/50 pt-3">
-                      <div className={`font-mono text-[8px] uppercase tracking-widest font-bold px-1.5 py-0.5 border ${catCls} bg-black/40`}>
+                      <div className={`font-mono text-[8px] uppercase tracking-widest font-bold px-1.5 py-0.5 border ${catCls} bg-card/40`}>
                         {type.category}
                       </div>
                       
@@ -634,7 +634,7 @@ export default function ReportsPage() {
                         {canSchedule && (
                           <button
                             onClick={() => setScheduleType(type)}
-                            className="border border-border/50 bg-black hover:border-brand hover:text-brand p-1.5 transition-colors"
+                            className="border border-border/50 bg-card hover:border-brand hover:text-brand p-1.5 transition-colors"
                             title="Schedule Delivery"
                           >
                             <Calendar className="h-3 w-3" />
@@ -659,7 +659,7 @@ export default function ReportsPage() {
           {/* ── Right: History + Schedules ── */}
           <div className="flex-1 min-w-0 flex flex-col h-full">
             {/* Tabs */}
-            <div className="flex border border-border/50 bg-black/40 mb-5 flex-shrink-0">
+            <div className="flex border border-border/50 bg-card/40 mb-5 flex-shrink-0">
               {(["history", "schedules"] as const).map((tab) => (
                 <button
                   key={tab}
@@ -680,13 +680,13 @@ export default function ReportsPage() {
               ))}
             </div>
 
-            <div className="flex-1 min-h-0 border border-border/50 bg-black/60 relative overflow-hidden">
+            <div className="flex-1 min-h-0 border border-border/50 bg-card/60 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
               
               {activeTab === "history" && (
                 <div className="h-full overflow-auto custom-scrollbar">
                   <table className="w-full text-sm min-w-[700px]">
-                    <thead className="sticky top-0 bg-black/90 backdrop-blur border-b border-border/50 z-10">
+                    <thead className="sticky top-0 bg-card/90 backdrop-blur border-b border-border/50 z-10">
                       <tr>
                         <th className="text-left px-5 py-4 font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest">REPORT TYPE</th>
                         <th className="text-left px-5 py-4 font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest">TIME HORIZON</th>
@@ -728,7 +728,7 @@ export default function ReportsPage() {
                                 {r.plantIds.length} ZONE{r.plantIds.length !== 1 ? "S" : ""}
                               </td>
                               <td className="px-5 py-4">
-                                <span className="border border-border/50 bg-black/40 text-[9px] uppercase tracking-widest px-2 py-1 font-bold text-foreground">
+                                <span className="border border-border/50 bg-card/40 text-[9px] uppercase tracking-widest px-2 py-1 font-bold text-foreground">
                                   {r.format}
                                 </span>
                               </td>
@@ -770,7 +770,7 @@ export default function ReportsPage() {
                     </div>
                   ) : (
                     <table className="w-full text-sm min-w-[700px]">
-                      <thead className="sticky top-0 bg-black/90 backdrop-blur border-b border-border/50 z-10">
+                      <thead className="sticky top-0 bg-card/90 backdrop-blur border-b border-border/50 z-10">
                         <tr>
                           <th className="text-left px-5 py-4 font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest">PIPELINE</th>
                           <th className="text-left px-5 py-4 font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest">CRON FREQ</th>
@@ -797,7 +797,7 @@ export default function ReportsPage() {
                                 {s.timeUtc}
                               </td>
                               <td className="px-5 py-4">
-                                <span className="border border-border/50 bg-black/40 text-[9px] uppercase tracking-widest px-2 py-1 font-bold text-foreground">
+                                <span className="border border-border/50 bg-card/40 text-[9px] uppercase tracking-widest px-2 py-1 font-bold text-foreground">
                                   {s.format}
                                 </span>
                               </td>

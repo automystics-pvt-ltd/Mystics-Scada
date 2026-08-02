@@ -32,7 +32,7 @@ export default function AnalyticsView() {
   return (
     <AppLayout>
       <div className="flex flex-col space-y-6">
-        <div className="border border-border/50 bg-black/40 p-5 relative flex-shrink-0">
+        <div className="border border-border/50 bg-card/40 p-5 relative flex-shrink-0">
           <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
           
           <div className="flex items-center mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground flex-wrap">
@@ -60,23 +60,23 @@ export default function AnalyticsView() {
             <div className="absolute top-0 left-0 w-1 h-full bg-status-normal shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
             <KpiCard title="CO2 AVOIDED (TODAY)" value={rev?.co2AvoidedKgToday} unit="KG" precision={0} icon={Leaf} loading={loadingRev} className="border-none bg-transparent" />
           </div>
-          <div className="border border-status-normal/30 bg-black/40 relative">
+          <div className="border border-status-normal/30 bg-card/40 relative">
             <KpiCard title="CO2 AVOIDED (LIFE)" value={rev?.co2AvoidedKgLifetime} unit="KG" precision={0} icon={Leaf} loading={loadingRev} className="border-none bg-transparent" />
           </div>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Yield Chart */}
-          <div className="xl:col-span-2 border border-border/50 bg-black/60 relative overflow-hidden flex flex-col">
+          <div className="xl:col-span-2 border border-border/50 bg-card/60 relative overflow-hidden flex flex-col">
             <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 p-5 border-b border-border/50 bg-black/40">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 p-5 border-b border-border/50 bg-card/40">
               <div>
                 <h3 className="font-mono text-sm uppercase tracking-widest text-foreground font-bold">GENERATION MATRIX</h3>
                 <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
                   SPECIFIC YIELD // <span className="text-brand font-bold">{yieldData?.specificYieldKwhPerKwp.toFixed(2)} KWH/KWP</span>
                 </p>
               </div>
-              <div className="flex border border-border/50 bg-black/40 p-1">
+              <div className="flex border border-border/50 bg-card/40 p-1">
                 {['daily', 'weekly', 'monthly', 'yearly'].map((p) => (
                   <button
                     key={p}
@@ -110,7 +110,7 @@ export default function AnalyticsView() {
 
           {/* PR & Losses */}
           <div className="space-y-6">
-            <div className="border border-border/50 bg-black/60 p-5 relative">
+            <div className="border border-border/50 bg-card/60 p-5 relative">
               <div className="absolute top-0 left-0 w-1 h-full bg-status-normal shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
               <h3 className="font-mono text-sm uppercase tracking-widest font-bold text-foreground mb-6 flex items-center gap-2">
                 <span className="w-2 h-2 bg-status-normal animate-pulse" /> UPTIME VECTORS
@@ -121,7 +121,7 @@ export default function AnalyticsView() {
                     <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">ZONE UPTIME</span>
                     <span className="font-mono text-sm font-bold text-status-normal">{perf?.availabilityPct.toFixed(1)}%</span>
                   </div>
-                  <div className="w-full bg-black/80 border border-border/50 h-2 p-[1px]">
+                  <div className="w-full bg-card/80 border border-border/50 h-2 p-[1px]">
                     <div className="bg-status-normal h-full shadow-[0_0_5px_rgba(34,197,94,0.5)]" style={{ width: `${perf?.availabilityPct || 0}%` }}></div>
                   </div>
                 </div>
@@ -130,20 +130,20 @@ export default function AnalyticsView() {
                     <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">GRID UPTIME</span>
                     <span className="font-mono text-sm font-bold text-status-normal">{perf?.gridAvailabilityPct.toFixed(1)}%</span>
                   </div>
-                  <div className="w-full bg-black/80 border border-border/50 h-2 p-[1px]">
+                  <div className="w-full bg-card/80 border border-border/50 h-2 p-[1px]">
                     <div className="bg-status-normal h-full shadow-[0_0_5px_rgba(34,197,94,0.5)]" style={{ width: `${perf?.gridAvailabilityPct || 0}%` }}></div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="border border-border/50 bg-black/60 p-5 relative">
+            <div className="border border-border/50 bg-card/60 p-5 relative">
               <div className="absolute top-0 left-0 w-1 h-full bg-status-warning shadow-[0_0_10px_rgba(251,191,36,0.5)]" />
               <h3 className="font-mono text-sm uppercase tracking-widest font-bold text-foreground mb-6 flex items-center gap-2">
                 <PieChart className="w-4 h-4 text-status-warning" /> ATTENUATION MODEL
               </h3>
               {loadingPerf ? (
-                <div className="h-40 border border-border/50 bg-black/40 animate-pulse"></div>
+                <div className="h-40 border border-border/50 bg-card/40 animate-pulse"></div>
               ) : (
                 <div className="space-y-4">
                   {[

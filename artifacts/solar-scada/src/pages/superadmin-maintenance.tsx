@@ -80,7 +80,7 @@ export default function SuperAdminMaintenance() {
                 { label: "HEAP USAGE", value: `${heapPct}%`,              ok: heapPct < 70 },
                 { label: "DB STATUS",  value: health.db.connected ? "ONLINE" : "OFFLINE", ok: health.db.connected },
               ].map(({ label, value, ok }) => (
-                <div key={label} className="border border-border/50 bg-black/40 p-4 flex items-center gap-4 group hover:border-border transition-colors">
+                <div key={label} className="border border-border/50 bg-card/40 p-4 flex items-center gap-4 group hover:border-border transition-colors">
                   {ok ? <CheckCircle2 className="h-6 w-6 text-status-normal drop-shadow-[0_0_5px_rgba(34,197,94,0.6)]" /> : <AlertTriangle className="h-6 w-6 text-status-warning drop-shadow-[0_0_5px_rgba(245,158,11,0.6)]" />}
                   <div>
                     <p className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{label}</p>
@@ -92,7 +92,7 @@ export default function SuperAdminMaintenance() {
           )}
 
           {/* Maintenance mode toggle */}
-          <div className={`border p-5 relative overflow-hidden ${maintenanceMode ? "border-status-warning/50 bg-status-warning/10" : "border-border/50 bg-black/40"}`}>
+          <div className={`border p-5 relative overflow-hidden ${maintenanceMode ? "border-status-warning/50 bg-status-warning/10" : "border-border/50 bg-card/40"}`}>
             {maintenanceMode && <div className="absolute top-0 left-0 w-1 h-full bg-status-warning shadow-[0_0_10px_rgba(245,158,11,0.8)]" />}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -120,8 +120,8 @@ export default function SuperAdminMaintenance() {
           </div>
 
           {/* Maintenance tasks */}
-          <div className="border border-border/50 bg-black/40">
-            <div className="bg-black/60 px-4 py-3 border-b border-border/50">
+          <div className="border border-border/50 bg-card/40">
+            <div className="bg-card/60 px-4 py-3 border-b border-border/50">
               <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground">MAINTENANCE TASKS</h2>
             </div>
             <div className="divide-y divide-border/30">
@@ -159,7 +159,7 @@ export default function SuperAdminMaintenance() {
               </p>
               <div className="grid grid-cols-2 gap-3 ml-1">
                 {integrityResult.checks.map(c => (
-                  <div key={c.name} className="flex items-center gap-3 font-mono text-[9px] uppercase tracking-widest bg-black/40 px-3 py-2 border border-border/30">
+                  <div key={c.name} className="flex items-center gap-3 font-mono text-[9px] uppercase tracking-widest bg-card/40 px-3 py-2 border border-border/30">
                     {c.status === "ok" ? <CheckCircle2 className="h-3.5 w-3.5 text-status-normal" /> : <AlertTriangle className="h-3.5 w-3.5 text-status-warning" />}
                     <span className="text-muted-foreground">{c.name}</span>
                     {c.count > 0 && <span className="font-bold text-status-warning ml-auto">{c.count}</span>}
@@ -170,18 +170,18 @@ export default function SuperAdminMaintenance() {
           )}
 
           {/* Links to advanced tools */}
-          <div className="border border-border/50 bg-black/40 p-5">
+          <div className="border border-border/50 bg-card/40 p-5">
             <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground mb-4">ADVANCED TOOLS</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Link href="/superadmin/db">
-                <div className="flex items-center gap-3 px-4 py-3 border border-border/50 bg-black/60 hover:border-accent-brand hover:bg-accent-brand/5 transition-colors cursor-pointer group relative overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3 border border-border/50 bg-card/60 hover:border-accent-brand hover:bg-accent-brand/5 transition-colors cursor-pointer group relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-accent-brand transition-colors" />
                   <Database className="h-4 w-4 text-muted-foreground group-hover:text-accent-brand transition-colors ml-1" />
                   <span className="font-mono text-[10px] font-bold group-hover:text-accent-brand transition-colors uppercase tracking-widest">DATABASE ADMIN CONSOLE</span>
                 </div>
               </Link>
               <Link href="/superadmin/system-health">
-                <div className="flex items-center gap-3 px-4 py-3 border border-border/50 bg-black/60 hover:border-accent-brand hover:bg-accent-brand/5 transition-colors cursor-pointer group relative overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3 border border-border/50 bg-card/60 hover:border-accent-brand hover:bg-accent-brand/5 transition-colors cursor-pointer group relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-accent-brand transition-colors" />
                   <Clock className="h-4 w-4 text-muted-foreground group-hover:text-accent-brand transition-colors ml-1" />
                   <span className="font-mono text-[10px] font-bold group-hover:text-accent-brand transition-colors uppercase tracking-widest">SYSTEM HEALTH MONITOR</span>

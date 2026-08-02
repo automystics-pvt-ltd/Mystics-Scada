@@ -86,13 +86,13 @@ export default function DeviceFirmwareReportPage() {
         {isLoading ? (
           <div className="text-center font-mono text-[10px] uppercase tracking-widest text-brand py-12 animate-pulse">ANALYZING FLEET SIGNATURES…</div>
         ) : groups.length === 0 ? (
-          <div className="text-center font-mono text-[10px] uppercase tracking-widest text-muted-foreground py-12 border border-dashed border-border/50 bg-black/20">NO HARDWARE TARGETS IN INVENTORY</div>
+          <div className="text-center font-mono text-[10px] uppercase tracking-widest text-muted-foreground py-12 border border-dashed border-border/50 bg-card/20">NO HARDWARE TARGETS IN INVENTORY</div>
         ) : (
           <div className="space-y-6">
             {groups.map((g) => (
               <div key={`${g.manufacturer}::${g.model}`} className="border border-border/50 bg-card/40 backdrop-blur-md relative group">
                 <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-brand transition-colors" />
-                <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-black/40">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-card/40">
                   <div>
                     <div className="font-mono text-sm uppercase tracking-widest font-bold text-foreground/90">{g.manufacturer} <span className="text-muted-foreground/50 mx-2">/</span> {g.model}</div>
                     <div className="text-[10px] font-mono text-muted-foreground mt-2 uppercase tracking-widest">
@@ -133,7 +133,7 @@ export default function DeviceFirmwareReportPage() {
                             {PLANT_NAMES[d.plantId] ?? d.plantId}
                           </td>
                           <td className="px-6 py-4">
-                            <code className="text-[10px] bg-black/40 px-2 py-1 border border-border/50 text-foreground/80">{d.firmwareVersion}</code>
+                            <code className="text-[10px] bg-card/40 px-2 py-1 border border-border/50 text-foreground/80">{d.firmwareVersion}</code>
                           </td>
                           <td className="px-6 py-4">
                             {d.upToDate ? (

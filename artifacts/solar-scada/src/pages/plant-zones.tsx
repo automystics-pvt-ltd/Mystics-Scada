@@ -54,7 +54,7 @@ export default function PlantZones() {
     <AppLayout>
       <div className="flex flex-col space-y-6">
         {/* Breadcrumb & Header */}
-        <div className="border border-border/50 bg-black/40 p-5 relative flex-shrink-0">
+        <div className="border border-border/50 bg-card/40 p-5 relative flex-shrink-0">
           <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
           
           <div className="flex items-center mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -85,7 +85,7 @@ export default function PlantZones() {
                     <button className={`flex items-center gap-2 px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${
                       isActive
                         ? "bg-brand/10 text-brand border border-brand/50 shadow-[0_0_10px_rgba(0,255,170,0.2)]"
-                        : "bg-black/40 text-muted-foreground border border-border/50 hover:bg-brand/5 hover:text-brand hover:border-brand/30"
+                        : "bg-card/40 text-muted-foreground border border-border/50 hover:bg-brand/5 hover:text-brand hover:border-brand/30"
                     }`}>
                       {item.name}
                     </button>
@@ -100,7 +100,7 @@ export default function PlantZones() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="border border-border/50 bg-black/40 p-5 h-[240px] animate-pulse" />
+              <div key={i} className="border border-border/50 bg-card/40 p-5 h-[240px] animate-pulse" />
             ))}
           </div>
         ) : (
@@ -116,7 +116,7 @@ export default function PlantZones() {
 
               return (
                 <Link key={zone.id} href={`/plants/${pid}/zones/${zone.id}`}>
-                  <div className={`border bg-black/60 p-5 hover:bg-brand/5 cursor-pointer group transition-all relative overflow-hidden ${
+                  <div className={`border bg-card/60 p-5 hover:bg-brand/5 cursor-pointer group transition-all relative overflow-hidden ${
                     isFault ? "border-status-fault/50" : isWarning ? "border-status-warning/50" : "border-border/50 hover:border-brand/50"
                   }`}>
                     <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${
@@ -141,7 +141,7 @@ export default function PlantZones() {
 
                     {/* Matrix grid */}
                     <div className="grid grid-cols-2 gap-px bg-border/50 border border-border/50 mb-4">
-                      <div className="bg-black p-3">
+                      <div className="bg-card p-3">
                         <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-widest mb-1">POWER OUT</div>
                         <div className="font-mono text-sm font-bold text-foreground">
                           {zone.totalPower >= 1000
@@ -149,15 +149,15 @@ export default function PlantZones() {
                             : `${zone.totalPower.toFixed(0)} KW`}
                         </div>
                       </div>
-                      <div className="bg-black p-3">
+                      <div className="bg-card p-3">
                         <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-widest mb-1">ONLINE / TOT</div>
                         <div className="font-mono text-sm font-bold text-foreground">{zone.online}/{zone.total}</div>
                       </div>
-                      <div className="bg-black p-3">
+                      <div className="bg-card p-3">
                         <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-widest mb-1">EFFICIENCY</div>
                         <div className="font-mono text-sm font-bold text-foreground">{zone.avgEff > 0 ? `${zone.avgEff.toFixed(1)}%` : "--"}</div>
                       </div>
-                      <div className="bg-black p-3">
+                      <div className="bg-card p-3">
                         <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-widest mb-1">AVAILABILITY</div>
                         <div className="font-mono text-sm font-bold text-foreground">{zone.availabilityPct.toFixed(0)}%</div>
                       </div>

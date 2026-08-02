@@ -64,7 +64,7 @@ function StepIndicator({ current }: { current: number }) {
             <div className={`flex items-center justify-center h-8 w-8 rounded-none border text-[10px] font-mono transition-all ${
               i < current   ? "bg-brand border-brand text-black shadow-[0_0_10px_rgba(0,255,170,0.3)]"
               : i === current ? "border-brand text-brand bg-brand/10 shadow-[inset_0_0_10px_rgba(0,255,170,0.2)]"
-              : "border-border/50 text-muted-foreground bg-black/40"
+              : "border-border/50 text-muted-foreground bg-card/40"
             }`}>
               {i < current ? <CheckCircle2 className="h-4 w-4" /> : `0${i + 1}`}
             </div>
@@ -141,7 +141,7 @@ function StepPlant({ state, update }: { state: WizardState; update: (p: Partial<
             className={`border p-5 text-left transition-all relative group overflow-hidden ${
               state.plantChoice === opt.value
                 ? "border-brand bg-brand/5 shadow-[0_0_15px_rgba(0,255,170,0.1)]"
-                : "border-border/50 bg-black/40 hover:border-brand/50 hover:bg-brand/5"
+                : "border-border/50 bg-card/40 hover:border-brand/50 hover:bg-brand/5"
             }`}
           >
             <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${state.plantChoice === opt.value ? "bg-brand" : "bg-border/50 group-hover:bg-brand/50"}`} />
@@ -153,14 +153,14 @@ function StepPlant({ state, update }: { state: WizardState; update: (p: Partial<
       </div>
 
       {state.plantChoice === "existing" && (
-        <div className="border border-border/50 bg-black/40 p-5 relative">
+        <div className="border border-border/50 bg-card/40 p-5 relative">
           <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
           <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2 block">Target Zone Registry</Label>
           {plants.length === 0 ? (
             <p className="font-mono text-[10px] uppercase tracking-widest text-status-warning mt-2">REGISTRY EMPTY. INITIALIZE A NEW ZONE FIRST.</p>
           ) : (
             <Select value={state.existingPlantId} onValueChange={(v) => update({ existingPlantId: v })}>
-              <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 text-brand"><SelectValue placeholder="QUERY REGISTRY..." /></SelectTrigger>
+              <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-card/40 text-brand"><SelectValue placeholder="QUERY REGISTRY..." /></SelectTrigger>
               <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
                 {plants.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
@@ -174,14 +174,14 @@ function StepPlant({ state, update }: { state: WizardState; update: (p: Partial<
       )}
 
       {state.plantChoice === "new" && (
-        <div className="space-y-5 border border-border/50 bg-black/40 p-6 relative">
+        <div className="space-y-5 border border-border/50 bg-card/40 p-6 relative">
           <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
           {/* Name + Location */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="sm:col-span-2">
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Zone Designation <span className="text-status-fault">*</span></Label>
               <Input
-                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-foreground"
+                className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 text-foreground"
                 placeholder="RAJASTHAN SOLAR PARK I"
                 value={state.newPlantName}
                 onChange={(e) => update({ newPlantName: e.target.value })}
@@ -190,7 +190,7 @@ function StepPlant({ state, update }: { state: WizardState; update: (p: Partial<
             <div className="sm:col-span-2">
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><MapPin className="h-3.5 w-3.5 text-brand" /> Geolocation</Label>
               <Input
-                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-brand/80"
+                className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 text-brand/80"
                 placeholder="26.9124 N, 70.9122 E"
                 value={state.newPlantLocation}
                 onChange={(e) => update({ newPlantLocation: e.target.value })}
@@ -203,7 +203,7 @@ function StepPlant({ state, update }: { state: WizardState; update: (p: Partial<
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><Gauge className="h-3.5 w-3.5 text-brand" /> Rating (MW) <span className="text-status-fault">*</span></Label>
               <Input
-                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-foreground font-bold"
+                className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 text-foreground font-bold"
                 type="number"
                 min="0.1"
                 step="0.5"
@@ -218,7 +218,7 @@ function StepPlant({ state, update }: { state: WizardState; update: (p: Partial<
                 value={state.newPlantTrackerType}
                 onValueChange={(v) => update({ newPlantTrackerType: v })}
               >
-                <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 text-foreground"><SelectValue placeholder="SELECT..." /></SelectTrigger>
+                <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-card/40 text-foreground"><SelectValue placeholder="SELECT..." /></SelectTrigger>
                 <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
                   <SelectItem value="fixed_tilt">FIXED TILT</SelectItem>
                   <SelectItem value="single_axis_tracker">SINGLE AXIS</SelectItem>
@@ -228,7 +228,7 @@ function StepPlant({ state, update }: { state: WizardState; update: (p: Partial<
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block flex items-center gap-2"><Calendar className="h-3.5 w-3.5 text-brand" /> Commission Epoch</Label>
               <Input
-                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-foreground"
+                className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 text-foreground"
                 type="number"
                 min="2000"
                 max={new Date().getFullYear()}
@@ -246,7 +246,7 @@ function StepPlant({ state, update }: { state: WizardState; update: (p: Partial<
               value={state.newPlantTimezoneOffset}
               onValueChange={(v) => update({ newPlantTimezoneOffset: v })}
             >
-              <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 text-foreground"><SelectValue placeholder="SELECT..." /></SelectTrigger>
+              <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-card/40 text-foreground"><SelectValue placeholder="SELECT..." /></SelectTrigger>
               <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
                 <SelectItem value="5.5">UTC+5:30 // IST</SelectItem>
                 <SelectItem value="0">UTC+0 // GMT/WET</SelectItem>
@@ -314,7 +314,7 @@ function StepTemplates({ state, update }: { state: WizardState; update: (p: Part
 
       <div className="space-y-5 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
         {Object.entries(byProtocol).map(([proto, group]) => (
-          <div key={proto} className="border border-border/50 bg-black/40 p-4">
+          <div key={proto} className="border border-border/50 bg-card/40 p-4">
             <p className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-foreground/50 mb-4 border-b border-border/50 pb-2">{proto}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {group.map((t) => {
@@ -324,7 +324,7 @@ function StepTemplates({ state, update }: { state: WizardState; update: (p: Part
                     key={t.id}
                     onClick={() => toggle(t.id)}
                     className={`border p-3 text-left transition-all flex items-start gap-4 relative group ${
-                      selected ? "border-brand bg-brand/5" : "border-border/50 bg-black/60 hover:border-brand/30 hover:bg-brand/5"
+                      selected ? "border-brand bg-brand/5" : "border-border/50 bg-card/60 hover:border-brand/30 hover:bg-brand/5"
                     }`}
                   >
                     <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${selected ? "bg-brand shadow-[0_0_10px_rgba(0,255,170,0.5)]" : "bg-transparent group-hover:bg-brand/30"}`} />
@@ -415,7 +415,7 @@ function StepDevices({ state, update, templates }: {
       </InfoBox>
 
       {/* Add buttons per template */}
-      <div className="border border-border/50 bg-black/40 p-4">
+      <div className="border border-border/50 bg-card/40 p-4">
         <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-brand mb-3">INSTANTIATE FROM PROFILES:</p>
         <div className="flex flex-wrap gap-3">
           {state.selectedTemplateIds.map((tid) => {
@@ -431,7 +431,7 @@ function StepDevices({ state, update, templates }: {
       </div>
 
       {state.devices.length === 0 ? (
-        <div className="border border-dashed border-border/50 p-12 text-center bg-black/20">
+        <div className="border border-dashed border-border/50 p-12 text-center bg-card/20">
           <Cpu className="h-8 w-8 text-brand/30 mx-auto mb-4 animate-pulse" />
           <p className="text-sm font-mono uppercase tracking-widest text-foreground/80">NO UNITS INSTANTIATED</p>
           <p className="text-[10px] font-mono text-muted-foreground mt-2 uppercase tracking-widest">CLICK A PROFILE ABOVE TO BEGIN INSTANTIATION.</p>
@@ -443,9 +443,9 @@ function StepDevices({ state, update, templates }: {
             const proto = dev.protocol.toLowerCase();
             const helpText = PROTO_HELP[proto] ?? "";
             return (
-              <div key={i} className="border border-border/50 bg-black/40 relative group">
+              <div key={i} className="border border-border/50 bg-card/40 relative group">
                 <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-brand transition-colors" />
-                <div className="flex items-center justify-between border-b border-border/50 bg-black/60 px-5 py-3">
+                <div className="flex items-center justify-between border-b border-border/50 bg-card/60 px-5 py-3">
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-xs uppercase tracking-widest font-bold text-foreground/90">
                       {tmpl?.manufacturer} {tmpl?.model}
@@ -466,7 +466,7 @@ function StepDevices({ state, update, templates }: {
                     <div className="sm:col-span-2">
                       <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Logical Identifier <span className="text-status-fault">*</span></Label>
                       <Input
-                        className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-foreground uppercase"
+                        className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 text-foreground uppercase"
                         placeholder={`${tmpl?.manufacturer ?? "DEVICE"}_INV_${String(i + 1).padStart(2, '0')}`}
                         value={dev.name}
                         onChange={(e) => updateDevice(i, { name: e.target.value })}
@@ -478,7 +478,7 @@ function StepDevices({ state, update, templates }: {
                         <div>
                           <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Network IP</Label>
                           <Input
-                            className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-brand"
+                            className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 text-brand"
                             placeholder="192.168.1.10"
                             value={dev.ipAddress ?? ""}
                             onChange={(e) => updateDevice(i, { ipAddress: e.target.value })}
@@ -487,7 +487,7 @@ function StepDevices({ state, update, templates }: {
                         <div>
                           <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">TCP Port</Label>
                           <Input
-                            className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
+                            className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50"
                             type="number"
                             placeholder={proto === "bacnet" ? "47808" : proto === "opcua" ? "4840" : "502"}
                             value={dev.port ?? ""}
@@ -501,7 +501,7 @@ function StepDevices({ state, update, templates }: {
                       <div>
                         <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Device Instance ID <span className="text-status-fault">*</span></Label>
                         <Input
-                          className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-brand"
+                          className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 text-brand"
                           type="number"
                           placeholder="1001"
                           value={dev.bacnetDeviceInstance ?? ""}
@@ -515,7 +515,7 @@ function StepDevices({ state, update, templates }: {
                         <div className="sm:col-span-2">
                           <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Broker Route</Label>
                           <Input
-                            className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-foreground"
+                            className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 text-foreground"
                             placeholder="mqtt://192.168.1.50:1883"
                             value={dev.brokerUrl ?? ""}
                             onChange={(e) => updateDevice(i, { brokerUrl: e.target.value })}
@@ -524,7 +524,7 @@ function StepDevices({ state, update, templates }: {
                         <div className="sm:col-span-2">
                           <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Publication Topic</Label>
                           <Input
-                            className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-brand"
+                            className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 text-brand"
                             placeholder="plant/site/inverter01/data"
                             value={dev.topic ?? ""}
                             onChange={(e) => updateDevice(i, { topic: e.target.value })}
@@ -537,7 +537,7 @@ function StepDevices({ state, update, templates }: {
                       <div className="sm:col-span-2">
                         <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Target WebSocket URL</Label>
                         <Input
-                          className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 text-brand"
+                          className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 text-brand"
                           placeholder="ws://192.168.1.30:8080/data"
                           value={dev.url ?? ""}
                           onChange={(e) => updateDevice(i, { url: e.target.value })}

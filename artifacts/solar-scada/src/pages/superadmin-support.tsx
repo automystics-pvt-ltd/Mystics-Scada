@@ -62,7 +62,7 @@ export default function SuperAdminSupport() {
           </div>
 
           {/* Impersonation search */}
-          <div className="border border-border/50 bg-black/40 p-5">
+          <div className="border border-border/50 bg-card/40 p-5">
             <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground mb-2 flex items-center gap-2">
               <ShieldAlert className="h-4 w-4 text-status-warning drop-shadow-[0_0_5px_rgba(245,158,11,0.6)]" />
               ORG IMPERSONATION
@@ -71,12 +71,12 @@ export default function SuperAdminSupport() {
 
             <div className="relative mb-5">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-accent-brand" />
-              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="SEARCH BY NAME OR SLUG..." className="pl-9 font-mono text-xs bg-black/60 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase" />
+              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="SEARCH BY NAME OR SLUG..." className="pl-9 font-mono text-xs bg-card/60 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase" />
             </div>
 
             <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
               {filtered.map(org => (
-                <div key={org.id} className="flex items-center gap-4 border border-border/50 bg-black/60 px-4 py-3 hover:border-accent-brand/50 transition-colors group relative">
+                <div key={org.id} className="flex items-center gap-4 border border-border/50 bg-card/60 px-4 py-3 hover:border-accent-brand/50 transition-colors group relative">
                   <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-accent-brand transition-colors" />
                   <div className="w-8 h-8 bg-accent-brand/10 text-accent-brand border border-accent-brand/30 flex items-center justify-center font-mono text-[10px] font-bold flex-shrink-0 shadow-[inset_0_0_10px_rgba(0,195,255,0.2)] ml-1">
                     {org.name.slice(0, 2).toUpperCase()}
@@ -108,7 +108,7 @@ export default function SuperAdminSupport() {
           </div>
 
           {/* Support links */}
-          <div className="border border-border/50 bg-black/40 p-5">
+          <div className="border border-border/50 bg-card/40 p-5">
             <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground mb-4">SUPPORT RESOURCES</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
@@ -118,7 +118,7 @@ export default function SuperAdminSupport() {
                 { label: "FEATURE FLAGS",  desc: "TOGGLE FEATURES PER ORG",      href: "/superadmin/feature-flags" },
               ].map(({ label, desc, href }) => (
                 <Link key={href} href={href}>
-                  <div className="border border-border/50 bg-black/60 px-5 py-4 hover:border-accent-brand hover:bg-accent-brand/5 transition-colors cursor-pointer group relative overflow-hidden">
+                  <div className="border border-border/50 bg-card/60 px-5 py-4 hover:border-accent-brand hover:bg-accent-brand/5 transition-colors cursor-pointer group relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-accent-brand transition-colors" />
                     <p className="font-mono text-[10px] font-bold group-hover:text-accent-brand transition-colors uppercase tracking-widest pl-2">{label}</p>
                     <p className="font-mono text-[8px] text-muted-foreground uppercase tracking-widest mt-1 pl-2">{desc}</p>

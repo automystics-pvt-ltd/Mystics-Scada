@@ -158,7 +158,7 @@ function StringCard({ str }: { str: StringRow }) {
   return (
     <div
       className={cn(
-        "bg-black/40 rounded-none-none p-4 border relative overflow-hidden transition-all",
+        "bg-card/40 rounded-none-none p-4 border relative overflow-hidden transition-all",
         str.isDeviating
           ? "border-status-fault shadow-[0_0_8px_rgba(239,68,68,0.15)]"
           : str.status === "off"
@@ -300,11 +300,11 @@ function Toolbar({
   visibleStrings: number;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-none-none border border-card-border bg-black/40 px-4 py-2.5">
+    <div className="flex flex-wrap items-center gap-2 rounded-none-none border border-card-border bg-card/40 px-4 py-2.5">
       <SlidersHorizontal className="w-4 h-4 text-muted-foreground flex-shrink-0" />
 
       {/* Filter toggle */}
-      <div className="flex items-center gap-1 rounded-none-none border border-border/50 p-0.5 bg-black/60">
+      <div className="flex items-center gap-1 rounded-none-none border border-border/50 p-0.5 bg-card/60">
         <button
           onClick={() => onFilter("all")}
           className={cn(
@@ -345,7 +345,7 @@ function Toolbar({
       </div>
 
       {/* Sort toggle */}
-      <div className="flex items-center gap-1 rounded-none-none border border-border/50 p-0.5 bg-black/60 ml-auto">
+      <div className="flex items-center gap-1 rounded-none-none border border-border/50 p-0.5 bg-card/60 ml-auto">
         <button
           onClick={() => onSort("default")}
           className={cn(
@@ -456,7 +456,7 @@ export default function CombinerStrings() {
             {/* Summary chips */}
             {data && (
               <div className="flex items-center gap-3 flex-shrink-0">
-                <div className="flex items-center gap-1.5 rounded-none-none border px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest bg-black/40 border-card-border">
+                <div className="flex items-center gap-1.5 rounded-none-none border px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest bg-card/40 border-card-border">
                   <Layers className="w-4 h-4 text-muted-foreground" />
                   <span className="font-mono font-semibold">{data.totalStrings}</span>
                   <span className="text-muted-foreground">strings</span>
@@ -499,7 +499,7 @@ export default function CombinerStrings() {
                 <div className="h-5 w-32 bg-white/10 animate-pulse rounded-none" />
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                   {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="h-28 bg-black/40 border border-card-border rounded-none-none animate-pulse" />
+                    <div key={i} className="h-28 bg-card/40 border border-card-border rounded-none-none animate-pulse" />
                   ))}
                 </div>
               </div>

@@ -41,7 +41,7 @@ export default function SuperAdminCommunications() {
           </div>
 
           {/* Platform banner */}
-          <div className="border border-border/50 bg-black/40 p-5">
+          <div className="border border-border/50 bg-card/40 p-5">
             <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground mb-2 flex items-center gap-2">
               <Megaphone className="h-4 w-4 text-accent-brand" />
               PLATFORM ANNOUNCEMENT BANNER
@@ -61,7 +61,7 @@ export default function SuperAdminCommunications() {
               value={bannerMsg}
               onChange={e => setBannerMsg(e.target.value)}
               placeholder="ENTER ANNOUNCEMENT MESSAGE FOR ALL USERS..."
-              className="font-mono text-xs bg-black/60 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase mb-4"
+              className="font-mono text-xs bg-card/60 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase mb-4"
             />
 
             <div className="flex gap-3">
@@ -90,13 +90,13 @@ export default function SuperAdminCommunications() {
           </div>
 
           {/* Email broadcast */}
-          <div className="border border-border/50 bg-black/40 p-5">
+          <div className="border border-border/50 bg-card/40 p-5">
             <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground mb-2 flex items-center gap-2">
               <Mail className="h-4 w-4 text-accent-brand" />
               EMAIL BROADCAST
             </h2>
             <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-5">SEND A SYSTEM EMAIL TO ALL ACTIVE USERS. REQUIRES SMTP CONFIGURATION IN SETTINGS.</p>
-            <div className="bg-black/60 border border-dashed border-border/30 p-8 text-center text-muted-foreground">
+            <div className="bg-card/60 border border-dashed border-border/30 p-8 text-center text-muted-foreground">
               <Mail className="h-8 w-8 mx-auto mb-3 opacity-30" />
               <p className="font-mono text-[10px] font-bold uppercase tracking-widest">EMAIL BROADCAST COMING SOON</p>
               <p className="font-mono text-[8px] uppercase tracking-widest mt-2 opacity-60">CONFIGURE SMTP CREDENTIALS IN SETTINGS → NOTIFICATIONS FIRST</p>
@@ -104,7 +104,7 @@ export default function SuperAdminCommunications() {
           </div>
 
           {/* Channel status */}
-          <div className="border border-border/50 bg-black/40 p-5">
+          <div className="border border-border/50 bg-card/40 p-5">
             <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground mb-4">NOTIFICATION CHANNELS</h2>
             <div className="space-y-3">
               {[
@@ -112,7 +112,7 @@ export default function SuperAdminCommunications() {
                 { label: "EMAIL (SMTP)",          status: "config",   icon: Mail,    desc: "CONFIGURE IN ORG SETTINGS" },
                 { label: "PLATFORM BANNER",       status: bannerActive ? "active" : "idle", icon: Megaphone, desc: bannerActive ? "1 BANNER ACTIVE" : "NO ACTIVE BANNERS" },
               ].map(({ label, status, icon: Icon, desc }) => (
-                <div key={label} className="flex items-center gap-4 px-4 py-3 border border-border/30 bg-black/60 hover:border-accent-brand/50 transition-colors">
+                <div key={label} className="flex items-center gap-4 px-4 py-3 border border-border/30 bg-card/60 hover:border-accent-brand/50 transition-colors">
                   <Icon className="h-4 w-4 text-muted-foreground" />
                   <div className="flex-1">
                     <p className="font-mono text-[10px] font-bold text-foreground uppercase tracking-widest">{label}</p>

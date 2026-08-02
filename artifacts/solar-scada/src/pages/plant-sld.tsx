@@ -75,7 +75,7 @@ function SldFlowNode({ data }: NodeProps<Node<Record<string, unknown>>>) {
   const content = (
     <div
       className={cn(
-        "bg-black/80 backdrop-blur-md w-[180px] border rounded-none p-3 flex flex-col items-center text-center relative transition-all cursor-pointer hover:bg-brand/10 hover:border-brand",
+        "bg-card/80 backdrop-blur-md w-[180px] border rounded-none p-3 flex flex-col items-center text-center relative transition-all cursor-pointer hover:bg-brand/10 hover:border-brand",
         STATUS_COLOR[node.status],
       )}
     >
@@ -139,7 +139,7 @@ function SldFlowNode({ data }: NodeProps<Node<Record<string, unknown>>>) {
 
       {/* Inverters offline or irradiance too low — deviation math is unreliable */}
       {node.type === "combiner" && node.stringFaultCount == null && (
-        <div className="mt-2 w-full flex items-center justify-center gap-1 border border-border/50 bg-black/40 text-muted-foreground px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-widest">
+        <div className="mt-2 w-full flex items-center justify-center gap-1 border border-border/50 bg-card/40 text-muted-foreground px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-widest">
           NO DATA
         </div>
       )}
@@ -162,7 +162,7 @@ function SldFlowNode({ data }: NodeProps<Node<Record<string, unknown>>>) {
   return (
     <Popover>
       <PopoverTrigger asChild>{content}</PopoverTrigger>
-      <PopoverContent side="right" className="w-64 rounded-none border border-brand/50 bg-black/90 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] p-0">
+      <PopoverContent side="right" className="w-64 rounded-none border border-brand/50 bg-card/90 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] p-0">
         <SldNodeDetail node={node} />
       </PopoverContent>
     </Popover>
@@ -231,7 +231,7 @@ function SldNodeDetail({ node }: { node: SldNodeDatum }) {
           </div>
         )}
         {node.type === "combiner" && node.stringFaultCount == null && (
-          <div className="flex items-center gap-2 border border-border/50 bg-black/40 text-muted-foreground px-2 py-1.5 text-[10px] font-mono uppercase tracking-widest">
+          <div className="flex items-center gap-2 border border-border/50 bg-card/40 text-muted-foreground px-2 py-1.5 text-[10px] font-mono uppercase tracking-widest">
             READINGS UNAVAILABLE
           </div>
         )}
@@ -411,7 +411,7 @@ function FaultSimulatorPanel({
           "inline-flex items-center gap-2 border px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest transition-all",
           hasFaults
             ? "border-status-warning/50 bg-status-warning/10 text-status-warning shadow-[0_0_10px_rgba(251,191,36,0.3)] hover:bg-status-warning/20"
-            : "border-border/50 bg-black/40 text-foreground hover:bg-brand/10 hover:border-brand/50 hover:text-brand",
+            : "border-border/50 bg-card/40 text-foreground hover:bg-brand/10 hover:border-brand/50 hover:text-brand",
         )}
       >
         <ShieldAlert className="w-3.5 h-3.5" />
@@ -424,7 +424,7 @@ function FaultSimulatorPanel({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-80 rounded-none border border-brand/50 bg-black/90 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] p-5 space-y-5">
+        <div className="absolute right-0 top-full mt-2 z-50 w-80 rounded-none border border-brand/50 bg-card/90 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] p-5 space-y-5">
           <div className="flex items-center justify-between border-b border-border/50 pb-3">
             <div className="flex items-center gap-2">
               <TriangleAlert className="w-4 h-4 text-status-warning" />
@@ -447,7 +447,7 @@ function FaultSimulatorPanel({
             <select
               value={target}
               onChange={(e) => setTarget(e.target.value)}
-              className="w-full bg-black/40 border border-border/50 rounded-none px-3 py-2 text-xs font-mono uppercase tracking-widest text-foreground focus:outline-none focus:border-brand/50"
+              className="w-full bg-card/40 border border-border/50 rounded-none px-3 py-2 text-xs font-mono uppercase tracking-widest text-foreground focus:outline-none focus:border-brand/50"
             >
               <option value="plant">⚡ FULL ZONE DISCONNECT</option>
               {Array.from({ length: inverterCount }, (_, i) => {
@@ -475,7 +475,7 @@ function FaultSimulatorPanel({
                     "flex-1 border px-2 py-1.5 text-[10px] font-mono uppercase tracking-widest transition-all",
                     duration === d.value
                       ? "border-brand bg-brand/20 text-brand shadow-[0_0_10px_rgba(0,255,170,0.3)]"
-                      : "border-border/50 bg-black/40 text-foreground/70 hover:border-brand/50 hover:text-foreground",
+                      : "border-border/50 bg-card/40 text-foreground/70 hover:border-brand/50 hover:text-foreground",
                   )}
                 >
                   {d.label}
@@ -664,7 +664,7 @@ export default function PlantSld() {
   return (
     <AppLayout>
       <div className="flex flex-col h-[calc(100vh-100px)] space-y-6">
-        <div className="border border-border/50 bg-black/40 p-5 relative flex-shrink-0">
+        <div className="border border-border/50 bg-card/40 p-5 relative flex-shrink-0">
           <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
           
           <div className="flex items-center mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -698,7 +698,7 @@ export default function PlantSld() {
               )}
               <button
                 onClick={() => setFullscreen((v) => !v)}
-                className="inline-flex items-center gap-2 border border-border/50 bg-black/40 px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-foreground hover:bg-brand/10 hover:text-brand hover:border-brand/50 transition-colors"
+                className="inline-flex items-center gap-2 border border-border/50 bg-card/40 px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-foreground hover:bg-brand/10 hover:text-brand hover:border-brand/50 transition-colors"
               >
                 <Maximize2 className="w-3.5 h-3.5" />
                 {fullscreen ? "CONTRACT" : "EXPAND"}
@@ -709,7 +709,7 @@ export default function PlantSld() {
 
         <div
           className={cn(
-            "flex-1 bg-black/60 rounded-none border border-border/50 overflow-hidden relative shadow-[inset_0_0_50px_rgba(0,0,0,0.8)]",
+            "flex-1 bg-card/60 rounded-none border border-border/50 overflow-hidden relative shadow-[inset_0_0_50px_rgba(0,0,0,0.8)]",
             fullscreen && "fixed inset-4 z-50 min-h-0 bg-background border-brand/50",
           )}
         >
@@ -743,7 +743,7 @@ export default function PlantSld() {
               colorMode="dark"
             >
               <Background color="rgba(255,255,255,0.05)" gap={24} />
-              <Controls showInteractive={false} className="border-border/50 bg-black/60 fill-foreground" />
+              <Controls showInteractive={false} className="border-border/50 bg-card/60 fill-foreground" />
             </ReactFlow>
           )}
         </div>

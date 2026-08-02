@@ -72,7 +72,7 @@ export default function SuperAdminFeatureFlags() {
           {isLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-24 border border-border/50 bg-black/40 animate-pulse" />
+                <div key={i} className="h-24 border border-border/50 bg-card/40 animate-pulse" />
               ))}
             </div>
           ) : (
@@ -85,7 +85,7 @@ export default function SuperAdminFeatureFlags() {
                 </h2>
                 <div className="space-y-3 mb-8">
                   {flags.filter(f => f.category === cat).map(flag => (
-                    <div key={flag.key} className={`border p-4 flex items-center gap-4 transition-colors relative group ${flag.enabled ? "border-accent-brand/30 bg-accent-brand/5 hover:border-accent-brand" : "border-border/50 bg-black/40 hover:border-border"}`}>
+                    <div key={flag.key} className={`border p-4 flex items-center gap-4 transition-colors relative group ${flag.enabled ? "border-accent-brand/30 bg-accent-brand/5 hover:border-accent-brand" : "border-border/50 bg-card/40 hover:border-border"}`}>
                       <div className={`absolute top-0 left-0 w-1 h-full ${flag.enabled ? "bg-accent-brand shadow-[0_0_10px_rgba(0,195,255,0.8)]" : "bg-border/50"}`} />
                       <div className="flex-1 min-w-0 pl-2">
                         <div className="flex items-center gap-3 mb-1.5">
@@ -127,7 +127,7 @@ export default function SuperAdminFeatureFlags() {
               { label: "ENABLED",        value: flags.filter(f => f.enabled).length,       color: "text-status-normal" },
               { label: "DISABLED / BETA",value: flags.filter(f => !f.enabled).length,      color: "text-status-warning" },
             ].map(({ label, value, color }) => (
-              <div key={label} className="border border-border/50 bg-black/40 p-4 text-center group hover:border-border transition-colors relative">
+              <div key={label} className="border border-border/50 bg-card/40 p-4 text-center group hover:border-border transition-colors relative">
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-border/30 group-hover:bg-border/60 transition-colors" />
                 <p className={`font-mono text-3xl font-bold ${color}`}>{value}</p>
                 <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-2">{label}</p>

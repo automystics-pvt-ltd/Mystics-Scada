@@ -69,21 +69,21 @@ export default function SuperAdminAuditLogs() {
           </div>
 
           {/* Filters */}
-          <div className="flex gap-3 flex-wrap items-end bg-black/40 border border-border/50 p-4">
+          <div className="flex gap-3 flex-wrap items-end bg-card/40 border border-border/50 p-4">
             <div>
               <label className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest block mb-1.5">ORG ID</label>
               <Input value={draft.orgId} onChange={e => setDraft(d => ({ ...d, orgId: e.target.value }))}
-                placeholder="ORG-ABC123..." className="w-40 font-mono text-xs bg-black/60 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase" />
+                placeholder="ORG-ABC123..." className="w-40 font-mono text-xs bg-card/60 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase" />
             </div>
             <div>
               <label className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest block mb-1.5">ACTION</label>
               <Input value={draft.action} onChange={e => setDraft(d => ({ ...d, action: e.target.value }))}
-                placeholder="LOGIN, USER_CREATED..." className="w-40 font-mono text-xs bg-black/60 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase" />
+                placeholder="LOGIN, USER_CREATED..." className="w-40 font-mono text-xs bg-card/60 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase" />
             </div>
             <div>
               <label className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest block mb-1.5">RESOURCE TYPE</label>
               <Input value={draft.resourceType} onChange={e => setDraft(d => ({ ...d, resourceType: e.target.value }))}
-                placeholder="USER, DEVICE..." className="w-40 font-mono text-xs bg-black/60 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase" />
+                placeholder="USER, DEVICE..." className="w-40 font-mono text-xs bg-card/60 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase" />
             </div>
             <Button onClick={() => { setQ(draft); setPage(0); }} className="gap-2 font-mono text-[9px] uppercase tracking-widest bg-accent-brand/10 text-accent-brand border border-accent-brand hover:bg-accent-brand hover:text-black rounded-none transition-colors">
               <Filter className="h-3.5 w-3.5" /> APPLY FILTER
@@ -94,10 +94,10 @@ export default function SuperAdminAuditLogs() {
           </div>
 
           {/* Table */}
-          <div className="border border-border/50 bg-black/40">
+          <div className="border border-border/50 bg-card/40">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-black/60 border-b border-border/50">
+                <thead className="bg-card/60 border-b border-border/50">
                   <tr>
                     <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">TIMESTAMP</th>
                     <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">ACTOR</th>
@@ -133,7 +133,7 @@ export default function SuperAdminAuditLogs() {
                         <p className="font-mono text-[8px] text-muted-foreground uppercase tracking-widest mt-0.5">{log.actorEmail ?? log.userId ?? "—"}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant="outline" className={`font-mono text-[8px] font-bold uppercase tracking-widest rounded-none border ${ACTION_COLOR[log.action] ?? "bg-black/40 text-muted-foreground border-border/50"}`}>
+                        <Badge variant="outline" className={`font-mono text-[8px] font-bold uppercase tracking-widest rounded-none border ${ACTION_COLOR[log.action] ?? "bg-card/40 text-muted-foreground border-border/50"}`}>
                           {log.action}
                         </Badge>
                       </td>
@@ -150,7 +150,7 @@ export default function SuperAdminAuditLogs() {
                 </tbody>
               </table>
             </div>
-            <div className="border-t border-border/50 px-4 py-3 flex items-center justify-between bg-black">
+            <div className="border-t border-border/50 px-4 py-3 flex items-center justify-between bg-card">
               <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
                 {total > 0 ? `${page * PAGE_SIZE + 1} TO ${Math.min((page + 1) * PAGE_SIZE, total)} OF ${total.toLocaleString()}` : "NO RESULTS"}
               </p>

@@ -54,7 +54,7 @@ export default function PlantZoneArrayDetail() {
     <AppLayout>
       <div className="flex flex-col space-y-6">
         {/* Breadcrumb */}
-        <div className="border border-border/50 bg-black/40 p-5 relative flex-shrink-0">
+        <div className="border border-border/50 bg-card/40 p-5 relative flex-shrink-0">
           <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
           <div className="flex items-center mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground flex-wrap">
             <Link href="/" className="hover:text-brand transition-colors">Portfolio</Link>
@@ -71,7 +71,7 @@ export default function PlantZoneArrayDetail() {
           </div>
           
           <div className="flex items-center gap-4 flex-wrap">
-            <Link href={`/plants/${pid}/zones/${zid}/arrays`} className="border border-border/50 bg-black/60 p-1.5 hover:text-brand hover:border-brand/50 transition-colors">
+            <Link href={`/plants/${pid}/zones/${zid}/arrays`} className="border border-border/50 bg-card/60 p-1.5 hover:text-brand hover:border-brand/50 transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </Link>
             <h1 className="text-xl font-mono font-bold uppercase tracking-widest text-foreground">
@@ -91,7 +91,7 @@ export default function PlantZoneArrayDetail() {
             { label: "AVG CURRENT", value: avgCurrent > 0 ? `${avgCurrent.toFixed(2)} A` : "--", accent: "text-foreground border-border/50" },
             { label: "MEDIAN CURRENT", value: arrayStrings[0]?.medianCurrentA != null ? `${arrayStrings[0].medianCurrentA.toFixed(2)} A` : "--", accent: "text-foreground border-border/50" },
           ].map(({ label, value, accent }) => (
-            <div key={label} className={`border bg-black/60 p-5 ${accent.split(" ").find(c => c.startsWith("border-")) || "border-border/50"}`}>
+            <div key={label} className={`border bg-card/60 p-5 ${accent.split(" ").find(c => c.startsWith("border-")) || "border-border/50"}`}>
               <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{label}</div>
               <div className={`font-mono text-2xl font-bold mt-2 ${accent.replace(/border-[^\s]+/, "")}`}>{value}</div>
             </div>
@@ -99,7 +99,7 @@ export default function PlantZoneArrayDetail() {
         </div>
 
         {/* String table */}
-        <div className="border border-border/50 bg-black/40 relative">
+        <div className="border border-border/50 bg-card/40 relative">
           <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
           <div className="px-5 py-4 border-b border-border/50 flex items-center justify-between">
             <h3 className="font-mono text-sm uppercase tracking-widest font-bold text-foreground">STRING TELEMETRY // {currentArray?.name}</h3>
@@ -109,7 +109,7 @@ export default function PlantZoneArrayDetail() {
           {isLoading ? (
             <div className="p-5 space-y-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-10 bg-black/60 border border-border/50 animate-pulse" />
+                <div key={i} className="h-10 bg-card/60 border border-border/50 animate-pulse" />
               ))}
             </div>
           ) : arrayStrings.length === 0 ? (
@@ -118,7 +118,7 @@ export default function PlantZoneArrayDetail() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border/50 bg-black/80">
+                  <tr className="border-b border-border/50 bg-card/80">
                     <th className="text-left px-5 py-3 font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest">STRING_ID</th>
                     <th className="text-right px-5 py-3 font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest">CURRENT (A)</th>
                     <th className="text-right px-5 py-3 font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest">VOLTAGE (V)</th>
@@ -128,7 +128,7 @@ export default function PlantZoneArrayDetail() {
                 </thead>
                 <tbody className="font-mono">
                   {arrayStrings.map((str, i) => (
-                    <tr key={str.id} className={`border-b border-border/50 hover:bg-brand/5 transition-colors ${i % 2 === 0 ? "bg-black/40" : "bg-black/20"}`}>
+                    <tr key={str.id} className={`border-b border-border/50 hover:bg-brand/5 transition-colors ${i % 2 === 0 ? "bg-card/40" : "bg-card/20"}`}>
                       <td className="px-5 py-3">
                         <div className="font-bold text-foreground uppercase tracking-widest text-xs">{str.label}</div>
                         <div className="text-[9px] text-muted-foreground">{str.id}</div>

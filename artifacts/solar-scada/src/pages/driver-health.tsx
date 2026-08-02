@@ -148,7 +148,7 @@ export default function DriverHealthPage() {
     <AppLayout>
       <div className="flex flex-col space-y-6 h-[calc(100vh-100px)]">
         {/* Header */}
-        <div className="border border-border/50 bg-black/40 p-5 relative flex-shrink-0 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="border border-border/50 bg-card/40 p-5 relative flex-shrink-0 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
           <div>
             <h1 className="text-xl font-mono font-bold uppercase tracking-widest text-foreground flex items-center gap-3">
@@ -172,9 +172,9 @@ export default function DriverHealthPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-shrink-0">
           {[
             { label: "CONNECTED",   value: connected,  sub: "LIVE DRIVERS",   color: "text-status-normal", bg: "border-status-normal/50 bg-status-normal/10 shadow-[inset_0_0_20px_rgba(34,197,94,0.1)]", bar: "bg-status-normal" },
-            { label: "ERROR",       value: errors,     sub: "NEED ATTENTION", color: "text-status-fault",  bg: errors > 0 ? "border-status-fault bg-status-fault/20 shadow-[inset_0_0_20px_rgba(239,68,68,0.2)] animate-pulse" : "border-border/50 bg-black/60", bar: "bg-status-fault" },
-            { label: "CONNECTING",  value: connecting, sub: "IN PROGRESS",    color: "text-brand", bg: connecting > 0 ? "border-brand bg-brand/10 shadow-[inset_0_0_20px_rgba(0,255,170,0.1)]" : "border-border/50 bg-black/60", bar: "bg-brand" },
-            { label: "AVG RTT",     value: avgRtt !== null ? `${avgRtt}ms` : "—", sub: "LAST READS", color: rttColor(avgRtt), bg: "border-border/50 bg-black/60", bar: "bg-muted-foreground" },
+            { label: "ERROR",       value: errors,     sub: "NEED ATTENTION", color: "text-status-fault",  bg: errors > 0 ? "border-status-fault bg-status-fault/20 shadow-[inset_0_0_20px_rgba(239,68,68,0.2)] animate-pulse" : "border-border/50 bg-card/60", bar: "bg-status-fault" },
+            { label: "CONNECTING",  value: connecting, sub: "IN PROGRESS",    color: "text-brand", bg: connecting > 0 ? "border-brand bg-brand/10 shadow-[inset_0_0_20px_rgba(0,255,170,0.1)]" : "border-border/50 bg-card/60", bar: "bg-brand" },
+            { label: "AVG RTT",     value: avgRtt !== null ? `${avgRtt}ms` : "—", sub: "LAST READS", color: rttColor(avgRtt), bg: "border-border/50 bg-card/60", bar: "bg-muted-foreground" },
           ].map(({ label, value, sub, color, bg, bar }) => (
             <div key={label} className={`relative p-5 flex flex-col justify-center border ${bg}`}>
               <div className={`absolute top-0 left-0 w-full h-0.5 ${bar}`} />
@@ -186,12 +186,12 @@ export default function DriverHealthPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-4 items-center border border-border/50 bg-black/60 p-3 flex-shrink-0">
+        <div className="flex flex-wrap gap-4 items-center border border-border/50 bg-card/60 p-3 flex-shrink-0">
           <div className="relative flex-1 min-w-[240px]">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-brand" />
             <input
               placeholder="SEARCH DEVICE OR PROTOCOL…"
-              className="w-full h-10 pl-10 pr-4 bg-black/40 border border-border/50 font-mono text-[10px] uppercase tracking-widest text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-brand/50 focus:ring-0 transition-colors"
+              className="w-full h-10 pl-10 pr-4 bg-card/40 border border-border/50 font-mono text-[10px] uppercase tracking-widest text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-brand/50 focus:ring-0 transition-colors"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -204,7 +204,7 @@ export default function DriverHealthPage() {
                 className={`font-mono text-[9px] uppercase tracking-widest font-bold px-3 py-1.5 border transition-colors ${
                   filterStatus === s
                     ? "bg-brand/20 border-brand text-brand shadow-[0_0_5px_rgba(0,255,170,0.3)]"
-                    : "bg-black/40 border-border/50 text-muted-foreground hover:border-brand/50 hover:text-brand"
+                    : "bg-card/40 border-border/50 text-muted-foreground hover:border-brand/50 hover:text-brand"
                 }`}
               >
                 {s === "all" ? "ALL" : s.replace("_", " ")}
@@ -217,11 +217,11 @@ export default function DriverHealthPage() {
         </div>
 
         {/* Driver table */}
-        <div className="flex-1 min-h-0 border border-border/50 bg-black/60 relative overflow-hidden">
+        <div className="flex-1 min-h-0 border border-border/50 bg-card/60 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
           <div className="h-full overflow-auto custom-scrollbar">
             <table className="w-full text-sm text-left min-w-[1000px]">
-              <thead className="bg-black/90 backdrop-blur border-b border-border/50 sticky top-0 z-10">
+              <thead className="bg-card/90 backdrop-blur border-b border-border/50 sticky top-0 z-10">
                 <tr>
                   <th className="px-5 py-4 font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest">TARGET DEVICE</th>
                   <th className="px-5 py-4 font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest">PROTOCOL</th>
@@ -259,7 +259,7 @@ export default function DriverHealthPage() {
                         <div className="text-[9px] text-muted-foreground mt-1">ID:{s.deviceId.slice(0, 8)}</div>
                       </td>
                       <td className="px-5 py-4">
-                        <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 border ${PROTOCOL_COLORS[s.protocol] ?? "text-muted-foreground border-border/50 bg-black/40"}`}>
+                        <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 border ${PROTOCOL_COLORS[s.protocol] ?? "text-muted-foreground border-border/50 bg-card/40"}`}>
                           {s.protocol.replace("_", " ")}
                         </span>
                       </td>
@@ -326,7 +326,7 @@ export default function DriverHealthPage() {
         </div>
 
         {!isLoading && noDriver > 0 && (
-          <div className="border border-border/50 bg-black/40 p-4 text-center">
+          <div className="border border-border/50 bg-card/40 p-4 text-center">
             <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground font-bold">
               {noDriver} DEVICE{noDriver !== 1 ? "S" : ""} LACK ACTIVE PROTOCOL DRIVERS — MISSING TELEMETRY CONFIGURATION.
             </p>
@@ -336,7 +336,7 @@ export default function DriverHealthPage() {
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
-        <AlertDialogContent className="rounded-none border border-status-fault/50 bg-black/90 backdrop-blur-xl shadow-[0_0_30px_rgba(239,68,68,0.2)] p-0 gap-0">
+        <AlertDialogContent className="rounded-none border border-status-fault/50 bg-card/90 backdrop-blur-xl shadow-[0_0_30px_rgba(239,68,68,0.2)] p-0 gap-0">
           <AlertDialogHeader className="p-5 border-b border-border/50">
             <AlertDialogTitle className="font-mono text-base font-bold uppercase tracking-widest text-status-fault flex items-center gap-3">
               <AlertCircle className="w-5 h-5" /> TERMINATE DEVICE RECORD?
@@ -345,8 +345,8 @@ export default function DriverHealthPage() {
               <strong className="text-foreground">{deleteTarget?.deviceName}</strong> WILL BE PERMANENTLY DELETED FROM THE REGISTRY. ALL HISTORICAL TELEMETRY WILL BE LOST.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="p-5 border-t border-border/50 bg-black/40 sm:justify-between flex-row">
-            <AlertDialogCancel className="font-mono text-[10px] uppercase tracking-widest font-bold border border-border/50 bg-black/40 text-muted-foreground hover:bg-white/5 transition-colors rounded-none h-10 px-4 mt-0">ABORT</AlertDialogCancel>
+          <AlertDialogFooter className="p-5 border-t border-border/50 bg-card/40 sm:justify-between flex-row">
+            <AlertDialogCancel className="font-mono text-[10px] uppercase tracking-widest font-bold border border-border/50 bg-card/40 text-muted-foreground hover:bg-white/5 transition-colors rounded-none h-10 px-4 mt-0">ABORT</AlertDialogCancel>
             <AlertDialogAction
               className="font-mono text-[10px] uppercase tracking-widest font-bold border border-status-fault bg-status-fault/10 text-status-fault hover:bg-status-fault/20 transition-colors shadow-[0_0_10px_rgba(239,68,68,0.2)] rounded-none h-10 px-4"
               onClick={() => {

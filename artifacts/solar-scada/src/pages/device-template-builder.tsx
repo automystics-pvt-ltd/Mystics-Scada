@@ -135,7 +135,7 @@ function FieldEditor({
                 <button
                   key={p.key}
                   onClick={() => applyPreset(p)}
-                  className="font-mono text-[10px] uppercase tracking-widest px-2 py-1 bg-black/40 border border-border/50 hover:border-brand/50 hover:text-brand hover:bg-brand/5 transition-colors"
+                  className="font-mono text-[10px] uppercase tracking-widest px-2 py-1 bg-card/40 border border-border/50 hover:border-brand/50 hover:text-brand hover:bg-brand/5 transition-colors"
                 >
                   {p.label}
                 </button>
@@ -147,7 +147,7 @@ function FieldEditor({
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Telemetry Key <span className="text-status-fault">*</span></Label>
               <Input
-                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
+                className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50"
                 placeholder="ac_power_w"
                 value={f.key}
                 onChange={(e) => setF((v) => ({ ...v, key: e.target.value.toLowerCase().replace(/\s+/g, "_") }))}
@@ -157,7 +157,7 @@ function FieldEditor({
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Display Designation <span className="text-status-fault">*</span></Label>
               <Input
-                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 uppercase"
+                className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 uppercase"
                 placeholder="AC Power"
                 value={f.label}
                 onChange={(e) => setF((v) => ({ ...v, label: e.target.value }))}
@@ -166,7 +166,7 @@ function FieldEditor({
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Engineering Unit</Label>
               <Input
-                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
+                className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50"
                 placeholder="W, KWH, V, °C..."
                 value={f.unit}
                 onChange={(e) => setF((v) => ({ ...v, unit: e.target.value }))}
@@ -177,7 +177,7 @@ function FieldEditor({
                 <div>
                   <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Register Address <span className="text-status-fault">*</span></Label>
                   <Input
-                    className="rounded-none font-mono text-sm border-border/50 bg-black/40 text-status-warning focus-visible:border-brand/50"
+                    className="rounded-none font-mono text-sm border-border/50 bg-card/40 text-status-warning focus-visible:border-brand/50"
                     type="number"
                     placeholder="30001"
                     value={f.address ?? ""}
@@ -190,7 +190,7 @@ function FieldEditor({
                     value={String(f.length ?? 1)}
                     onValueChange={(v) => setF((prev) => ({ ...prev, length: Number(v) }))}
                   >
-                    <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-card/40"><SelectValue /></SelectTrigger>
                     <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
                       <SelectItem value="1">1 REG (16-BIT)</SelectItem>
                       <SelectItem value="2">2 REG (32-BIT)</SelectItem>
@@ -203,7 +203,7 @@ function FieldEditor({
                     value={f.dataType ?? "UINT16"}
                     onValueChange={(v) => setF((prev) => ({ ...prev, dataType: v as FieldDef["dataType"] }))}
                   >
-                    <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 uppercase tracking-widest"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-card/40 uppercase tracking-widest"><SelectValue /></SelectTrigger>
                     <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
                       {DATA_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                     </SelectContent>
@@ -215,7 +215,7 @@ function FieldEditor({
                 <div className="col-span-2">
                   <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Node ID <span className="text-status-fault">*</span></Label>
                   <Input
-                    className="rounded-none font-mono text-sm border-border/50 bg-black/40 text-brand focus-visible:border-brand/50"
+                    className="rounded-none font-mono text-sm border-border/50 bg-card/40 text-brand focus-visible:border-brand/50"
                     placeholder="ns=2;i=1002"
                     value={f.nodeId ?? ""}
                     onChange={(e) => setF((v) => ({ ...v, nodeId: e.target.value }))}
@@ -225,7 +225,7 @@ function FieldEditor({
                 <div>
                   <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Poll Rate (ms)</Label>
                   <Input
-                    className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
+                    className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50"
                     type="number"
                     placeholder="1000"
                     value={f.samplingIntervalMs ?? ""}
@@ -241,7 +241,7 @@ function FieldEditor({
                     value={f.objectType ?? "analogInput"}
                     onValueChange={(v) => setF((prev) => ({ ...prev, objectType: v }))}
                   >
-                    <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 uppercase tracking-widest"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-card/40 uppercase tracking-widest"><SelectValue /></SelectTrigger>
                     <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
                       {BACNET_OBJECT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                     </SelectContent>
@@ -250,7 +250,7 @@ function FieldEditor({
                 <div>
                   <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Instance Index <span className="text-status-fault">*</span></Label>
                   <Input
-                    className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
+                    className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50"
                     type="number"
                     placeholder="0"
                     value={f.objectInstance ?? ""}
@@ -263,7 +263,7 @@ function FieldEditor({
                     value={f.propertyId ?? "presentValue"}
                     onValueChange={(v) => setF((prev) => ({ ...prev, propertyId: v }))}
                   >
-                    <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 uppercase tracking-widest"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-card/40 uppercase tracking-widest"><SelectValue /></SelectTrigger>
                     <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
                       {BACNET_PROPERTIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                     </SelectContent>
@@ -274,7 +274,7 @@ function FieldEditor({
               <div className="col-span-2">
                 <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">JSON Selector <span className="text-status-fault">*</span></Label>
                 <Input
-                  className="rounded-none font-mono text-sm border-border/50 bg-black/40 text-brand focus-visible:border-brand/50"
+                  className="rounded-none font-mono text-sm border-border/50 bg-card/40 text-brand focus-visible:border-brand/50"
                   placeholder="$.data.power or data.power"
                   value={f.jsonPath ?? ""}
                   onChange={(e) => setF((v) => ({ ...v, jsonPath: e.target.value }))}
@@ -285,7 +285,7 @@ function FieldEditor({
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Multiplier Scale (×)</Label>
               <Input
-                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
+                className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50"
                 type="number"
                 step="0.001"
                 placeholder="1"
@@ -296,7 +296,7 @@ function FieldEditor({
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Linear Offset (+)</Label>
               <Input
-                className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50"
+                className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50"
                 type="number"
                 step="0.001"
                 placeholder="0"
@@ -466,18 +466,18 @@ export default function DeviceTemplateBuilderPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Manufacturer <span className="text-status-fault">*</span></Label>
-              <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 uppercase" placeholder="HUAWEI, SUNGROW..." value={manufacturer}
+              <Input className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 uppercase" placeholder="HUAWEI, SUNGROW..." value={manufacturer}
                 onChange={(e) => setManufacturer(e.target.value)} />
             </div>
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Model Designation <span className="text-status-fault">*</span></Label>
-              <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50 uppercase" placeholder="SUN2000-50KTL..." value={model}
+              <Input className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50 uppercase" placeholder="SUN2000-50KTL..." value={model}
                 onChange={(e) => setModel(e.target.value)} />
             </div>
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Data Link Protocol <span className="text-status-fault">*</span></Label>
               <Select value={protocol} onValueChange={(v) => setProtocol(v as Protocol)}>
-                <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-black/40 uppercase tracking-widest"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="rounded-none font-mono text-sm border-border/50 bg-card/40 uppercase tracking-widest"><SelectValue /></SelectTrigger>
                 <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest bg-background">
                   {PROTOCOLS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
                 </SelectContent>
@@ -485,12 +485,12 @@ export default function DeviceTemplateBuilderPage() {
             </div>
             <div>
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Acquisition Cycle (Sec)</Label>
-              <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50" type="number" min={5} max={3600} value={pollInterval}
+              <Input className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50" type="number" min={5} max={3600} value={pollInterval}
                 onChange={(e) => setPollInterval(Number(e.target.value) || 30)} />
             </div>
             <div className="col-span-1 sm:col-span-2">
               <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1 block">Firmware Target Key <span className="opacity-50">(OPTIONAL)</span></Label>
-              <Input className="rounded-none font-mono text-sm border-border/50 bg-black/40 focus-visible:border-brand/50" placeholder="firmware_version"
+              <Input className="rounded-none font-mono text-sm border-border/50 bg-card/40 focus-visible:border-brand/50" placeholder="firmware_version"
                 value={fwParam} onChange={(e) => setFwParam(e.target.value)} />
               <p className="font-mono text-[9px] uppercase tracking-widest text-brand/70 mt-1">
                 TELEMETRY KEY BOUND TO FIRMWARE SIGNATURE
@@ -523,13 +523,13 @@ export default function DeviceTemplateBuilderPage() {
 
           <div className="p-6">
             {fields.length === 0 ? (
-              <div className="border border-dashed border-border/50 p-12 text-center bg-black/20">
+              <div className="border border-dashed border-border/50 p-12 text-center bg-card/20">
                 <Cpu className="h-8 w-8 text-brand mx-auto mb-4 opacity-40 animate-pulse" />
                 <p className="text-sm font-mono uppercase tracking-widest text-foreground/80">NO ALLOCATIONS</p>
                 <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2">INITIALIZE YOUR FIRST DATA POINT</p>
               </div>
             ) : (
-              <div className="border border-border/50 bg-black/40 overflow-x-auto">
+              <div className="border border-border/50 bg-card/40 overflow-x-auto">
                 <table className="w-full text-xs font-mono min-w-[700px]">
                   <thead>
                     <tr className="bg-muted/10 border-b border-border/50">

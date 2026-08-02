@@ -189,7 +189,7 @@ export default function SuperAdminDashboard() {
           {/* KPI row */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {KPIs.map((kpi) => (
-              <div key={kpi.label} className="border border-border/50 bg-black/40 p-4 relative group hover:border-accent-brand/50 transition-colors">
+              <div key={kpi.label} className="border border-border/50 bg-card/40 p-4 relative group hover:border-accent-brand/50 transition-colors">
                 <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-accent-brand transition-colors" />
                 <div className="flex items-start justify-between pl-2">
                   <div>
@@ -205,14 +205,14 @@ export default function SuperAdminDashboard() {
 
           {/* Alert breakdown */}
           {stats && (
-            <div className="border border-border/50 bg-black/40">
-              <div className="px-4 py-3 border-b border-border/50 bg-black/60">
+            <div className="border border-border/50 bg-card/40">
+              <div className="px-4 py-3 border-b border-border/50 bg-card/60">
                 <h3 className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground font-bold">ALERT SEVERITY BREAKDOWN</h3>
               </div>
               <div className="p-4">
                 <div className="grid grid-cols-4 gap-4">
                   {(["critical", "major", "minor", "informational"] as const).map((sev) => (
-                    <div key={sev} className="text-center border border-border/30 bg-black/20 py-4">
+                    <div key={sev} className="text-center border border-border/30 bg-card/20 py-4">
                       <p className={`font-mono text-2xl font-bold ${
                         sev === "critical" ? "text-status-fault"
                         : sev === "major" ? "text-status-warning"
@@ -228,8 +228,8 @@ export default function SuperAdminDashboard() {
           )}
 
           {/* Org table */}
-          <div className="border border-border/50 bg-black/40">
-            <div className="px-4 py-3 border-b border-border/50 bg-black/60 flex items-center justify-between">
+          <div className="border border-border/50 bg-card/40">
+            <div className="px-4 py-3 border-b border-border/50 bg-card/60 flex items-center justify-between">
               <h3 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground">ALL ORGANISATIONS</h3>
               <Link href="/superadmin/orgs">
                 <Button variant="outline" size="sm" className="h-7 text-[10px] font-mono uppercase tracking-widest border-accent-brand/30 text-accent-brand hover:bg-accent-brand/10">
@@ -240,7 +240,7 @@ export default function SuperAdminDashboard() {
             </div>
             <div className="p-0 overflow-x-auto">
               <Table>
-                <TableHeader className="bg-black/60 border-b border-border/50">
+                <TableHeader className="bg-card/60 border-b border-border/50">
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="pl-4 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">ORGANISATION</TableHead>
                     <TableHead className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">PLAN</TableHead>

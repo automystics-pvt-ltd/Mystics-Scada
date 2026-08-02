@@ -33,7 +33,7 @@ const PRIORITY_BADGE: Record<WorkOrderPriority, string> = {
   critical: "bg-status-fault/10 text-status-fault border-status-fault shadow-[0_0_10px_rgba(239,68,68,0.3)]",
   high:     "bg-[#e67e22]/10 text-[#e67e22] border-[#e67e22] shadow-[0_0_10px_rgba(230,126,34,0.3)]",
   medium:   "bg-status-warning/10 text-status-warning border-status-warning shadow-[0_0_10px_rgba(251,191,36,0.3)]",
-  low:      "bg-black/40 text-muted-foreground border-border/50",
+  low:      "bg-card/40 text-muted-foreground border-border/50",
 };
 
 function formatDue(dueDate: Date | string | null): { label: string; overdue: boolean } {
@@ -86,8 +86,8 @@ function NewWorkOrderModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-black/90 border border-brand/50 w-full max-w-md shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] rounded-none relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-card/80 backdrop-blur-sm p-4">
+      <div className="bg-card/90 border border-brand/50 w-full max-w-md shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] rounded-none relative">
         <div className="absolute top-0 left-0 w-full h-1 bg-brand" />
         
         <div className="flex items-center justify-between p-5 border-b border-border/50">
@@ -110,7 +110,7 @@ function NewWorkOrderModal({ onClose }: { onClose: () => void }) {
               value={form.equipment}
               onChange={e => setForm(f => ({ ...f, equipment: e.target.value }))}
               placeholder="e.g. INVERTER-03"
-              className="w-full bg-black/40 border border-border/50 rounded-none px-3 py-2 font-mono text-sm focus:outline-none focus:border-brand/50 focus:ring-0 text-foreground uppercase"
+              className="w-full bg-card/40 border border-border/50 rounded-none px-3 py-2 font-mono text-sm focus:outline-none focus:border-brand/50 focus:ring-0 text-foreground uppercase"
             />
           </div>
 
@@ -124,7 +124,7 @@ function NewWorkOrderModal({ onClose }: { onClose: () => void }) {
               value={form.faultDescription}
               onChange={e => setForm(f => ({ ...f, faultDescription: e.target.value }))}
               placeholder="DESCRIBE OBSERVED ANOMALY..."
-              className="w-full bg-black/40 border border-border/50 rounded-none px-3 py-2 font-mono text-sm focus:outline-none focus:border-brand/50 focus:ring-0 resize-none text-foreground uppercase"
+              className="w-full bg-card/40 border border-border/50 rounded-none px-3 py-2 font-mono text-sm focus:outline-none focus:border-brand/50 focus:ring-0 resize-none text-foreground uppercase"
             />
           </div>
 
@@ -137,7 +137,7 @@ function NewWorkOrderModal({ onClose }: { onClose: () => void }) {
                 <select
                   value={form.priority}
                   onChange={e => setForm(f => ({ ...f, priority: e.target.value as WorkOrderPriority }))}
-                  className="w-full appearance-none bg-black/40 border border-border/50 rounded-none px-3 py-2 font-mono text-sm focus:outline-none focus:border-brand/50 focus:ring-0 pr-8 text-foreground uppercase"
+                  className="w-full appearance-none bg-card/40 border border-border/50 rounded-none px-3 py-2 font-mono text-sm focus:outline-none focus:border-brand/50 focus:ring-0 pr-8 text-foreground uppercase"
                 >
                   <option value="low">LOW</option>
                   <option value="medium">MEDIUM</option>
@@ -156,7 +156,7 @@ function NewWorkOrderModal({ onClose }: { onClose: () => void }) {
                 type="datetime-local"
                 value={form.dueDate}
                 onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
-                className="w-full bg-black/40 border border-border/50 rounded-none px-3 py-2 font-mono text-[10px] uppercase focus:outline-none focus:border-brand/50 focus:ring-0 text-brand"
+                className="w-full bg-card/40 border border-border/50 rounded-none px-3 py-2 font-mono text-[10px] uppercase focus:outline-none focus:border-brand/50 focus:ring-0 text-brand"
               />
             </div>
           </div>
@@ -169,7 +169,7 @@ function NewWorkOrderModal({ onClose }: { onClose: () => void }) {
               value={form.assignedTo}
               onChange={e => setForm(f => ({ ...f, assignedTo: e.target.value }))}
               placeholder="OPERATOR IDENTIFIER (OPTIONAL)"
-              className="w-full bg-black/40 border border-border/50 rounded-none px-3 py-2 font-mono text-sm focus:outline-none focus:border-brand/50 focus:ring-0 text-foreground uppercase"
+              className="w-full bg-card/40 border border-border/50 rounded-none px-3 py-2 font-mono text-sm focus:outline-none focus:border-brand/50 focus:ring-0 text-foreground uppercase"
             />
           </div>
 
@@ -177,7 +177,7 @@ function NewWorkOrderModal({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-border/50 bg-black/40 font-mono text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:bg-white/5 transition-colors"
+              className="flex-1 px-4 py-2 border border-border/50 bg-card/40 font-mono text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:bg-white/5 transition-colors"
             >
               ABORT
             </button>
@@ -201,7 +201,7 @@ function WOCard({ wo, onMove, isLast }: { wo: WorkOrder; onMove: (id: string, s:
   const due = formatDue(wo.dueDate);
 
   return (
-    <div className={`border border-border/50 bg-black/60 border-l-[3px] ${PRIORITY_LEFT[wo.priority]} p-4 relative group hover:border-r-brand/50 transition-all`}>
+    <div className={`border border-border/50 bg-card/60 border-l-[3px] ${PRIORITY_LEFT[wo.priority]} p-4 relative group hover:border-r-brand/50 transition-all`}>
       {/* Header row */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">WO-{wo.id.substring(0, 6).toUpperCase()}</span>
@@ -234,7 +234,7 @@ function WOCard({ wo, onMove, isLast }: { wo: WorkOrder; onMove: (id: string, s:
 
       {/* Root cause snippet */}
       {wo.rootCause && (
-        <div className="border-l-2 border-brand/50 pl-2 mb-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground line-clamp-2 bg-black/40 p-1.5">
+        <div className="border-l-2 border-brand/50 pl-2 mb-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground line-clamp-2 bg-card/40 p-1.5">
           <span className="font-bold text-brand">RCA: </span>{wo.rootCause}
         </div>
       )}
@@ -297,7 +297,7 @@ export default function MaintenanceBoard() {
         <div className="flex flex-col h-[calc(100vh-100px)] space-y-6">
 
           {/* Header */}
-          <div className="border border-border/50 bg-black/40 p-5 relative flex-shrink-0 flex flex-wrap justify-between items-start gap-4">
+          <div className="border border-border/50 bg-card/40 p-5 relative flex-shrink-0 flex flex-wrap justify-between items-start gap-4">
             <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
             <div>
               <h1 className="text-xl font-mono font-bold uppercase tracking-widest text-foreground flex items-center gap-3">
@@ -318,22 +318,22 @@ export default function MaintenanceBoard() {
 
           {/* Summary stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 flex-shrink-0">
-            <div className="border border-border/50 bg-black/60 p-4 relative">
+            <div className="border border-border/50 bg-card/60 p-4 relative">
               <div className="absolute top-0 left-0 w-full h-0.5 bg-brand shadow-[0_0_10px_rgba(0,255,170,0.5)]" />
               <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2"><Clock className="w-3 h-3 text-brand" /> ACTIVE TICKETS</div>
               <div className="font-mono text-2xl font-bold text-foreground">{isLoading ? "..." : stats.open}</div>
             </div>
-            <div className="border border-border/50 bg-black/60 p-4 relative">
+            <div className="border border-border/50 bg-card/60 p-4 relative">
               <div className="absolute top-0 left-0 w-full h-0.5 bg-status-fault shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse" />
               <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2"><AlertCircle className="w-3 h-3 text-status-fault" /> CRITICAL INCIDENTS</div>
               <div className="font-mono text-2xl font-bold text-status-fault">{isLoading ? "..." : stats.critical}</div>
             </div>
-            <div className="border border-border/50 bg-black/60 p-4 relative">
+            <div className="border border-border/50 bg-card/60 p-4 relative">
               <div className="absolute top-0 left-0 w-full h-0.5 bg-status-warning shadow-[0_0_10px_rgba(251,191,36,0.5)]" />
               <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2"><AlertTriangle className="w-3 h-3 text-status-warning" /> SLA BREACHED</div>
               <div className="font-mono text-2xl font-bold text-status-warning">{isLoading ? "..." : stats.breached}</div>
             </div>
-            <div className="border border-border/50 bg-black/60 p-4 relative">
+            <div className="border border-border/50 bg-card/60 p-4 relative">
               <div className="absolute top-0 left-0 w-full h-0.5 bg-status-normal shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
               <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2"><Wrench className="w-3 h-3 text-status-normal" /> VERIFIED LOGS</div>
               <div className="font-mono text-2xl font-bold text-status-normal">{isLoading ? "..." : stats.done}</div>
@@ -341,20 +341,20 @@ export default function MaintenanceBoard() {
           </div>
 
           {/* Kanban board */}
-          <div className="flex-1 overflow-x-auto min-h-0 custom-scrollbar border border-border/50 bg-black/40 p-4">
+          <div className="flex-1 overflow-x-auto min-h-0 custom-scrollbar border border-border/50 bg-card/40 p-4">
             <div className="flex gap-4 h-full" style={{ minWidth: `${KANBAN_COLUMNS.length * 320 + 64}px` }}>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="w-[300px] flex-shrink-0 bg-black/60 border border-border/50 animate-pulse" />
+                  <div key={i} className="w-[300px] flex-shrink-0 bg-card/60 border border-border/50 animate-pulse" />
                 ))
               ) : KANBAN_COLUMNS.map(col => {
                 const cards = cardsFor(col.id);
                 return (
-                  <div key={col.id} className="w-[300px] flex-shrink-0 flex flex-col bg-black/60 border border-border/50 relative">
+                  <div key={col.id} className="w-[300px] flex-shrink-0 flex flex-col bg-card/60 border border-border/50 relative">
                     <div className={`absolute top-0 left-0 w-full h-1 ${col.color}`} />
                     
                     {/* Column header */}
-                    <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between bg-black/80">
+                    <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between bg-card/80">
                       <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-foreground flex items-center gap-2">
                         <span className={`w-1.5 h-1.5 inline-block ${col.color}`} />
                         {col.title}
@@ -367,7 +367,7 @@ export default function MaintenanceBoard() {
                     {/* Cards */}
                     <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
                       {cards.length === 0 ? (
-                        <div className="flex items-center justify-center h-20 border border-dashed border-border/50 bg-black/40">
+                        <div className="flex items-center justify-center h-20 border border-dashed border-border/50 bg-card/40">
                           <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">NO TICKETS IN QUEUE</span>
                         </div>
                       ) : (

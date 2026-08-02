@@ -55,12 +55,12 @@ function ChannelRow({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border border-border/50 rounded-none-none overflow-hidden bg-black/40">
+    <div className="border border-border/50 rounded-none-none overflow-hidden bg-card/40">
       <div
         className="flex items-center gap-3 px-5 py-4 cursor-pointer hover:bg-white/5 transition-colors"
         onClick={() => setOpen((o) => !o)}
       >
-        <div className={`p-2 rounded-none-none ${enabled ? "bg-accent-brand/10" : "bg-black/60"}`}>
+        <div className={`p-2 rounded-none-none ${enabled ? "bg-accent-brand/10" : "bg-card/60"}`}>
           <Icon className={`h-4 w-4 ${enabled ? "text-accent-brand" : "text-muted-foreground"}`} />
         </div>
         <div className="flex-1 min-w-0">
@@ -151,7 +151,7 @@ export default function SuperAdminNotifications() {
           {/* Delivery stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {stats.map(({ label, value, color }) => (
-              <div key={label} className="border border-border/50 rounded-none-none p-4 bg-black/40">
+              <div key={label} className="border border-border/50 rounded-none-none p-4 bg-card/40">
                 <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
                 <p className={`text-2xl font-bold font-mono ${color}`}>{value}</p>
               </div>
@@ -188,11 +188,11 @@ export default function SuperAdminNotifications() {
               ) : (
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-2 font-mono text-[8px] uppercase tracking-widest">
-                    <div className="bg-black/40 rounded-none px-3 py-2">
+                    <div className="bg-card/40 rounded-none px-3 py-2">
                       <p className="text-muted-foreground mb-0.5">Host</p>
                       <p className="font-mono">{config?.smtp.host ?? "—"}</p>
                     </div>
-                    <div className="bg-black/40 rounded-none px-3 py-2">
+                    <div className="bg-card/40 rounded-none px-3 py-2">
                       <p className="text-muted-foreground mb-0.5">From address</p>
                       <p className="font-mono truncate">{config?.smtp.from ?? "—"}</p>
                     </div>
@@ -262,7 +262,7 @@ export default function SuperAdminNotifications() {
             >
               <div className="font-mono text-[8px] uppercase tracking-widest space-y-2 text-muted-foreground">
                 <p>Create a Slack Incoming Webhook and add the URL to your environment:</p>
-                <code className="block bg-black/60 px-3 py-2 rounded-none font-mono">SLACK_WEBHOOK_URL=https://hooks.slack.com/services/…</code>
+                <code className="block bg-card/60 px-3 py-2 rounded-none font-mono">SLACK_WEBHOOK_URL=https://hooks.slack.com/services/…</code>
                 <p>Restart the API service after adding the variable.</p>
               </div>
             </ChannelRow>
@@ -289,13 +289,13 @@ export default function SuperAdminNotifications() {
             >
               <div className="font-mono text-[8px] uppercase tracking-widest space-y-2 text-muted-foreground">
                 <p>Configure via environment variable:</p>
-                <code className="block bg-black/60 px-3 py-2 rounded-none font-mono">TEAMS_WEBHOOK_URL=https://outlook.office.com/webhook/…</code>
+                <code className="block bg-card/60 px-3 py-2 rounded-none font-mono">TEAMS_WEBHOOK_URL=https://outlook.office.com/webhook/…</code>
               </div>
             </ChannelRow>
           </div>
 
           {/* Platform Banner section (kept from communications page) */}
-          <div className="border border-border/50 rounded-none-none p-5 bg-black/40 space-y-4">
+          <div className="border border-border/50 rounded-none-none p-5 bg-card/40 space-y-4">
             <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground flex items-center gap-2">
               <Megaphone className="h-4 w-4 text-accent-brand" /> Platform Announcement Banner
             </h2>

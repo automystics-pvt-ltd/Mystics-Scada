@@ -210,18 +210,18 @@ export default function SuperAdminOrgs() {
           </div>
 
           {/* Filters */}
-          <div className="flex items-center gap-3 bg-black/40 border border-border/50 p-2">
+          <div className="flex items-center gap-3 bg-card/40 border border-border/50 p-2">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-accent-brand" />
               <Input
                 placeholder="SEARCH NAME OR SLUG..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 h-8 font-mono text-[10px] uppercase tracking-widest bg-black/60 border-border/50 rounded-none focus-visible:ring-accent-brand"
+                className="pl-9 h-8 font-mono text-[10px] uppercase tracking-widest bg-card/60 border-border/50 rounded-none focus-visible:ring-accent-brand"
               />
             </div>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-              <SelectTrigger className="w-48 h-8 font-mono text-[10px] uppercase tracking-widest bg-black/60 border-border/50 rounded-none">
+              <SelectTrigger className="w-48 h-8 font-mono text-[10px] uppercase tracking-widest bg-card/60 border-border/50 rounded-none">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest">
@@ -232,10 +232,10 @@ export default function SuperAdminOrgs() {
             </Select>
           </div>
 
-          <div className="border border-border/50 bg-black/40">
+          <div className="border border-border/50 bg-card/40">
             <div className="p-0 overflow-x-auto">
               <Table>
-                <TableHeader className="bg-black/60 border-b border-border/50">
+                <TableHeader className="bg-card/60 border-b border-border/50">
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="pl-4 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">ORGANISATION</TableHead>
                     <TableHead className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">PLAN</TableHead>
@@ -335,7 +335,7 @@ export default function SuperAdminOrgs() {
 
         {/* Create Org Dialog */}
         <Dialog open={showCreate} onOpenChange={setShowCreate}>
-          <DialogContent className="max-w-md bg-black/95 border border-accent-brand/50 rounded-none shadow-[0_0_30px_rgba(0,195,255,0.15)] backdrop-blur-xl">
+          <DialogContent className="max-w-md bg-card/95 border border-accent-brand/50 rounded-none shadow-[0_0_30px_rgba(0,195,255,0.15)] backdrop-blur-xl">
             <DialogHeader className="border-b border-border/50 pb-4">
               <DialogTitle className="font-mono text-sm uppercase tracking-widest text-accent-brand">INITIALIZE ORGANISATION</DialogTitle>
             </DialogHeader>
@@ -350,7 +350,7 @@ export default function SuperAdminOrgs() {
                     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
                     setForm((f) => ({ ...f, name, slug }));
                   }}
-                  className="font-mono text-xs bg-black/50 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase"
+                  className="font-mono text-xs bg-card/50 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase"
                 />
               </div>
               <div className="space-y-1.5">
@@ -359,14 +359,14 @@ export default function SuperAdminOrgs() {
                   placeholder="e.g. sunergy-corp"
                   value={form.slug}
                   onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
-                  className="font-mono text-xs bg-black/50 border-border/50 rounded-none focus-visible:ring-accent-brand"
+                  className="font-mono text-xs bg-card/50 border-border/50 rounded-none focus-visible:ring-accent-brand"
                 />
                 <p className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground">URL-SAFE, LOWERCASE, HYPHENS ONLY</p>
               </div>
               <div className="space-y-1.5">
                 <Label className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">PLAN TIER</Label>
                 <Select value={form.planTier} onValueChange={(v) => setForm((f) => ({ ...f, planTier: v }))}>
-                  <SelectTrigger className="font-mono text-xs uppercase tracking-widest bg-black/50 border-border/50 rounded-none">
+                  <SelectTrigger className="font-mono text-xs uppercase tracking-widest bg-card/50 border-border/50 rounded-none">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-none border-border/50 font-mono text-[10px] uppercase tracking-widest">
@@ -385,7 +385,7 @@ export default function SuperAdminOrgs() {
                       placeholder="E.G. JANE SMITH"
                       value={form.adminName}
                       onChange={(e) => setForm((f) => ({ ...f, adminName: e.target.value }))}
-                      className="font-mono text-xs bg-black/50 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase"
+                      className="font-mono text-xs bg-card/50 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -395,7 +395,7 @@ export default function SuperAdminOrgs() {
                       placeholder="E.G. JANE@SUNERGY.COM"
                       value={form.adminEmail}
                       onChange={(e) => setForm((f) => ({ ...f, adminEmail: e.target.value }))}
-                      className="font-mono text-xs bg-black/50 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase"
+                      className="font-mono text-xs bg-card/50 border-border/50 rounded-none focus-visible:ring-accent-brand uppercase"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -410,7 +410,7 @@ export default function SuperAdminOrgs() {
                         placeholder="MIN 8 CHARACTERS"
                         value={form.adminPassword}
                         onChange={(e) => setForm((f) => ({ ...f, adminPassword: e.target.value }))}
-                        className="pr-9 font-mono text-xs bg-black/50 border-border/50 rounded-none focus-visible:ring-accent-brand"
+                        className="pr-9 font-mono text-xs bg-card/50 border-border/50 rounded-none focus-visible:ring-accent-brand"
                         disabled={!form.adminEmail}
                       />
                       <button

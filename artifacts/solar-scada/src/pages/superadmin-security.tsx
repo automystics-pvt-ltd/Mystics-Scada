@@ -68,7 +68,7 @@ export default function SuperAdminSecurity() {
               { label: "ACTIVE USERS (24H)",       value: summary?.activeUsers24h      ?? 0, color: "text-accent-brand",                                                        icon: UserCheck },
               { label: "SUPER ADMIN ACTIONS (24H)",value: summary?.superAdminActions24h ?? 0, color: summary?.superAdminActions24h ? "text-status-warning" : "text-muted-foreground", icon: ShieldAlert },
             ].map(({ label, value, color, icon: Icon }) => (
-              <div key={label} className="border border-border/50 bg-black/40 p-4 relative group transition-colors hover:border-accent-brand/50">
+              <div key={label} className="border border-border/50 bg-card/40 p-4 relative group transition-colors hover:border-accent-brand/50">
                 <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-accent-brand transition-colors" />
                 <div className="flex items-center justify-between mb-3 pl-2">
                   <p className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{label}</p>
@@ -111,14 +111,14 @@ export default function SuperAdminSecurity() {
           )}
 
           {/* Event stream */}
-          <div className="border border-border/50 bg-black/40">
-            <div className="px-4 py-3 border-b border-border/50 bg-black/60 flex items-center justify-between">
+          <div className="border border-border/50 bg-card/40">
+            <div className="px-4 py-3 border-b border-border/50 bg-card/60 flex items-center justify-between">
               <h2 className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground">EVENT STREAM</h2>
               <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{events.length} EVENTS</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-black/60 border-b border-border/50">
+                <thead className="bg-card/60 border-b border-border/50">
                   <tr>
                     <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">TIME</th>
                     <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">EVENT</th>
@@ -154,7 +154,7 @@ export default function SuperAdminSecurity() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <Icon className={`h-4 w-4 ${meta?.color ? meta.color.split(" ")[0] : "text-muted-foreground"}`} />
-                            <Badge variant="outline" className={`font-mono text-[8px] font-bold uppercase tracking-widest rounded-none border px-1.5 py-0.5 ${meta?.color ?? "bg-black/40 text-muted-foreground border-border/50"}`}>
+                            <Badge variant="outline" className={`font-mono text-[8px] font-bold uppercase tracking-widest rounded-none border px-1.5 py-0.5 ${meta?.color ?? "bg-card/40 text-muted-foreground border-border/50"}`}>
                               {meta?.label ?? ev.action}
                             </Badge>
                           </div>

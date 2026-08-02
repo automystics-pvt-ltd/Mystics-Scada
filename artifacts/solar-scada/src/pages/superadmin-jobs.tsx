@@ -144,7 +144,7 @@ export default function SuperAdminJobs() {
               { label: "RUNNING",          value: allRunning,   icon: CheckCircle2, color: "text-status-normal" },
               { label: "WORKERS W/ ERRORS",value: withErrors,   icon: ServerCrash,  color: withErrors ? "text-status-fault" : "text-muted-foreground" },
             ].map(({ label, value, icon: Icon, color }) => (
-              <div key={label} className="border border-border/50 bg-black/40 p-4 relative group hover:border-accent-brand/30 transition-colors">
+              <div key={label} className="border border-border/50 bg-card/40 p-4 relative group hover:border-accent-brand/30 transition-colors">
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-border/30 group-hover:bg-accent-brand/50 transition-colors" />
                 <div className="flex items-center justify-between mb-3">
                   <p className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{label}</p>
@@ -161,7 +161,7 @@ export default function SuperAdminJobs() {
           <div className="space-y-4">
             {isLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="border border-border/50 bg-black/40 animate-pulse h-36" />
+                <div key={i} className="border border-border/50 bg-card/40 animate-pulse h-36" />
               ))
             ) : jobs.map((job) => {
               const Icon = JOB_ICONS[job.id] ?? Activity;
@@ -170,11 +170,11 @@ export default function SuperAdminJobs() {
               const isBusy = triggering[job.id];
 
               return (
-                <div key={job.id} className="border border-border/50 bg-black/40 p-5 relative overflow-hidden group hover:border-border transition-colors">
+                <div key={job.id} className="border border-border/50 bg-card/40 p-5 relative overflow-hidden group hover:border-border transition-colors">
                   <div className={`absolute top-0 left-0 w-1 h-full ${job.running ? "bg-status-normal shadow-[0_0_10px_rgba(34,197,94,0.8)]" : "bg-border/50"}`} />
                   <div className="flex items-start justify-between gap-5 ml-2">
                     <div className="flex items-start gap-4 flex-1 min-w-0">
-                      <div className={`p-2 border border-border/30 bg-black/60 ${color}`}>
+                      <div className={`p-2 border border-border/30 bg-card/60 ${color}`}>
                         <Icon className="h-6 w-6" />
                       </div>
                       <div className="flex-1 min-w-0">

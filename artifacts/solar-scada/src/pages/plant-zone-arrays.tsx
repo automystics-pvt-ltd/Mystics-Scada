@@ -26,7 +26,7 @@ function ArrayCard({ plantId, zoneId, inverterId, inverterName, arrId, arrName, 
 
   return (
     <Link href={`/plants/${plantId}/zones/${zoneId}/arrays/${arrId}`}>
-      <div className={`border bg-black/60 p-4 hover:bg-brand/5 cursor-pointer group transition-all relative overflow-hidden ${
+      <div className={`border bg-card/60 p-4 hover:bg-brand/5 cursor-pointer group transition-all relative overflow-hidden ${
         isFault ? "border-status-fault/50" : isWarning ? "border-status-warning/50" : "border-border/50 hover:border-brand/50"
       }`}>
         <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${
@@ -53,19 +53,19 @@ function ArrayCard({ plantId, zoneId, inverterId, inverterName, arrId, arrName, 
         </div>
 
         <div className="grid grid-cols-3 gap-px bg-border/50 border border-border/50">
-          <div className="bg-black p-2 text-center">
+          <div className="bg-card p-2 text-center">
             <div className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mb-1">STRINGS</div>
             <div className={`font-mono text-sm font-bold ${online < arrayStrings.length ? "text-status-fault drop-shadow-[0_0_5px_rgba(239,68,68,0.5)]" : "text-foreground"}`}>
               {online}/{arrayStrings.length}
             </div>
           </div>
-          <div className="bg-black p-2 text-center">
+          <div className="bg-card p-2 text-center">
             <div className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mb-1">AVG CUR</div>
             <div className="font-mono text-sm font-bold text-foreground">
               {avgCurrent > 0 ? `${avgCurrent.toFixed(2)} A` : "--"}
             </div>
           </div>
-          <div className="bg-black p-2 text-center">
+          <div className="bg-card p-2 text-center">
             <div className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mb-1">DEVIATING</div>
             <div className={`font-mono text-sm font-bold ${deviating > 0 ? "text-status-warning drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]" : "text-foreground"}`}>
               {deviating}
@@ -104,7 +104,7 @@ export default function PlantZoneArrays() {
     <AppLayout>
       <div className="flex flex-col space-y-6">
         {/* Breadcrumb */}
-        <div className="border border-border/50 bg-black/40 p-5 relative flex-shrink-0">
+        <div className="border border-border/50 bg-card/40 p-5 relative flex-shrink-0">
           <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
           
           <div className="flex items-center mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -122,7 +122,7 @@ export default function PlantZoneArrays() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <div className="flex items-center gap-4 flex-wrap">
-                <Link href={`/plants/${pid}/zones/${zid}`} className="border border-border/50 bg-black/60 p-1.5 hover:text-brand hover:border-brand/50 transition-colors">
+                <Link href={`/plants/${pid}/zones/${zid}`} className="border border-border/50 bg-card/60 p-1.5 hover:text-brand hover:border-brand/50 transition-colors">
                   <ArrowLeft className="w-4 h-4" />
                 </Link>
                 <h1 className="text-xl font-mono font-bold uppercase tracking-widest text-foreground">
@@ -151,7 +151,7 @@ export default function PlantZoneArrays() {
               const isInvWarning = inv.status === "standby";
               
               return (
-                <div key={inv.id} className="border border-border/50 bg-black/40 p-5">
+                <div key={inv.id} className="border border-border/50 bg-card/40 p-5">
                   <div className="flex items-center gap-3 mb-5 pb-3 border-b border-border/50">
                     <div className="font-mono text-base font-bold uppercase tracking-widest">{inv.name}</div>
                     <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{inv.id}</div>
@@ -159,7 +159,7 @@ export default function PlantZoneArrays() {
                       isInvFault ? "bg-status-fault/10 border-status-fault/50 text-status-fault animate-pulse"
                         : isInvWarning ? "bg-status-warning/10 border-status-warning/50 text-status-warning"
                         : inv.status === "running" ? "bg-status-normal/10 border-status-normal/50 text-status-normal"
-                          : "bg-black/60 border-border/50 text-muted-foreground"
+                          : "bg-card/60 border-border/50 text-muted-foreground"
                     }`}>
                       {inv.status.toUpperCase().replace("_", " ")}
                     </div>

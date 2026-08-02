@@ -43,12 +43,12 @@ export default function StringDiagnostics() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {isLoading ? (
             Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-black/40 border border-border/50 rounded-none-none p-4 h-32 animate-pulse" />
+              <div key={i} className="bg-card/40 border border-border/50 rounded-none-none p-4 h-32 animate-pulse" />
             ))
           ) : strings?.map(str => (
             <div 
               key={str.id} 
-              className={`bg-black/40 rounded-none-none p-4 border relative overflow-hidden transition-all ${
+              className={`bg-card/40 rounded-none-none p-4 border relative overflow-hidden transition-all ${
                 str.isDeviating 
                   ? 'border-status-fault shadow-[0_0_10px_rgba(239,68,68,0.15)]' 
                   : str.status === 'off' 

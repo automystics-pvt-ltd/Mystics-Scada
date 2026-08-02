@@ -46,7 +46,7 @@ export default function PlantZoneDetail() {
     <AppLayout>
       <div className="flex flex-col space-y-6">
         {/* Breadcrumb & Header */}
-        <div className="border border-border/50 bg-black/40 p-5 relative flex-shrink-0">
+        <div className="border border-border/50 bg-card/40 p-5 relative flex-shrink-0">
           <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
           
           <div className="flex items-center mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -62,7 +62,7 @@ export default function PlantZoneDetail() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <div className="flex items-center gap-4 flex-wrap">
-                <Link href={`/plants/${pid}/zones`} className="border border-border/50 bg-black/60 p-1.5 hover:text-brand hover:border-brand/50 transition-colors">
+                <Link href={`/plants/${pid}/zones`} className="border border-border/50 bg-card/60 p-1.5 hover:text-brand hover:border-brand/50 transition-colors">
                   <ArrowLeft className="w-4 h-4" />
                 </Link>
                 <h1 className="text-xl font-mono font-bold uppercase tracking-widest text-foreground">
@@ -79,11 +79,11 @@ export default function PlantZoneDetail() {
         </div>
 
         {/* Zone KPI bar */}
-        <div className="border border-border/50 bg-black/60 relative overflow-hidden flex flex-wrap items-center">
+        <div className="border border-border/50 bg-card/60 relative overflow-hidden flex flex-wrap items-center">
           <div className="absolute top-0 left-0 w-1 h-full bg-brand shadow-[0_0_10px_rgba(0,255,170,0.5)]" />
           
           {/* Progress block */}
-          <div className="p-5 border-r border-border/50 bg-black/40 flex items-center justify-center flex-shrink-0 min-w-[140px]">
+          <div className="p-5 border-r border-border/50 bg-card/40 flex items-center justify-center flex-shrink-0 min-w-[140px]">
             <div className="text-center">
               <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">HEALTH SCORE</div>
               <div className="font-mono text-3xl font-bold" style={{ color: color, textShadow: `0 0 10px ${color}80` }}>
@@ -117,7 +117,7 @@ export default function PlantZoneDetail() {
             </div>
           </Link>
           <Link href={`/plants/${pid}/inverters`}>
-            <div className="inline-flex items-center gap-2 border border-border/50 bg-black/40 text-muted-foreground px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-brand/50 hover:text-brand transition-colors cursor-pointer">
+            <div className="inline-flex items-center gap-2 border border-border/50 bg-card/40 text-muted-foreground px-4 py-2 font-mono text-[10px] uppercase tracking-widest hover:border-brand/50 hover:text-brand transition-colors cursor-pointer">
               GLOBAL INVERTER REGISTRY <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </Link>
@@ -135,7 +135,7 @@ export default function PlantZoneDetail() {
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="border border-border/50 bg-black/40 h-[180px] animate-pulse" />
+                <div key={i} className="border border-border/50 bg-card/40 h-[180px] animate-pulse" />
               ))}
             </div>
           ) : (
@@ -148,7 +148,7 @@ export default function PlantZoneDetail() {
                 
                 return (
                   <Link key={inv.id} href={`/plants/${pid}/inverters/${inv.id}`}>
-                    <div className={`border bg-black/60 p-4 hover:bg-brand/5 cursor-pointer group transition-all relative ${
+                    <div className={`border bg-card/60 p-4 hover:bg-brand/5 cursor-pointer group transition-all relative ${
                       isFault ? "border-status-fault/50" : isWarning ? "border-status-warning/50" : "border-border/50 hover:border-brand/50"
                     }`}>
                       <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${
@@ -169,19 +169,19 @@ export default function PlantZoneDetail() {
                       </div>
                       
                       <div className="grid grid-cols-3 gap-px bg-border/50 border border-border/50">
-                        <div className="bg-black p-2 text-center">
+                        <div className="bg-card p-2 text-center">
                           <div className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mb-1">POWER</div>
                           <div className="font-mono text-sm font-bold text-foreground">
                             {inv.acPowerKw != null ? `${inv.acPowerKw.toFixed(0)} KW` : "--"}
                           </div>
                         </div>
-                        <div className="bg-black p-2 text-center">
+                        <div className="bg-card p-2 text-center">
                           <div className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mb-1">EFFICIENCY</div>
                           <div className="font-mono text-sm font-bold text-foreground">
                             {inv.efficiencyPct != null && inv.efficiencyPct > 0 ? `${inv.efficiencyPct.toFixed(1)}%` : "--"}
                           </div>
                         </div>
-                        <div className="bg-black p-2 text-center">
+                        <div className="bg-card p-2 text-center">
                           <div className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground mb-1">TEMP</div>
                           <div className={`font-mono text-sm font-bold ${(inv.temperatureC ?? 0) > 62 ? "text-status-warning drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]" : "text-foreground"}`}>
                             {inv.temperatureC != null ? `${inv.temperatureC.toFixed(0)}°C` : "--"}

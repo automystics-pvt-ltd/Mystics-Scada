@@ -64,7 +64,7 @@ function KpiBox({ label, value, unit, icon: Icon, accent = false, loading = fals
     <div className={`relative flex-1 min-w-0 px-5 py-4 border transition-all ${
       accent
         ? "bg-brand/5 border-brand shadow-[inset_0_0_20px_rgba(0,255,170,0.05)]"
-        : "bg-black/40 border-border/50 hover:bg-brand/5 hover:border-brand/50"
+        : "bg-card/40 border-border/50 hover:bg-brand/5 hover:border-brand/50"
     }`}>
       {accent && <div className="absolute top-0 left-0 w-1 h-full bg-brand shadow-[0_0_10px_rgba(0,255,170,0.5)]" />}
       {!accent && <div className="absolute top-0 left-0 w-1 h-full bg-border/50 group-hover:bg-brand/50 transition-colors" />}
@@ -73,7 +73,7 @@ function KpiBox({ label, value, unit, icon: Icon, accent = false, loading = fals
         <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
           {label}
         </span>
-        <div className={`w-5 h-5 flex items-center justify-center border ${accent ? "border-brand/30 bg-brand/10 text-brand" : "border-border/50 bg-black/60 text-muted-foreground"}`}>
+        <div className={`w-5 h-5 flex items-center justify-center border ${accent ? "border-brand/30 bg-brand/10 text-brand" : "border-border/50 bg-card/60 text-muted-foreground"}`}>
           <Icon className="w-3 h-3" />
         </div>
       </div>
@@ -304,7 +304,7 @@ export default function PlantDashboard() {
       <div className="flex flex-col space-y-6">
 
         {/* ── Breadcrumb & Header ──────────────────────────────────────── */}
-        <div className="border border-border/50 bg-black/40 p-5 relative">
+        <div className="border border-border/50 bg-card/40 p-5 relative">
           <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
           
           <div className="flex items-center mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -329,7 +329,7 @@ export default function PlantDashboard() {
                 <div className={`flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest px-2.5 py-1 border ${
                   liveStream.connected
                     ? "bg-brand/10 border-brand/30 text-brand"
-                    : "bg-black/60 border-border/50 text-muted-foreground"
+                    : "bg-card/60 border-border/50 text-muted-foreground"
                 }`}>
                   {liveStream.connected
                     ? <Radio className="h-3 h-3 animate-pulse" />
@@ -350,7 +350,7 @@ export default function PlantDashboard() {
                     <button className={`flex items-center gap-2 px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${
                       isActive
                         ? "bg-brand/10 text-brand border border-brand/50 shadow-[0_0_10px_rgba(0,255,170,0.2)]"
-                        : "bg-black/40 text-muted-foreground border border-border/50 hover:bg-brand/5 hover:text-brand hover:border-brand/30"
+                        : "bg-card/40 text-muted-foreground border border-border/50 hover:bg-brand/5 hover:text-brand hover:border-brand/30"
                     }`}>
                       {item.icon && <item.icon className="w-3.5 h-3.5" />}
                       {item.name}
@@ -363,7 +363,7 @@ export default function PlantDashboard() {
         </div>
 
         {/* ── HERO: Live power number ───────────────────────────────────── */}
-        <div className="border border-border/50 bg-black/60 relative overflow-hidden flex flex-col items-center justify-center py-12">
+        <div className="border border-border/50 bg-card/60 relative overflow-hidden flex flex-col items-center justify-center py-12">
           {/* Subtle grid background */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
           
@@ -406,7 +406,7 @@ export default function PlantDashboard() {
           )}
           
           {/* PR + Availability inline */}
-          <div className="flex items-center gap-8 mt-10 text-xs border border-border/50 bg-black/80 px-8 py-4 z-10 shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center gap-8 mt-10 text-xs border border-border/50 bg-card/80 px-8 py-4 z-10 shadow-[0_0_15px_rgba(0,0,0,0.5)]">
             <div className="text-center">
               <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-1.5">PRF RATIO</p>
               <p className="font-mono font-bold text-foreground text-base">{livePr?.toFixed(1) ?? "--"}%</p>
@@ -426,7 +426,7 @@ export default function PlantDashboard() {
 
         {/* ── Period tabs + date nav ────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center border border-border/50 bg-black/40 p-1">
+          <div className="flex items-center border border-border/50 bg-card/40 p-1">
             {(["day", "week", "month", "year", "lifetime"] as Period[]).map((p) => (
               <button
                 key={p}
@@ -434,7 +434,7 @@ export default function PlantDashboard() {
                 className={`px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all ${
                   period === p
                     ? "bg-brand/20 text-brand border border-brand/50 shadow-[0_0_10px_rgba(0,255,170,0.2)]"
-                    : "text-muted-foreground border border-transparent hover:text-foreground hover:bg-black/60"
+                    : "text-muted-foreground border border-transparent hover:text-foreground hover:bg-card/60"
                 }`}
               >
                 {PERIOD_LABELS[p]}
@@ -446,7 +446,7 @@ export default function PlantDashboard() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setDateOffset(d => d + 1)}
-                className="p-2 border border-border/50 bg-black/40 text-muted-foreground hover:text-brand hover:border-brand/50 transition-colors"
+                className="p-2 border border-border/50 bg-card/40 text-muted-foreground hover:text-brand hover:border-brand/50 transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -457,7 +457,7 @@ export default function PlantDashboard() {
               <button
                 onClick={() => setDateOffset(d => Math.max(0, d - 1))}
                 disabled={dateOffset === 0}
-                className="p-2 border border-border/50 bg-black/40 text-muted-foreground hover:text-brand hover:border-brand/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="p-2 border border-border/50 bg-card/40 text-muted-foreground hover:text-brand hover:border-brand/50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -481,11 +481,11 @@ export default function PlantDashboard() {
         </div>
 
         {/* ── Main chart ───────────────────────────────────────────────── */}
-        <div className="border border-border/50 bg-black/60 relative overflow-hidden">
+        <div className="border border-border/50 bg-card/60 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
           
           {/* Chart header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between px-5 py-4 border-b border-border/50 bg-black/40">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between px-5 py-4 border-b border-border/50 bg-card/40">
             <div>
               <h3 className="font-mono text-sm uppercase tracking-widest text-foreground font-bold">
                 {period === "day"
@@ -577,7 +577,7 @@ export default function PlantDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* Site conditions */}
-          <div className="border border-border/50 bg-black/40 relative">
+          <div className="border border-border/50 bg-card/40 relative">
             <div className="absolute top-0 left-0 w-1 h-full bg-status-warning/50" />
             <h3 className="font-mono text-sm uppercase tracking-widest text-foreground flex items-center gap-2 p-5 border-b border-border/50">
               <Sun className="w-4 h-4 text-status-warning" /> METEOROLOGICAL VECTOR
@@ -589,7 +589,7 @@ export default function PlantDashboard() {
                 { label: "ARRAY TEMP",     value: plant?.moduleTempC,  unit: "°C",    icon: Thermometer, warn: (plant?.moduleTempC ?? 0) > 55 },
                 { label: "AMBIENT TEMP",   value: plant?.ambientTempC, unit: "°C",    icon: Wind,        warn: false },
               ].map(({ label, value, unit, icon: Icon, warn }) => (
-                <div key={label} className={`border border-border/50 bg-black/60 p-4 transition-colors ${warn ? "border-status-warning/50 shadow-[inset_0_0_15px_rgba(251,191,36,0.1)]" : ""}`}>
+                <div key={label} className={`border border-border/50 bg-card/60 p-4 transition-colors ${warn ? "border-status-warning/50 shadow-[inset_0_0_15px_rgba(251,191,36,0.1)]" : ""}`}>
                   <div className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground mb-2">
                     <Icon className={`w-3 h-3 ${warn ? "text-status-warning" : "text-brand/50"}`} />
                     {label}
@@ -601,7 +601,7 @@ export default function PlantDashboard() {
           </div>
 
           {/* Inverter health matrix */}
-          <div className="border border-border/50 bg-black/40 relative flex flex-col">
+          <div className="border border-border/50 bg-card/40 relative flex flex-col">
             <div className="absolute top-0 left-0 w-1 h-full bg-brand" />
             <div className="flex items-center justify-between p-5 border-b border-border/50">
               <h3 className="font-mono text-sm uppercase tracking-widest text-foreground flex items-center gap-2">
@@ -660,7 +660,7 @@ export default function PlantDashboard() {
 
         {/* ── AI Insights ──────────────────────────────────────────────── */}
         {plantInsights.length > 0 && (
-          <div className="border border-brand/30 bg-black/60 relative">
+          <div className="border border-brand/30 bg-card/60 relative">
             <div className="absolute top-0 left-0 w-1 h-full bg-brand shadow-[0_0_10px_rgba(0,255,170,0.5)]" />
             <button
               onClick={() => setInsightsOpen(v => !v)}

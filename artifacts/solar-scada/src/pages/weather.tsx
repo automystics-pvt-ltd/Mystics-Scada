@@ -36,14 +36,14 @@ export default function WeatherView() {
         {isLoading ? (
           <div className="text-muted-foreground animate-pulse">Loading weather telemetry...</div>
         ) : stations?.length === 0 ? (
-          <div className="bg-black/40 border border-border/50 p-8 rounded-none-none text-center text-muted-foreground">
+          <div className="bg-card/40 border border-border/50 p-8 rounded-none-none text-center text-muted-foreground">
             No weather stations configured for this plant.
           </div>
         ) : (
           <div className="space-y-8">
             {stations?.map((station) => (
-              <div key={station.id} className="bg-black/40 border border-card-border rounded-none-none overflow-hidden">
-                <div className="bg-black/60 px-6 py-4 border-b border-card-border flex justify-between items-center">
+              <div key={station.id} className="bg-card/40 border border-card-border rounded-none-none overflow-hidden">
+                <div className="bg-card/60 px-6 py-4 border-b border-card-border flex justify-between items-center">
                   <div className="flex items-center">
                     <CloudLightning className="w-5 h-5 mr-3 text-accent-brand" />
                     <h2 className="text-lg font-semibold">{station.name}</h2>

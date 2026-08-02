@@ -63,10 +63,10 @@ function ProtocolBadge({ protocol }: { protocol: string }) {
 
 function FieldMapTable({ fields }: { fields: FieldDef[] }) {
   if (fields.length === 0) {
-    return <p className="text-xs font-mono text-muted-foreground uppercase tracking-widest italic p-4 text-center border border-dashed border-border/50 bg-black/20">UNMAPPED — CUSTOM DEVICE DEFINITION REQUIRED</p>;
+    return <p className="text-xs font-mono text-muted-foreground uppercase tracking-widest italic p-4 text-center border border-dashed border-border/50 bg-card/20">UNMAPPED — CUSTOM DEVICE DEFINITION REQUIRED</p>;
   }
   return (
-    <div className="border border-border/50 bg-black/40 overflow-hidden">
+    <div className="border border-border/50 bg-card/40 overflow-hidden">
       <table className="w-full text-xs font-mono">
         <thead>
           <tr className="bg-muted/10 border-b border-border/50">
@@ -201,7 +201,7 @@ export default function DeviceTemplatesPage() {
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="QUERY MANUFACTURER / MODEL..."
-              className="pl-9 h-9 rounded-none border-border/50 bg-black/40 font-mono text-sm uppercase focus-visible:border-brand/50 focus-visible:ring-0"
+              className="pl-9 h-9 rounded-none border-border/50 bg-card/40 font-mono text-sm uppercase focus-visible:border-brand/50 focus-visible:ring-0"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -214,7 +214,7 @@ export default function DeviceTemplatesPage() {
                 className={`text-[10px] font-mono uppercase tracking-widest px-3 py-2 border transition-colors ${
                   filterProtocol === p
                     ? "bg-brand/20 text-brand border-brand/50 shadow-[0_0_10px_rgba(0,255,170,0.2)]"
-                    : "bg-black/20 border-border/50 text-muted-foreground hover:border-foreground/30 hover:text-foreground/80"
+                    : "bg-card/20 border-border/50 text-muted-foreground hover:border-foreground/30 hover:text-foreground/80"
                 }`}
               >
                 {p === "all" ? "ALL PROTOCOLS" : (PROTOCOL_META[p]?.label ?? p.toUpperCase())}
@@ -250,7 +250,7 @@ export default function DeviceTemplatesPage() {
                         {t.orgId === null ? (
                           <Badge variant="outline" className="text-[9px] rounded-none border-brand/40 text-brand bg-brand/5 shrink-0 uppercase tracking-widest font-mono">SYS</Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[9px] rounded-none border-border/50 text-foreground/70 shrink-0 uppercase tracking-widest font-mono bg-black/40">CST</Badge>
+                          <Badge variant="outline" className="text-[9px] rounded-none border-border/50 text-foreground/70 shrink-0 uppercase tracking-widest font-mono bg-card/40">CST</Badge>
                         )}
                       </div>
                       <div className="flex items-center justify-between relative z-10">
@@ -294,12 +294,12 @@ export default function DeviceTemplatesPage() {
 
               <div className="space-y-6 py-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="border border-border/50 bg-black/40 px-4 py-3 relative">
+                  <div className="border border-border/50 bg-card/40 px-4 py-3 relative">
                     <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
                     <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">POLL CYCLE</span>
                     <div className="font-mono text-xl mt-1 text-foreground/90">{selected.defaultPollIntervalS}<span className="text-sm text-muted-foreground ml-1">SEC</span></div>
                   </div>
-                  <div className="border border-border/50 bg-black/40 px-4 py-3 relative">
+                  <div className="border border-border/50 bg-card/40 px-4 py-3 relative">
                     <div className="absolute top-0 left-0 w-1 h-full bg-border/50" />
                     <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">DATA POINTS</span>
                     <div className="font-mono text-xl mt-1 text-foreground/90">{selected.fieldMap.length}</div>

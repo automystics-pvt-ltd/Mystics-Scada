@@ -50,7 +50,7 @@ function SetPasswordModal({ user, onClose, onDone }: {
 
   return (
     <Dialog open onOpenChange={open => !open && onClose()}>
-      <DialogContent className="max-w-sm bg-black/95 border border-accent-brand/50 rounded-none shadow-[0_0_30px_rgba(0,195,255,0.15)] backdrop-blur-xl">
+      <DialogContent className="max-w-sm bg-card/95 border border-accent-brand/50 rounded-none shadow-[0_0_30px_rgba(0,195,255,0.15)] backdrop-blur-xl">
         <DialogHeader className="border-b border-border/50 pb-4">
           <DialogTitle className="font-mono text-sm uppercase tracking-widest text-accent-brand flex items-center gap-2">
             <KeyRound className="h-4 w-4" />
@@ -72,7 +72,7 @@ function SetPasswordModal({ user, onClose, onDone }: {
                 placeholder="MIN 8 CHARACTERS"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="pr-9 font-mono text-xs bg-black/50 border-border/50 rounded-none focus-visible:ring-accent-brand"
+                className="pr-9 font-mono text-xs bg-card/50 border-border/50 rounded-none focus-visible:ring-accent-brand"
                 autoFocus
               />
               <button
@@ -92,7 +92,7 @@ function SetPasswordModal({ user, onClose, onDone }: {
               value={confirm}
               onChange={e => setConfirm(e.target.value)}
               onKeyDown={e => e.key === "Enter" && void save()}
-              className="font-mono text-xs bg-black/50 border-border/50 rounded-none focus-visible:ring-accent-brand"
+              className="font-mono text-xs bg-card/50 border-border/50 rounded-none focus-visible:ring-accent-brand"
             />
             {confirm && password !== confirm && (
               <p className="font-mono text-[8px] uppercase tracking-widest text-status-fault mt-1">PASSPHRASES DO NOT MATCH</p>
@@ -184,16 +184,16 @@ export default function SuperAdminUsers() {
           </div>
 
           {/* Filters */}
-          <div className="flex gap-3 bg-black/40 border border-border/50 p-2">
+          <div className="flex gap-3 bg-card/40 border border-border/50 p-2">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-accent-brand" />
               <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="SEARCH NAME OR EMAIL..."
-                className="pl-9 h-8 font-mono text-[10px] uppercase tracking-widest bg-black/60 border-border/50 rounded-none focus-visible:ring-accent-brand" onKeyDown={e => e.key === "Enter" && applySearch()} />
+                className="pl-9 h-8 font-mono text-[10px] uppercase tracking-widest bg-card/60 border-border/50 rounded-none focus-visible:ring-accent-brand" onKeyDown={e => e.key === "Enter" && applySearch()} />
             </div>
-            <Input value={orgId} onChange={e => setOrgId(e.target.value)} placeholder="ORG ID..." className="w-48 h-8 font-mono text-[10px] uppercase tracking-widest bg-black/60 border-border/50 rounded-none focus-visible:ring-accent-brand"
+            <Input value={orgId} onChange={e => setOrgId(e.target.value)} placeholder="ORG ID..." className="w-48 h-8 font-mono text-[10px] uppercase tracking-widest bg-card/60 border-border/50 rounded-none focus-visible:ring-accent-brand"
               onKeyDown={e => e.key === "Enter" && applySearch()} />
             <select value={status} onChange={e => setStatus(e.target.value)}
-              className="border border-border/50 bg-black/60 font-mono text-[10px] uppercase tracking-widest rounded-none h-8 px-3 focus:outline-none focus:ring-1 focus:ring-accent-brand">
+              className="border border-border/50 bg-card/60 font-mono text-[10px] uppercase tracking-widest rounded-none h-8 px-3 focus:outline-none focus:ring-1 focus:ring-accent-brand">
               <option value="">ALL STATUSES</option>
               <option value="active">ACTIVE</option>
               <option value="invited">INVITED</option>
@@ -203,10 +203,10 @@ export default function SuperAdminUsers() {
           </div>
 
           {/* Users table */}
-          <div className="border border-border/50 bg-black/40">
+          <div className="border border-border/50 bg-card/40">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-black/60 border-b border-border/50">
+                <thead className="bg-card/60 border-b border-border/50">
                   <tr>
                     <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">USER</th>
                     <th className="px-4 py-2 font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">ORGANISATION</th>
@@ -291,7 +291,7 @@ export default function SuperAdminUsers() {
               </table>
             </div>
             {/* Pagination */}
-            <div className="border-t border-border/50 px-4 py-3 flex items-center justify-between bg-black">
+            <div className="border-t border-border/50 px-4 py-3 flex items-center justify-between bg-card">
               <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground font-bold">
                 {total > 0 ? `${page * PAGE_SIZE + 1} TO ${Math.min((page + 1) * PAGE_SIZE, total)} OF ${total.toLocaleString()}` : "NO RESULTS"}
               </p>
@@ -313,7 +313,7 @@ export default function SuperAdminUsers() {
               { label: "INVITED",   value: users.filter(u => u.status === "invited").length,   color: "text-blue-400" },
               { label: "SUSPENDED", value: users.filter(u => u.status === "suspended").length, color: "text-status-fault" },
             ].map(({ label, value, color }) => (
-              <div key={label} className="border border-border/50 bg-black/40 p-4 text-center group hover:border-border transition-colors relative">
+              <div key={label} className="border border-border/50 bg-card/40 p-4 text-center group hover:border-border transition-colors relative">
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-border/30 group-hover:bg-border/60 transition-colors" />
                 <p className={`font-mono text-3xl font-bold ${color}`}>{value}</p>
                 <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground mt-2">{label} (BUFFER)</p>

@@ -39,7 +39,7 @@ const TYPE_COLOR: Record<string, string> = {
   "alarm.minor":    "text-blue-400 border-blue-400 bg-blue-400/10",
   "work_order.status":  "text-brand border-brand bg-brand/10",
   "work_order.created": "text-brand border-brand bg-brand/10",
-  "device.offline": "text-muted-foreground border-border/50 bg-black/40",
+  "device.offline": "text-muted-foreground border-border/50 bg-card/40",
 };
 
 function relativeTime(iso: string): string {
@@ -103,7 +103,7 @@ export function NotificationBell({ className }: { className?: string }) {
         className={`relative w-8 h-8 border flex items-center justify-center transition-colors ${
           open
             ? "border-brand text-brand bg-brand/10 shadow-[0_0_10px_rgba(0,255,170,0.2)]"
-            : "border-border/50 text-muted-foreground bg-black/40 hover:text-brand hover:border-brand/50"
+            : "border-border/50 text-muted-foreground bg-card/40 hover:text-brand hover:border-brand/50"
         } ${className ?? ""}`}
       >
         <Bell className="h-4 w-4" />
@@ -161,11 +161,11 @@ function NotificationPanel({ onClose }: { onClose: () => void }) {
 
   return (
     /* Fixed panel anchored to the sidebar — slides in from left edge */
-    <div className="absolute left-full top-0 ml-4 w-96 bg-black/95 border border-brand/50 shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] z-[200] flex flex-col max-h-[85vh] overflow-hidden backdrop-blur-xl">
+    <div className="absolute left-full top-0 ml-4 w-96 bg-card/95 border border-brand/50 shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,255,170,0.05)] z-[200] flex flex-col max-h-[85vh] overflow-hidden backdrop-blur-xl">
       <div className="absolute top-0 left-0 w-full h-1 bg-brand" />
       
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 flex-shrink-0 bg-black/80">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 flex-shrink-0 bg-card/80">
         <div className="flex items-center gap-3">
           <Bell className="h-4 w-4 text-brand" />
           <span className="font-mono text-[10px] uppercase tracking-widest font-bold text-foreground">SYSTEM LOGS</span>
@@ -199,7 +199,7 @@ function NotificationPanel({ onClose }: { onClose: () => void }) {
         {isLoading ? (
           <div className="p-4 space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-16 bg-black/60 border border-border/50 animate-pulse" />
+              <div key={i} className="h-16 bg-card/60 border border-border/50 animate-pulse" />
             ))}
           </div>
         ) : notifications.length === 0 ? (
@@ -214,7 +214,7 @@ function NotificationPanel({ onClose }: { onClose: () => void }) {
           <div className="py-2 px-2 space-y-1">
             {notifications.map((notif) => {
               const IconComp = TYPE_ICON[notif.type] ?? Info;
-              const colorClass = TYPE_COLOR[notif.type] ?? "text-muted-foreground border-border/50 bg-black/40";
+              const colorClass = TYPE_COLOR[notif.type] ?? "text-muted-foreground border-border/50 bg-card/40";
 
               return (
                 <div
@@ -222,7 +222,7 @@ function NotificationPanel({ onClose }: { onClose: () => void }) {
                   className={`p-4 border transition-colors cursor-pointer group ${
                     !notif.isRead 
                       ? "border-brand/50 bg-brand/5 hover:bg-brand/10 hover:border-brand" 
-                      : "border-border/30 bg-black/40 hover:border-brand/30 hover:bg-black/60"
+                      : "border-border/30 bg-card/40 hover:border-brand/30 hover:bg-card/60"
                   }`}
                   onClick={() => {
                     if (!notif.isRead) markRead.mutate(notif.id);
