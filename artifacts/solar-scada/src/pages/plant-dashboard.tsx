@@ -545,6 +545,11 @@ export default function PlantDashboard() {
                     { key: "powerKw",   name: "AC Power", color: "hsl(var(--brand))" },
                     { key: "dcPowerKw", name: "DC Power", color: "hsl(var(--status-warning))", dashed: true },
                   ]}
+                  tooltipFmt={(v) => `${v.toFixed(2)} kW`}
+                  tooltipExtras={[
+                    { key: "energyKwh", name: "Energy", color: "hsl(var(--muted-foreground))",
+                      fmt: (v) => `${v.toFixed(3)} kWh` },
+                  ]}
                   height={260}
                   yFmt={(v) => v >= 1000 ? `${(v/1000).toFixed(1)}MW` : `${v.toFixed(0)}KW`}
                 />

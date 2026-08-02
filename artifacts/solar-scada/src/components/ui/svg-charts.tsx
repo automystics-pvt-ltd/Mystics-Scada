@@ -134,14 +134,23 @@ export interface AreaSeries {
   key: string; name: string; color: string; dashed?: boolean;
 }
 
+export interface AreaTooltipExtra {
+  key: string; name: string; color?: string;
+  fmt?: (v: number) => string;
+}
+
 export function SvgAreaChart({
-  data, xKey, series, height = 180, yFmt, refX,
+  data, xKey, series, height = 180, yFmt, tooltipFmt, tooltipExtras, refX,
 }: {
   data: Record<string, unknown>[];
   xKey: string;
   series: AreaSeries[];
   height?: number;
   yFmt?: (v: number) => string;
+  /** Separate formatter used only inside the hover tooltip (defaults to 2 d.p.). */
+  tooltipFmt?: (v: number) => string;
+  /** Extra data rows shown in the hover tooltip but not rendered as chart lines. */
+  tooltipExtras?: AreaTooltipExtra[];
   refX?: string;  // vertical reference line at this x label
 }) {
   const H      = VH;
@@ -149,12 +158,40 @@ export function SvgAreaChart({
   const { x0, y0, w, h } = plotBox(pad);
   const labels = data.map((d) => String(d[xKey] ?? ""));
   const [lo, hi] = useMemo(() => yRange(data, series.map((s) => s.key)), [data, series]);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  // Tooltip uses its own precise formatter; axis labels use the coarser yFmt.
+  const ttFmt = tooltipFmt ?? ((v: number) => v.toFixed(2));
+  const step  = data.length > 0 ? w / data.length : w;
+
+  // ── Tooltip content ────────────────────────────────────────────────────────
+  const hoveredData = hoveredIdx !== null ? (data[hoveredIdx] ?? null) : null;
+  const ttW = 140; const ttPad = 8; const ttLineH = 13;
+
+  const tooltipContent = useMemo(() => {
+    if (hoveredData == null) return null;
+    const label = String(hoveredData[xKey] ?? "");
+    const rows: { name: string; color: string; value: string }[] = [
+      ...series.map((s) => ({
+        name: s.name,
+        color: s.color,
+        value: ttFmt(Number(hoveredData[s.key] ?? 0)),
+      })),
+      ...(tooltipExtras ?? []).map((e) => ({
+        name: e.name,
+        color: e.color ?? "hsl(var(--muted-foreground))",
+        value: (e.fmt ?? ttFmt)(Number(hoveredData[e.key] ?? 0)),
+      })),
+    ];
+    return { label, rows };
+  }, [hoveredData, xKey, series, ttFmt, tooltipExtras]);
 
   if (data.length === 0) return null;
 
   return (
     <svg viewBox={`0 0 ${VW} ${H}`} preserveAspectRatio="xMidYMid meet"
-      style={{ width: "100%", height }} aria-hidden>
+      style={{ width: "100%", height }} aria-hidden
+      onMouseLeave={() => setHoveredIdx(null)}>
       <defs>
         {series.map((s) => <AreaGrad key={s.key} id={`area-${s.key}`} color={s.color} />)}
       </defs>
@@ -191,6 +228,77 @@ export function SvgAreaChart({
           </g>
         );
       })}
+
+      {/* Hover hit-areas — transparent full-height column rects */}
+      {data.map((_, i) => (
+        <rect key={`hit-${i}`}
+          x={x0 + i * step} y={y0} width={step} height={h}
+          fill="transparent"
+          style={{ cursor: "crosshair" }}
+          onMouseEnter={() => setHoveredIdx(i)}
+        />
+      ))}
+
+      {/* Tooltip overlay */}
+      {hoveredIdx !== null && tooltipContent && (() => {
+        const { label, rows } = tooltipContent;
+        const ttH = ttPad * 2 + 12 + rows.length * ttLineH + 2;
+        // Center the guide on the actual data point x position
+        const ptX = mapX(hoveredIdx, data.length, x0, w);
+
+        // Flip left when in the right half of the plot area
+        const ttX = ptX > x0 + w / 2
+          ? ptX - ttW - 6
+          : ptX + 6;
+        const ttY = Math.max(y0 + 2, y0 + h / 2 - ttH / 2);
+
+        return (
+          <g key="tt" style={{ pointerEvents: "none" }}>
+            {/* Vertical guide */}
+            <line x1={ptX} x2={ptX} y1={y0} y2={y0 + h}
+              stroke="hsl(var(--border))" strokeOpacity={0.7} strokeDasharray="3 2" />
+            {/* Dot on each series line */}
+            {series.map((s) => {
+              const cy = mapY(Number(data[hoveredIdx]?.[s.key] ?? 0), lo, hi, y0, h);
+              return (
+                <circle key={s.key} cx={ptX} cy={cy} r={3}
+                  fill={s.color} stroke="hsl(var(--background))" strokeWidth={1.5} />
+              );
+            })}
+            {/* Box shadow (faux drop-shadow) */}
+            <rect x={ttX + 1} y={ttY + 1} width={ttW} height={ttH}
+              fill="hsl(var(--background))" rx={2} opacity={0.3} />
+            {/* Box */}
+            <rect x={ttX} y={ttY} width={ttW} height={ttH}
+              fill="hsl(var(--background))" stroke="hsl(var(--border))"
+              strokeWidth={0.6} rx={2} opacity={0.97} />
+            {/* Time label */}
+            <text x={ttX + ttPad} y={ttY + ttPad + 8}
+              fontSize={8.5} fontWeight="700" fontFamily="monospace"
+              fill="hsl(var(--foreground))">{label}</text>
+            {/* Divider */}
+            <line x1={ttX + ttPad} x2={ttX + ttW - ttPad}
+              y1={ttY + ttPad + 13} y2={ttY + ttPad + 13}
+              stroke="hsl(var(--border))" strokeOpacity={0.5} />
+            {/* Series rows */}
+            {rows.map((row, ri) => {
+              const ry = ttY + ttPad + 22 + ri * ttLineH;
+              return (
+                <g key={ri}>
+                  <rect x={ttX + ttPad} y={ry - 5} width={6} height={6}
+                    fill={row.color} rx={1} />
+                  <text x={ttX + ttPad + 10} y={ry}
+                    fontSize={7.5} fontFamily="monospace"
+                    fill="hsl(var(--muted-foreground))">{row.name}</text>
+                  <text x={ttX + ttW - ttPad} y={ry}
+                    fontSize={7.5} fontFamily="monospace" textAnchor="end"
+                    fill="hsl(var(--foreground))">{row.value}</text>
+                </g>
+              );
+            })}
+          </g>
+        );
+      })()}
     </svg>
   );
 }
