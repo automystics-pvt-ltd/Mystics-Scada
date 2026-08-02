@@ -313,36 +313,35 @@ export default function PlantDashboard() {
             <span className="text-foreground">{plant?.name ?? "Zone"}</span>
           </div>
 
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-4 flex-wrap">
-                <h1 className="text-xl font-mono font-bold uppercase tracking-widest text-foreground">
-                  {plant?.name ?? "ZONE DASHBOARD"}
-                </h1>
-                {plant && <HealthBadge status={liveHealth as any} />}
-                {healthScore !== null && (
-                  <span className="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 border"
-                    style={{ borderColor: healthScoreColor(healthScore), color: healthScoreColor(healthScore), backgroundColor: `${healthScoreColor(healthScore)}20` }}>
-                    H:{healthScore}/100
-                  </span>
-                )}
-                <div className={`flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest px-2.5 py-1 border ${
-                  liveStream.connected
-                    ? "bg-brand/10 border-brand/30 text-brand"
-                    : "bg-card/60 border-border/50 text-muted-foreground"
-                }`}>
-                  {liveStream.connected
-                    ? <Radio className="h-3 h-3 animate-pulse" />
-                    : <WifiOff className="h-3 h-3" />}
-                  {liveStream.connected ? "STREAM: ACTIVE" : "POLLING"}
-                </div>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-4 flex-wrap">
+              <h1 className="text-xl font-mono font-bold uppercase tracking-widest text-foreground">
+                {plant?.name ?? "ZONE DASHBOARD"}
+              </h1>
+              {plant && <HealthBadge status={liveHealth as any} />}
+              {healthScore !== null && (
+                <span className="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 border"
+                  style={{ borderColor: healthScoreColor(healthScore), color: healthScoreColor(healthScore), backgroundColor: `${healthScoreColor(healthScore)}20` }}>
+                  H:{healthScore}/100
+                </span>
+              )}
+              <div className={`flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest px-2.5 py-1 border ${
+                liveStream.connected
+                  ? "bg-brand/10 border-brand/30 text-brand"
+                  : "bg-card/60 border-border/50 text-muted-foreground"
+              }`}>
+                {liveStream.connected
+                  ? <Radio className="h-3 h-3 animate-pulse" />
+                  : <WifiOff className="h-3 h-3" />}
+                {liveStream.connected ? "STREAM: ACTIVE" : "POLLING"}
               </div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mt-2">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                 {plant?.region} // {plant?.capacityKw ? `${(plant.capacityKw / 1000).toFixed(2)} MWP CAP` : "--"}
               </p>
             </div>
-            
-            <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 custom-scrollbar">
+
+            {/* Sub-nav on its own full-width row so all tabs are always visible */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 custom-scrollbar">
               {SUB_NAV(pid).map((item) => {
                 const isActive = item.href === `${BASE}plants/${pid}` || item.href === `${BASE}plants/${pid}/`;
                 return (

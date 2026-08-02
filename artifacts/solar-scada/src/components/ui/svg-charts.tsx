@@ -11,7 +11,7 @@ const VH = 200;  // internal viewBox height for full charts
 
 interface Pad { top: number; right: number; bottom: number; left: number }
 
-const FULL_PAD: Pad  = { top: 10, right: 8,  bottom: 30, left: 46 };
+const FULL_PAD: Pad  = { top: 10, right: 8,  bottom: 40, left: 46 };
 const MINI_PAD: Pad  = { top: 4,  right: 2,  bottom: 22, left: 32 };
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ function Axes({
       {xLabels.map(({ label, idx }) => {
         const x = mapX(idx, labels.length, x0, w);
         return (
-          <text key={idx} x={x} y={y0 + h + 14} textAnchor="middle"
+          <text key={idx} x={x} y={y0 + h + 22} textAnchor="middle"
             fontSize={9} fill="hsl(var(--muted-foreground))">
             {label}
           </text>
