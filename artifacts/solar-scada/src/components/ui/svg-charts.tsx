@@ -358,7 +358,9 @@ export function SvgComposedChart({
 
   const tooltipContent = useMemo(() => {
     if (hoveredData == null) return null;
-    const label = String(hoveredData[xKey] ?? "");
+    const baseLabel = String(hoveredData[xKey] ?? "");
+    const isPartialHovered = partialDataKey ? Boolean(hoveredData[partialDataKey]) : false;
+    const label = isPartialHovered ? `${baseLabel} (in progress)` : baseLabel;
     const rows: { name: string; color: string; value: string }[] = [
       ...bars.map((b) => ({
         name: b.name,
@@ -382,7 +384,7 @@ export function SvgComposedChart({
       });
     }
     return { label, rows };
-  }, [hoveredData, xKey, bars, lines, fmt]);
+  }, [hoveredData, xKey, bars, lines, fmt, partialDataKey]);
 
   if (data.length === 0) return null;
 

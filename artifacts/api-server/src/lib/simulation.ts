@@ -543,20 +543,43 @@ export function plantYieldSeries(plant: PlantConfig, period: "daily" | "weekly" 
     let actualKwh = expectedKwh * Math.max(0.4, Math.min(1.05, dayFactor));
     let partial: boolean | undefined;
 
-    // ── Special-case: today's point in the daily view ────────────────────────
-    // Instead of using the full-day random yield (which yields near-zero at
-    // night), scale by the actual fraction of the solar day elapsed so the bar
-    // reflects accumulated energy rather than looking like a fault.
-    if (period === "daily" && i === 0) {
+    // ── Special-case: the current (last) bar in every period view ───────────
+    // Scale the bar by the fraction of the period that has actually elapsed so
+    // it reflects accumulated energy rather than a projected full-period value.
+    // Mark it partial=true so the frontend renders the diagonal stripe.
+    if (i === 0) {
       const hour = localHour(plant, now);
-      // After sunset the full day's energy has been collected → fraction = 1.
-      // Before sunrise nothing has been collected yet → fraction = 0.
-      const dayFraction = hour >= SOLAR_SUNSET
+      // Sub-day fraction: 0 before sunrise, ramps to 1 at sunset, stays 1 after.
+      const todayFraction = hour >= SOLAR_SUNSET
         ? 1
         : Math.max(0, Math.min(1, (hour - SOLAR_SUNRISE) / (SOLAR_SUNSET - SOLAR_SUNRISE)));
-      actualKwh = actualKwh * dayFraction;
-      // Mark as partial while the solar day is still in progress.
-      partial = hour < SOLAR_SUNSET;
+
+      let periodFraction: number;
+
+      if (period === "daily") {
+        // Daily: fraction of today's solar window elapsed.
+        periodFraction = todayFraction;
+        partial = hour < SOLAR_SUNSET;
+      } else if (period === "weekly") {
+        // Weekly: days elapsed this week (0=Sun … 6=Sat) + sub-day fraction.
+        const dayOfWeek = d.getUTCDay();
+        periodFraction = (dayOfWeek + todayFraction) / 7;
+        partial = true;
+      } else if (period === "monthly") {
+        // Monthly: days elapsed this month (1-based date) + sub-day fraction.
+        const daysInMonth = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+        periodFraction = ((d.getUTCDate() - 1) + todayFraction) / daysInMonth;
+        partial = true;
+      } else {
+        // Yearly: days elapsed since Jan 1 + sub-day fraction.
+        const startOfYear = Date.UTC(d.getUTCFullYear(), 0, 1);
+        const daysElapsed = (d.getTime() - startOfYear) / (24 * 60 * 60 * 1000);
+        const daysInYear = d.getUTCFullYear() % 4 === 0 ? 366 : 365;
+        periodFraction = (daysElapsed + todayFraction) / daysInYear;
+        partial = true;
+      }
+
+      actualKwh = actualKwh * periodFraction;
     }
 
     points.push({
