@@ -2,7 +2,7 @@
  * Pure SVG chart components — drop-in replacements for Recharts.
  * No external refs, no createRef(): fully compatible with React 19.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 // ─── Internal layout ──────────────────────────────────────────────────────────
 
@@ -160,6 +160,14 @@ export function SvgAreaChart({
   const [lo, hi] = useMemo(() => yRange(data, series.map((s) => s.key)), [data, series]);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
+  // Dismiss tooltip on any touch — capture phase fires before any child stopPropagation.
+  // The hit-rect handler then re-sets to the correct index in the same event flush.
+  useEffect(() => {
+    const dismiss = () => setHoveredIdx(null);
+    document.addEventListener("touchstart", dismiss, { capture: true });
+    return () => document.removeEventListener("touchstart", dismiss, { capture: true });
+  }, []);
+
   // Tooltip uses its own precise formatter; axis labels use the coarser yFmt.
   const ttFmt = tooltipFmt ?? ((v: number) => v.toFixed(2));
   const step  = data.length > 0 ? w / data.length : w;
@@ -236,6 +244,7 @@ export function SvgAreaChart({
           fill="transparent"
           style={{ cursor: "crosshair" }}
           onMouseEnter={() => setHoveredIdx(i)}
+          onTouchStart={() => setHoveredIdx(i)}
         />
       ))}
 
@@ -328,6 +337,14 @@ export function SvgComposedChart({
   const allKeys = [...bars.map((b) => b.key), ...lines.map((l) => l.key)];
   const [lo, hi] = useMemo(() => yRange(data, allKeys), [data, allKeys]);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  // Dismiss tooltip on any touch — capture phase fires before any child stopPropagation.
+  // The hit-rect handler then re-sets to the correct index in the same event flush.
+  useEffect(() => {
+    const dismiss = () => setHoveredIdx(null);
+    document.addEventListener("touchstart", dismiss, { capture: true });
+    return () => document.removeEventListener("touchstart", dismiss, { capture: true });
+  }, []);
 
   const barW   = data.length > 0 && bars.length > 0 ? Math.max(2, (w / data.length) * 0.6) : 0;
   const step   = data.length > 0 ? w / data.length : w;
@@ -432,6 +449,7 @@ export function SvgComposedChart({
           fill="transparent"
           style={{ cursor: "crosshair" }}
           onMouseEnter={() => setHoveredIdx(i)}
+          onTouchStart={() => setHoveredIdx(i)}
         />
       ))}
 
