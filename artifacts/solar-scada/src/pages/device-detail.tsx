@@ -30,6 +30,8 @@ import {
   Table2,
   ChevronUp,
   ChevronDown,
+  Stethoscope,
+  ShieldAlert,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -217,7 +219,126 @@ function TabBtn({
   );
 }
 
-type TabId = "general" | "raw-registers" | "curve" | "settings";
+type TabId = "general" | "raw-registers" | "curve" | "diagnostics" | "settings";
+
+// ── Diagnostics types ─────────────────────────────────────────────────────────
+interface DiagnosticsData {
+  deviceId: string;
+  healthScore: number | null;
+  consecutiveFailures: number;
+  dataSource: "live" | "simulated";
+  connectivityTimeline: { timestamp: string; status: string; successCount: number; failureCount: number }[];
+  pollingStats: {
+    readingCount24h: number;
+    errorCount24h: number;
+    successRate24h: number | null;
+    avgRttMs: number | null;
+    lastRttMs: number | null;
+    lastReadingAt: string | Date | null;
+    driverStatus: string;
+  };
+  errorBreakdown: { category: string; count: number }[];
+}
+
+interface CommLogEntry {
+  timestamp: string;
+  level: "INFO" | "WARN" | "ERROR";
+  message: string;
+  eventType: string | null;
+  registerAddr: number | null;
+  rttMs: number | null;
+}
+
+// ── ConnectivityTimeline (SVG) ────────────────────────────────────────────────
+function ConnectivityTimeline({ buckets }: { buckets: { timestamp: string; status: string; successCount: number; failureCount: number }[] }) {
+  const W = 720; const H = 36; const gap = 1;
+  const n = buckets.length;
+  const barW = Math.max(1, (W - gap * (n - 1)) / n);
+  const colorOf = (s: string) =>
+    s === "online" ? "#34d399" : s === "degraded" ? "#fbbf24" : s === "offline" || s === "error" ? "#f87171" : "#374151";
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: H }}>
+      {buckets.map((b, i) => (
+        <rect
+          key={i}
+          x={i * (barW + gap)}
+          y={0}
+          width={barW}
+          height={H}
+          fill={colorOf(b.status)}
+          opacity={b.status === "no_data" ? 0.15 : 0.85}
+        >
+          <title>{new Date(b.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} — {b.status}{b.successCount + b.failureCount > 0 ? ` (${b.successCount}✓ ${b.failureCount}✗)` : ""}</title>
+        </rect>
+      ))}
+    </svg>
+  );
+}
+
+// ── ErrorDonut (SVG) ──────────────────────────────────────────────────────────
+const DONUT_COLORS = ["#f87171", "#fbbf24", "#60a5fa", "#a78bfa", "#34d399"];
+function ErrorDonut({ breakdown }: { breakdown: { category: string; count: number }[] }) {
+  const total = breakdown.reduce((s, b) => s + b.count, 0);
+  if (total === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-6">
+        <CheckCircle2 className="h-8 w-8 text-emerald-400 mb-2 opacity-70" />
+        <p className="text-xs">No errors in 24h</p>
+      </div>
+    );
+  }
+  const R = 40; const cx = 56; const cy = 56;
+
+  // Use stroke-based donut to avoid SVG arc degenerate case (start==end when sweep=2π)
+  // Each segment = circle with stroke-dasharray sliced by dashoffset rotation.
+  const circumference = 2 * Math.PI * R;
+  let cumulative = 0;
+  const segments = breakdown.map((b, i) => {
+    const fraction = b.count / total;
+    const dashLen = fraction * circumference;
+    // Rotate so this segment starts where the last ended; start from top (-90°)
+    const rotateDeg = (cumulative / total) * 360 - 90;
+    cumulative += b.count;
+    return { dashLen, circumference, rotateDeg, color: DONUT_COLORS[i % DONUT_COLORS.length]!, category: b.category, count: b.count };
+  });
+
+  return (
+    <div className="flex items-center gap-4">
+      <svg viewBox="0 0 112 112" style={{ width: 88, height: 88, flexShrink: 0 }}>
+        {/* Background ring */}
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke="hsl(var(--border))" strokeWidth={20} opacity={0.2} />
+        {segments.map((s, i) => (
+          <circle
+            key={i}
+            cx={cx} cy={cy} r={R}
+            fill="none"
+            stroke={s.color}
+            strokeWidth={20}
+            strokeDasharray={`${s.dashLen} ${s.circumference - s.dashLen}`}
+            strokeDashoffset={0}
+            transform={`rotate(${s.rotateDeg} ${cx} ${cy})`}
+            opacity={0.85}
+          >
+            <title>{s.category}: {s.count}</title>
+          </circle>
+        ))}
+        {/* Center hole label */}
+        <circle cx={cx} cy={cy} r={22} fill="hsl(var(--card))" />
+        <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" className="fill-foreground" style={{ fontSize: 13, fontWeight: 700 }}>{total}</text>
+        <text x={cx} y={cy + 13} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 7, fill: "hsl(var(--muted-foreground))" }}>errors</text>
+      </svg>
+      <div className="space-y-1.5 min-w-0">
+        {segments.map((s, i) => (
+          <div key={i} className="flex items-center gap-1.5 text-xs">
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
+            <span className="text-muted-foreground truncate">{s.category}</span>
+            <span className="ml-auto font-semibold tabular-nums text-foreground pl-2">{s.count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // ── Section groupings for General Information ─────────────────────────────────
 const SECTION_KEYS: { title: string; keys: string[] }[] = [
@@ -269,6 +390,9 @@ export default function DeviceDetailPage() {
     setOpenSections((prev) => ({ ...prev, [title]: !(prev[title] ?? true) }));
   const isSectionOpen = (title: string) => openSections[title] ?? true;
 
+  // Diagnostics log level filter
+  const [logLevel, setLogLevel] = useState<"ALL" | "INFO" | "WARN" | "ERROR">("ALL");
+
   // CSV import state
   const csvFileRef = useRef<HTMLInputElement>(null);
   const [importResult, setImportResult] = useState<{ imported: number; skipped: number; columns: string[] } | null>(null);
@@ -319,6 +443,30 @@ export default function DeviceDetailPage() {
       return r.json() as Promise<Device>;
     },
     refetchInterval: 30_000,
+  });
+
+  const { data: diagnostics, isLoading: diagLoading } = useQuery<DiagnosticsData>({
+    queryKey: ["device-diagnostics", deviceId],
+    queryFn: async () => {
+      const r = await fetch(`${BASE}api/devices/${deviceId}/diagnostics`, { credentials: "include" });
+      if (!r.ok) throw new Error("Failed to load diagnostics");
+      return r.json() as Promise<DiagnosticsData>;
+    },
+    enabled: activeTab === "diagnostics",
+    refetchInterval: activeTab === "diagnostics" ? 30_000 : false,
+  });
+
+  const { data: commLogs = [], isLoading: logsLoading, isError: logsError } = useQuery<CommLogEntry[]>({
+    queryKey: ["device-logs", deviceId, logLevel],
+    queryFn: async () => {
+      const params = new URLSearchParams({ count: "200" });
+      if (logLevel !== "ALL") params.set("level", logLevel);
+      const r = await fetch(`${BASE}api/devices/${deviceId}/logs?${params}`, { credentials: "include" });
+      if (!r.ok) throw new Error(`Failed to load comm logs (${r.status})`);
+      return r.json() as Promise<CommLogEntry[]>;
+    },
+    enabled: activeTab === "diagnostics",
+    refetchInterval: activeTab === "diagnostics" ? 30_000 : false,
   });
 
   const { data: polledReading } = useQuery<Reading | null>({
@@ -710,6 +858,7 @@ export default function DeviceDetailPage() {
           <TabBtn active={activeTab === "general"}      onClick={() => setActiveTab("general")}      icon={Info}>General information</TabBtn>
           <TabBtn active={activeTab === "raw-registers"} onClick={() => setActiveTab("raw-registers")} icon={Table2}>Raw Registers</TabBtn>
           <TabBtn active={activeTab === "curve"}        onClick={() => setActiveTab("curve")}        icon={BarChart2}>Curve</TabBtn>
+          <TabBtn active={activeTab === "diagnostics"}  onClick={() => setActiveTab("diagnostics")}  icon={Stethoscope}>Diagnostics</TabBtn>
           <TabBtn active={activeTab === "settings"}     onClick={() => setActiveTab("settings")}     icon={Settings}>Settings</TabBtn>
         </div>
 
@@ -1053,6 +1202,225 @@ export default function DeviceDetailPage() {
                 <button onClick={() => setTestResult(null)} className="shrink-0 text-muted-foreground hover:text-foreground">
                   <X className="h-3.5 w-3.5" />
                 </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ══════════════ DIAGNOSTICS tab ══════════════════════════════ */}
+        {activeTab === "diagnostics" && (
+          <div className="bg-card border border-border/60 rounded-b-xl rounded-tr-xl overflow-hidden">
+            {/* Sub-header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/10">
+              <h3 className="text-xs font-semibold text-foreground">24h Diagnostics &amp; Connectivity</h3>
+              <button
+                onClick={() => {
+                  void queryClient.invalidateQueries({ queryKey: ["device-diagnostics", deviceId] });
+                  void queryClient.invalidateQueries({ queryKey: ["device-logs", deviceId] });
+                }}
+                className="p-1 rounded hover:bg-muted/40 transition-colors text-muted-foreground hover:text-foreground"
+                title="Refresh diagnostics"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {diagLoading ? (
+              <div className="flex items-center justify-center py-20 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading diagnostics…
+              </div>
+            ) : diagnostics ? (
+              <>
+                {/* ── Stat cards ───────────────────────────────────────── */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 border-b border-border/40">
+                  {/* Health score */}
+                  <div className="flex flex-col gap-1 px-4 py-3.5 border-r border-border/40">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Health Score</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className={`text-2xl font-bold tabular-nums ${
+                        diagnostics.healthScore == null ? "text-muted-foreground"
+                        : diagnostics.healthScore >= 80 ? "text-emerald-400"
+                        : diagnostics.healthScore >= 50 ? "text-amber-400"
+                        : "text-red-400"
+                      }`}>
+                        {diagnostics.healthScore != null ? diagnostics.healthScore : "--"}
+                      </span>
+                      {diagnostics.healthScore != null && <span className="text-xs text-muted-foreground">/100</span>}
+                    </div>
+                    {diagnostics.dataSource === "simulated" && (
+                      <span className="text-[10px] text-amber-400/70">simulated</span>
+                    )}
+                  </div>
+
+                  {/* Success rate */}
+                  <div className="flex flex-col gap-1 px-4 py-3.5 border-r border-border/40">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Success Rate 24h</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className={`text-2xl font-bold tabular-nums ${
+                        diagnostics.pollingStats.successRate24h == null ? "text-muted-foreground"
+                        : diagnostics.pollingStats.successRate24h >= 95 ? "text-emerald-400"
+                        : diagnostics.pollingStats.successRate24h >= 80 ? "text-amber-400"
+                        : "text-red-400"
+                      }`}>
+                        {diagnostics.pollingStats.successRate24h != null ? diagnostics.pollingStats.successRate24h : "--"}
+                      </span>
+                      {diagnostics.pollingStats.successRate24h != null && <span className="text-xs text-muted-foreground">%</span>}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      {diagnostics.pollingStats.readingCount24h}✓ &nbsp;{diagnostics.pollingStats.errorCount24h}✗
+                    </span>
+                  </div>
+
+                  {/* Avg RTT */}
+                  <div className="flex flex-col gap-1 px-4 py-3.5 border-r border-border/40">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Avg RTT</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-bold tabular-nums text-foreground">
+                        {diagnostics.pollingStats.avgRttMs != null ? diagnostics.pollingStats.avgRttMs : "--"}
+                      </span>
+                      {diagnostics.pollingStats.avgRttMs != null && <span className="text-xs text-muted-foreground">ms</span>}
+                    </div>
+                    {diagnostics.pollingStats.lastRttMs != null && (
+                      <span className="text-[10px] text-muted-foreground">last: {diagnostics.pollingStats.lastRttMs}ms</span>
+                    )}
+                  </div>
+
+                  {/* Consecutive failures */}
+                  <div className="flex flex-col gap-1 px-4 py-3.5">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Consec. Failures</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className={`text-2xl font-bold tabular-nums ${
+                        diagnostics.consecutiveFailures === 0 ? "text-emerald-400"
+                        : diagnostics.consecutiveFailures < 5 ? "text-amber-400"
+                        : "text-red-400"
+                      }`}>
+                        {diagnostics.consecutiveFailures}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      Driver: <span className="font-mono">{diagnostics.pollingStats.driverStatus}</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* ── 24h Connectivity Timeline ────────────────────────── */}
+                <div className="px-4 py-4 border-b border-border/40">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">24h Connectivity Timeline</span>
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-emerald-400/80 inline-block" /> Online</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-amber-400/80 inline-block" /> Degraded</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-red-400/80 inline-block" /> Offline</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-border inline-block" /> No data</span>
+                    </div>
+                  </div>
+                  <div className="rounded overflow-hidden border border-border/30">
+                    <ConnectivityTimeline buckets={diagnostics.connectivityTimeline} />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                    <span>24h ago</span>
+                    <span>12h ago</span>
+                    <span>Now</span>
+                  </div>
+                </div>
+
+                {/* ── Error breakdown + Comm log ────────────────────────── */}
+                <div className="grid grid-cols-1 sm:grid-cols-3">
+                  {/* Error breakdown donut */}
+                  <div className="border-r border-border/40 px-4 py-4">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-3">Error Breakdown</span>
+                    <ErrorDonut breakdown={diagnostics.errorBreakdown} />
+                  </div>
+
+                  {/* Comm log */}
+                  <div className="sm:col-span-2 flex flex-col">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/5">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Comm Log</span>
+                      {/* Level filter */}
+                      <div className="flex items-center gap-1">
+                        {(["ALL", "INFO", "WARN", "ERROR"] as const).map((lvl) => (
+                          <button
+                            key={lvl}
+                            onClick={() => setLogLevel(lvl)}
+                            className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors border ${
+                              logLevel === lvl
+                                ? lvl === "ERROR" ? "bg-red-500/20 text-red-400 border-red-500/40"
+                                  : lvl === "WARN" ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                                  : lvl === "INFO" ? "bg-blue-500/20 text-blue-400 border-blue-500/40"
+                                  : "bg-primary/10 text-primary border-primary/30"
+                                : "bg-transparent text-muted-foreground border-transparent hover:border-border/60"
+                            }`}
+                          >
+                            {lvl}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="overflow-y-auto max-h-72">
+                      {logsLoading ? (
+                        <div className="flex items-center justify-center py-10 text-muted-foreground">
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading…
+                        </div>
+                      ) : logsError ? (
+                        <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+                          <AlertCircle className="h-6 w-6 text-red-400 opacity-60 mb-2" />
+                          <p className="text-xs text-red-400">Failed to load comm logs</p>
+                          <button
+                            onClick={() => void queryClient.invalidateQueries({ queryKey: ["device-logs", deviceId] })}
+                            className="mt-2 text-xs text-muted-foreground underline hover:text-foreground"
+                          >Retry</button>
+                        </div>
+                      ) : commLogs.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+                          <ShieldAlert className="h-6 w-6 opacity-30 mb-2" />
+                          <p className="text-xs">No log entries found</p>
+                        </div>
+                      ) : (
+                        <table className="w-full text-xs">
+                          <thead className="sticky top-0 bg-card z-10">
+                            <tr className="border-b border-border/40 bg-muted/10">
+                              <th className="px-3 py-2 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Time</th>
+                              <th className="px-3 py-2 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Level</th>
+                              <th className="px-3 py-2 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Message</th>
+                              <th className="px-3 py-2 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">RTT</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {commLogs.map((log, i) => (
+                              <tr key={i} className={`border-b border-border/20 ${
+                                log.level === "ERROR" ? "bg-red-500/5 hover:bg-red-500/10"
+                                : log.level === "WARN" ? "bg-amber-500/5 hover:bg-amber-500/10"
+                                : "hover:bg-muted/10"
+                              }`}>
+                                <td className="px-3 py-1.5 font-mono text-muted-foreground whitespace-nowrap">
+                                  {new Date(log.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                                </td>
+                                <td className="px-3 py-1.5 whitespace-nowrap">
+                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                    log.level === "ERROR" ? "bg-red-500/15 text-red-400"
+                                    : log.level === "WARN" ? "bg-amber-500/15 text-amber-400"
+                                    : "bg-blue-500/10 text-blue-400"
+                                  }`}>
+                                    {log.level}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-1.5 text-foreground max-w-xs truncate">{log.message}</td>
+                                <td className="px-3 py-1.5 text-muted-foreground font-mono whitespace-nowrap">
+                                  {log.rttMs != null ? `${log.rttMs}ms` : "--"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                <AlertCircle className="h-8 w-8 opacity-30 mb-3" />
+                <p className="text-sm">Could not load diagnostics data</p>
               </div>
             )}
           </div>
