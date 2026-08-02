@@ -1,0 +1,46 @@
+**Enhanced Prompt:**
+
+Design and implement a **comprehensive, enterprise-grade Solar SCADA Monitoring Application** with a modern, production-ready architecture and an intuitive UI/UX. The application should provide complete end-to-end monitoring, control, analytics, reporting, configuration, and management for utility-scale, commercial, and residential solar plants.
+
+Build a **fully integrated system** where every module, screen, workflow, dashboard, and report is interconnected with proper navigation, data relationships, role-based access, and seamless user flows. Ensure all screens are complete, responsive, scalable, and production-ready.
+
+The application should include, but not be limited to:
+
+* **Executive Dashboard** with real-time KPIs, plant health, generation, alarms, energy yield, PR, CUF, weather, device status, and live system overview.
+* **Plant Management** (multiple plants, sites, zones, strings, arrays, and asset hierarchy).
+* **Real-Time SCADA Monitoring** with live telemetry, auto-refresh, configurable polling intervals, and communication health.
+* **IoT Device Management** including inverters, string inverters, central inverters, weather stations, pyranometers, transformers, RMUs, meters, sensors, gateways, batteries, BMS, EMS, DG sets, UPS, trackers, combiner boxes, protection relays, and all field devices.
+* **Device Communication Configuration** supporting Modbus RTU/TCP, MQTT, OPC-UA, IEC 61850, DNP3, HTTP/HTTPS APIs, WebSocket, LoRaWAN, NB-IoT, Zigbee, RS485, CAN Bus, BACnet, SNMP, and custom industrial protocols.
+* **Gateway & Edge Device Configuration** with communication mapping, register configuration, tag management, polling frequency, retry mechanisms, heartbeat monitoring, firmware management, diagnostics, and device provisioning.
+* **Live Single Line Diagram (SLD)** with real-time device status, power flow visualization, and equipment health.
+* **Alarm & Event Management** with severity levels, acknowledgements, escalation workflows, notifications, historical events, root-cause analysis, and audit trails.
+* **Historical Data Explorer** with trend analysis, custom charts, comparative analysis, data replay, and export capabilities.
+* **Performance Analytics** including PR, CUF, efficiency, irradiation analysis, energy loss analysis, availability, downtime, degradation, inverter comparison, string comparison, and predictive insights.
+* **Weather Monitoring** with live and historical weather parameters integrated with plant performance.
+* **Maintenance Management** including preventive, predictive, corrective maintenance, work orders, technician assignments, spare parts, and maintenance history.
+* **Asset Lifecycle Management** with warranty, AMC, service history, inspections, calibration, and documentation.
+* **Energy Forecasting & AI Analytics** for production forecasting, anomaly detection, fault prediction, and performance optimization.
+* **Comprehensive Reports** including real-time, hourly, daily, weekly, monthly, yearly, custom date range, device reports, alarm reports, communication reports, maintenance reports, audit reports, energy reports, financial reports, carbon savings, compliance reports, and executive summaries.
+* **Advanced Report Builder** with filters, drill-down capabilities, scheduled reports, email distribution, dashboards, and exports to PDF, Excel, CSV, DOCX, and printable formats.
+* **User & Role Management** with granular RBAC, permissions, approvals, and complete audit logging.
+* **Notification Center** supporting Email, SMS, WhatsApp, mobile push notifications, and webhook integrations.
+* **System Configuration** including plants, devices, communication settings, thresholds, alarms, KPIs, report schedules, integrations, branding, localization, and application settings.
+* **API & Integration Hub** supporting ERP, CRM, Power BI, SCADA systems, cloud platforms, utility APIs, and third-party monitoring solutions.
+* **Mobile-Optimized Monitoring** with responsive layouts, offline capability, and touch-friendly controls.
+* **Cybersecurity Features** including encryption, secure authentication, MFA, audit logs, secure APIs, certificate management, and device authentication.
+
+Ensure every screen has:
+
+* Clear information hierarchy and intuitive navigation.
+* Consistent enterprise design system.
+* Interactive dashboards with drill-down capabilities.
+* Real-time updates and live device status.
+* Cross-linked navigation between related modules.
+* Context-aware actions and configurable widgets.
+* Responsive layouts for mobile, tablet, laptop, desktop, and large displays.
+* Light and Dark themes.
+* High performance with scalable architecture.
+* Production-ready validation, error handling, loading states, and empty states.
+* WCAG-compliant accessibility.
+
+The final solution should resemble a **world-class enterprise Solar SCADA platform** comparable to industry leaders such as Siemens, Schneider Electric, ABB, Honeywell, GE Digital, Hitachi Energy, Sungrow iSolarCloud, Huawei FusionSolar, and Tigo Energy, delivering a **fully integrated, production-ready IoT monitoring ecosystem** with comprehensive device communication, configuration, analytics, reporting, and operational management.
