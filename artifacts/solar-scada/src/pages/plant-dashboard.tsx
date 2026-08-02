@@ -1,9 +1,7 @@
 import {
   useGetPlant,
-  useGetPlantYield,
   useListInverters,
   getGetPlantQueryKey,
-  getGetPlantYieldQueryKey,
   getListInvertersQueryKey,
 } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout";
@@ -94,6 +92,7 @@ function KpiBox({ label, value, unit, icon: Icon, accent = false, loading = fals
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
+// hint: Logic changed on both sides. Requires understanding intent of each change.
 export default function PlantDashboard() {
   const { plantId } = useParams();
   const pid = plantId ?? "";
@@ -110,8 +109,25 @@ export default function PlantDashboard() {
   const yieldPeriodMap: Record<Period, "daily"|"weekly"|"monthly"|"yearly"> = {
     day: "daily", week: "daily", month: "daily", year: "monthly", lifetime: "yearly",
   };
-  const { data: yieldData } = useGetPlantYield(pid, { period: yieldPeriodMap[period] }, {
-    query: { enabled: !!pid && period !== "day", queryKey: getGetPlantYieldQueryKey(pid, { period: yieldPeriodMap[period] }) },
+
+  // Number of days to shift the reference date back for week/month navigation
+  const yieldDaysOffset = useMemo(() => {
+    if (period === "week") return dateOffset * 7;
+    if (period === "month") return dateOffset * 30;
+    return 0;
+  }, [period, dateOffset]);
+
+  const { data: yieldData } = useQuery({
+    queryKey: ["plant-yield", pid, yieldPeriodMap[period], yieldDaysOffset],
+    queryFn: async () => {
+      const params = new URLSearchParams({ period: yieldPeriodMap[period] });
+      if (yieldDaysOffset > 0) params.set("daysOffset", String(yieldDaysOffset));
+      const r = await fetch(`${BASE}api/plants/${pid}/yield?${params}`, { credentials: "include" });
+      if (!r.ok) throw new Error("Yield fetch failed");
+      return r.json();
+    },
+    enabled: !!pid && period !== "day",
+    staleTime: 15_000,
   });
 
   const { data: trendData, isLoading: trendLoading } = useQuery<TrendResponse>({
@@ -173,12 +189,40 @@ export default function PlantDashboard() {
   const liveHealth  = liveStream.latest?.health     ?? plant?.healthStatus    ?? "offline";
   const liveIrradiance = liveStream.latest?.irradianceWm2 ?? plant?.irradiancePoaWm2 ?? null;
 
-  // Current date display for header
+  // Period label shown in the date navigation pill.
+  // For week and month the label is derived from the same date arithmetic used
+  // to compute yieldDaysOffset so the label always matches the data window.
   const displayDate = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - dateOffset);
-    return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-  }, [dateOffset]);
+    if (period === "day") {
+      const d = new Date();
+      d.setDate(d.getDate() - dateOffset);
+      return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    }
+    if (period === "week") {
+      // End of the target 7-day window (matches the API reference date)
+      const end = new Date();
+      end.setDate(end.getDate() - dateOffset * 7);
+      const start = new Date(end);
+      start.setDate(start.getDate() - 6);
+      const fmt = (d: Date) => d.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+      return `${fmt(start)} – ${fmt(end)} ${end.getFullYear()}`;
+    }
+    if (period === "month") {
+      // End of the target 30-day rolling window (matches the API reference date).
+      // Shown as a date range so the label exactly matches the data, regardless
+      // of calendar-month boundaries (months vary between 28–31 days).
+      const end = new Date();
+      end.setDate(end.getDate() - dateOffset * 30);
+      const start = new Date(end);
+      start.setDate(start.getDate() - 29); // 30 days inclusive
+      const fmt = (d: Date) => d.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+      const yearSuffix = end.getFullYear() !== start.getFullYear()
+        ? ` ${end.getFullYear()}`
+        : ` ${start.getFullYear()}`;
+      return `${fmt(start)} – ${fmt(end)}${yearSuffix}`;
+    }
+    return "";
+  }, [period, dateOffset]);
 
   // Chart data per period
   const chartData = useMemo(() => {
@@ -397,7 +441,7 @@ export default function PlantDashboard() {
             ))}
           </div>
 
-          {period === "day" && (
+          {(period === "day" || period === "week" || period === "month") && (
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setDateOffset(d => d + 1)}
@@ -407,7 +451,7 @@ export default function PlantDashboard() {
               </button>
               <span className="flex items-center gap-2 px-4 py-2 border border-brand/30 bg-brand/5 font-mono text-[10px] text-brand uppercase tracking-widest min-w-[140px] justify-center">
                 <Calendar className="w-3.5 h-3.5" />
-                {dateOffset === 0 ? "TODAY (LIVE)" : displayDate}
+                {period === "day" && dateOffset === 0 ? "TODAY (LIVE)" : displayDate}
               </span>
               <button
                 onClick={() => setDateOffset(d => Math.max(0, d - 1))}
@@ -443,7 +487,15 @@ export default function PlantDashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between px-5 py-4 border-b border-border/50 bg-black/40">
             <div>
               <h3 className="font-mono text-sm uppercase tracking-widest text-foreground font-bold">
-                {period === "day" ? "POWER VECTOR" : period === "week" ? "ENERGY OUTPUT (7-DAY)" : period === "month" ? "ENERGY OUTPUT (30-DAY)" : period === "year" ? "MONTHLY GENERATION" : "LIFETIME GENERATION"}
+                {period === "day"
+                  ? "POWER VECTOR"
+                  : period === "week"
+                  ? `ENERGY OUTPUT // ${displayDate}`
+                  : period === "month"
+                  ? `ENERGY OUTPUT // ${displayDate}`
+                  : period === "year"
+                  ? "MONTHLY GENERATION"
+                  : "LIFETIME GENERATION"}
               </h3>
               <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
                 {period === "day" ? "15-MIN INTERVALS // KW" : "ENERGY OUTPUT // KWH"}

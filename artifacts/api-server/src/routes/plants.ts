@@ -159,7 +159,14 @@ router.get("/plants/:plantId/yield", (req, res) => {
     return;
   }
   const { period } = GetPlantYieldQueryParams.parse(req.query);
-  const data = GetPlantYieldResponse.parse(yieldSeries(plant, period, new Date()));
+  // daysOffset shifts the reference date backwards so operators can browse
+  // historical weeks and months (0 = current period, 7 = one week ago, etc.)
+  const rawOffset = Number(req.query["daysOffset"]);
+  const daysOffset = Number.isFinite(rawOffset) && rawOffset >= 0 ? Math.floor(rawOffset) : 0;
+  const refDate = daysOffset > 0
+    ? new Date(Date.now() - daysOffset * 24 * 60 * 60 * 1000)
+    : new Date();
+  const data = GetPlantYieldResponse.parse(yieldSeries(plant, period, refDate));
   res.json(data);
 });
 
