@@ -520,7 +520,7 @@ export interface YieldPoint {
 
 export function plantYieldSeries(plant: PlantConfig, period: "daily" | "weekly" | "monthly" | "yearly", now: Date): YieldPoint[] {
   const spec = {
-    daily: { points: 14, stepDays: 1, label: (d: Date) => d.toISOString().slice(0, 10) },
+    daily: { points: 30, stepDays: 1, label: (d: Date) => d.toISOString().slice(0, 10) },
     weekly: { points: 12, stepDays: 7, label: (d: Date) => `Week of ${d.toISOString().slice(0, 10)}` },
     monthly: { points: 12, stepDays: 30, label: (d: Date) => d.toISOString().slice(0, 7) },
     yearly: { points: 5, stepDays: 365, label: (d: Date) => `${d.getUTCFullYear()}` },

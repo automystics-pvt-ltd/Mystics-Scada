@@ -101,7 +101,7 @@ export default function PlantDashboard() {
   });
 
   const yieldPeriodMap: Record<Period, "daily"|"weekly"|"monthly"|"yearly"> = {
-    day: "daily", week: "daily", month: "monthly", year: "monthly", lifetime: "yearly",
+    day: "daily", week: "daily", month: "daily", year: "monthly", lifetime: "yearly",
   };
   const { data: yieldData } = useGetPlantYield(pid, { period: yieldPeriodMap[period] }, {
     query: { enabled: !!pid && period !== "day", queryKey: getGetPlantYieldQueryKey(pid, { period: yieldPeriodMap[period] }) },
@@ -115,7 +115,7 @@ export default function PlantDashboard() {
       if (!r.ok) throw new Error("Trend fetch failed");
       return r.json();
     },
-    enabled: !!pid && (period === "day" || period === "week"),
+    enabled: !!pid && period === "day",
     refetchInterval: period === "day" ? 30_000 : false,
     staleTime: 15_000,
   });
@@ -175,7 +175,7 @@ export default function PlantDashboard() {
 
   // Chart data per period
   const chartData = useMemo(() => {
-    if (period === "day" || period === "week") {
+    if (period === "day") {
       return (trendData?.points ?? []).map(p => ({
         label: p.label,
         powerKw: p.acPowerKw,
@@ -183,9 +183,9 @@ export default function PlantDashboard() {
         energyKwh: p.energyKwh,
       }));
     }
-    // month/year/lifetime → yield bars
+    // week/month/year/lifetime → yield bars
     const pts = yieldData?.points ?? [];
-    const slice = period === "month" ? pts.slice(-30) : period === "year" ? pts.slice(-12) : pts;
+    const slice = period === "week" ? pts.slice(-7) : period === "month" ? pts : period === "year" ? pts.slice(-12) : pts;
     return slice.map((p: any) => ({
       label: p.label ?? p.date ?? "",
       actualKwh: p.actualKwh ?? 0,
@@ -208,7 +208,7 @@ export default function PlantDashboard() {
         { label: "CO₂ Avoided",    value: co2Today.toFixed(0), unit: "kg", icon: Leaf },
       ];
       case "week": return [
-        { label: "Weekly Energy",   value: chartData.reduce((s: number, p: any) => s + (p.energyKwh ?? 0), 0).toFixed(0), unit: "kWh", icon: Activity, accent: true },
+        { label: "Weekly Energy",   value: chartData.reduce((s: number, p: any) => s + (p.actualKwh ?? 0), 0).toFixed(0), unit: "kWh", icon: Activity, accent: true },
         { label: "Specific Yield",  value: specificYield.toFixed(2), unit: "kWh/kWp", icon: TrendingUp },
         { label: "Revenue",         value: `₹${(revenue?.monthRevenue ?? 0).toLocaleString("en-IN")}`, unit: undefined, icon: DollarSign },
         { label: "Performance Ratio", value: livePr?.toFixed(1) ?? "--", unit: "%", icon: BarChart4 },
@@ -427,14 +427,14 @@ export default function PlantDashboard() {
           <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-border/40">
             <div>
               <h3 className="text-sm font-semibold text-foreground">
-                {period === "day" ? "Power Curve" : period === "week" ? "Weekly Power Trend" : period === "month" ? "Monthly Generation" : period === "year" ? "Annual Generation" : "Lifetime Generation"}
+                {period === "day" ? "Power Curve" : period === "week" ? "Daily Energy (Last 7 Days)" : period === "month" ? "Daily Energy (Last 30 Days)" : period === "year" ? "Monthly Generation" : "Yearly Generation"}
               </h3>
               <p className="text-[10px] text-muted-foreground mt-0.5">
                 {period === "day" ? "15-minute intervals · kW" : "Energy output · kWh"}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {(period === "day" || period === "week") && (
+              {period === "day" && (
                 <>
                   <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                     <span className="inline-block w-5 h-0.5 bg-emerald-500 rounded" /> AC Power
@@ -444,7 +444,7 @@ export default function PlantDashboard() {
                   </span>
                 </>
               )}
-              {(period === "month" || period === "year" || period === "lifetime") && (
+              {period !== "day" && (
                 <>
                   <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                     <span className="inline-block w-3 h-3 rounded-sm bg-emerald-500 opacity-80" /> Actual
@@ -459,7 +459,7 @@ export default function PlantDashboard() {
 
           {/* Chart body */}
           <div className="px-4 pt-4 pb-5">
-            {(period === "day" || period === "week") ? (
+            {period === "day" ? (
               trendLoading ? (
                 <div className="h-64 flex items-center justify-center">
                   <div className="text-xs text-muted-foreground animate-pulse">Loading chart data…</div>
