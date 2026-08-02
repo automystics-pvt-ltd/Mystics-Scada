@@ -2,7 +2,7 @@
  * Pure SVG chart components — drop-in replacements for Recharts.
  * No external refs, no createRef(): fully compatible with React 19.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 // ─── Internal layout ──────────────────────────────────────────────────────────
 
@@ -216,14 +216,52 @@ export function SvgComposedChart({
   const labels  = data.map((d) => String(d[xKey] ?? ""));
   const allKeys = [...bars.map((b) => b.key), ...lines.map((l) => l.key)];
   const [lo, hi] = useMemo(() => yRange(data, allKeys), [data, allKeys]);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
-  const barW = bars.length > 0 ? Math.max(2, (w / data.length) * 0.6) : 0;
+  const barW   = data.length > 0 && bars.length > 0 ? Math.max(2, (w / data.length) * 0.6) : 0;
+  const step   = data.length > 0 ? w / data.length : w;
+  const fmt    = yFmt ?? fmtNum;
+
+  // ── Tooltip content (must be before any early returns — Rules of Hooks) ───
+  const hoveredData = hoveredIdx !== null ? (data[hoveredIdx] ?? null) : null;
+  const ttW = 128;
+  const ttPad = 8;
+  const ttLineH = 13;
+
+  const tooltipContent = useMemo(() => {
+    if (hoveredData == null) return null;
+    const label = String(hoveredData[xKey] ?? "");
+    const rows: { name: string; color: string; value: string }[] = [
+      ...bars.map((b) => ({
+        name: b.name,
+        color: b.color,
+        value: fmt(Number(hoveredData[b.key] ?? 0)),
+      })),
+      ...lines.map((l) => ({
+        name: l.name,
+        color: l.color,
+        value: fmt(Number(hoveredData[l.key] ?? 0)),
+      })),
+    ];
+    // Performance ratio row (only when both bar and line are present)
+    const actual   = bars[0]  ? Number(hoveredData[bars[0].key]  ?? 0) : 0;
+    const expected = lines[0] ? Number(hoveredData[lines[0].key] ?? 0) : 0;
+    if (expected > 0) {
+      rows.push({
+        name: "Perf Ratio",
+        color: "hsl(var(--muted-foreground))",
+        value: `${(actual / expected * 100).toFixed(1)}%`,
+      });
+    }
+    return { label, rows };
+  }, [hoveredData, xKey, bars, lines, fmt]);
 
   if (data.length === 0) return null;
 
   return (
     <svg viewBox={`0 0 ${VW} ${H}`} preserveAspectRatio="xMidYMid meet"
-      style={{ width: "100%", height }} aria-hidden>
+      style={{ width: "100%", height }} aria-hidden
+      onMouseLeave={() => setHoveredIdx(null)}>
       <defs>
         {bars.map((b) => <AreaGrad key={b.key} id={`bar-grd-${b.key}`} color={b.color} />)}
       </defs>
@@ -239,7 +277,7 @@ export function SvgComposedChart({
           return (
             <rect key={`${b.key}-${i}`}
               x={bx} y={by} width={barW} height={Math.max(0, bh)}
-              fill={b.color} rx={1} opacity={0.85} />
+              fill={b.color} rx={1} opacity={hoveredIdx === i ? 1 : 0.85} />
           );
         })
       )}
@@ -257,6 +295,68 @@ export function SvgComposedChart({
             strokeDasharray={s.dashed ? "5 3" : undefined} />
         );
       })}
+
+      {/* Hover hit-areas — transparent full-height column rects */}
+      {data.map((_, i) => (
+        <rect key={`hit-${i}`}
+          x={x0 + i * step} y={y0} width={step} height={h}
+          fill="transparent"
+          style={{ cursor: "crosshair" }}
+          onMouseEnter={() => setHoveredIdx(i)}
+        />
+      ))}
+
+      {/* Tooltip overlay */}
+      {hoveredIdx !== null && tooltipContent && (() => {
+        const { label, rows } = tooltipContent;
+        const ttH = ttPad * 2 + 12 + rows.length * ttLineH + 2;
+        const colCx = x0 + hoveredIdx * step + step / 2;
+
+        // Flip left when in the right half of the plot area
+        const ttX = colCx > x0 + w / 2
+          ? colCx - ttW - 6
+          : colCx + 6;
+        const ttY = Math.max(y0 + 2, y0 + h / 2 - ttH / 2);
+
+        return (
+          <g key="tt" style={{ pointerEvents: "none" }}>
+            {/* Vertical guide */}
+            <line x1={colCx} x2={colCx} y1={y0} y2={y0 + h}
+              stroke="hsl(var(--border))" strokeOpacity={0.7} strokeDasharray="3 2" />
+            {/* Box shadow (faux drop-shadow) */}
+            <rect x={ttX + 1} y={ttY + 1} width={ttW} height={ttH}
+              fill="hsl(var(--background))" rx={2} opacity={0.3} />
+            {/* Box */}
+            <rect x={ttX} y={ttY} width={ttW} height={ttH}
+              fill="hsl(var(--background))" stroke="hsl(var(--border))"
+              strokeWidth={0.6} rx={2} opacity={0.97} />
+            {/* Date label */}
+            <text x={ttX + ttPad} y={ttY + ttPad + 8}
+              fontSize={8.5} fontWeight="700" fontFamily="monospace"
+              fill="hsl(var(--foreground))">{label}</text>
+            {/* Divider */}
+            <line x1={ttX + ttPad} x2={ttX + ttW - ttPad}
+              y1={ttY + ttPad + 13} y2={ttY + ttPad + 13}
+              stroke="hsl(var(--border))" strokeOpacity={0.5} />
+            {/* Series rows */}
+            {rows.map((row, ri) => {
+              const ry = ttY + ttPad + 22 + ri * ttLineH;
+              return (
+                <g key={ri}>
+                  <rect x={ttX + ttPad} y={ry - 5} width={6} height={6}
+                    fill={row.color} rx={1} />
+                  <text x={ttX + ttPad + 10} y={ry}
+                    fontSize={7.5} fontFamily="monospace"
+                    fill="hsl(var(--muted-foreground))">{row.name}</text>
+                  <text x={ttX + ttW - ttPad} y={ry}
+                    fontSize={7.5} fontFamily="monospace" textAnchor="end"
+                    fill="hsl(var(--foreground))">{row.value}</text>
+                </g>
+              );
+            })}
+          </g>
+        );
+      })()}
 
       {/* Legend */}
       {[...bars, ...lines].map((s, i) => {
