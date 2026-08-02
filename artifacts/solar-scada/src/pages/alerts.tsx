@@ -64,14 +64,14 @@ function AlertDetail({ alert, onClose, onAcknowledge, onResolve }: {
       {/* Header */}
       <div className="flex items-start justify-between p-5 border-b border-border">
         <div className="flex-1 min-w-0 pr-2">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <SeverityBadge severity={alert.severity} />
             <AlertStatusBadge status={alert.status} />
           </div>
-          <h3 className="font-semibold text-foreground leading-snug">{alert.title}</h3>
+          <h3 className="text-xl font-bold text-foreground leading-snug">{alert.title}</h3>
         </div>
         <button onClick={onClose} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
       </div>
 
@@ -111,36 +111,36 @@ function AlertDetail({ alert, onClose, onAcknowledge, onResolve }: {
 
         {/* Timeline */}
         <div>
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Timeline</h4>
-          <div className="space-y-3">
-            <div className="flex gap-3 text-sm">
+          <h4 className="text-[11px] font-medium text-muted-foreground tracking-normal capitalize mb-4">Timeline</h4>
+          <div className="space-y-4">
+            <div className="flex gap-4 text-sm relative">
               <div className="flex flex-col items-center">
-                <div className="w-2 h-2 rounded-full bg-status-fault mt-1 flex-shrink-0" />
-                <div className="w-px flex-1 bg-border mt-1" />
+                <div className="w-2.5 h-2.5 rounded-full bg-status-fault mt-1 flex-shrink-0 relative z-10" />
+                <div className="w-px flex-1 bg-border mt-1 absolute top-3.5 bottom-[-16px] left-[4.5px]" />
               </div>
               <div className="pb-3">
-                <div className="font-medium">Alert triggered</div>
-                <div className="text-xs text-muted-foreground">{new Date(alert.createdAt).toLocaleString()}</div>
+                <div className="font-semibold">Alert triggered</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{new Date(alert.createdAt).toLocaleString()}</div>
               </div>
             </div>
             {(alert.status === "acknowledged" || alert.status === "assigned" || alert.status === "resolved" || alert.status === "closed") && (
-              <div className="flex gap-3 text-sm">
+              <div className="flex gap-4 text-sm relative">
                 <div className="flex flex-col items-center">
-                  <div className="w-2 h-2 rounded-full bg-[#e67e22] mt-1 flex-shrink-0" />
-                  {alert.status === "resolved" || alert.status === "closed" ? <div className="w-px flex-1 bg-border mt-1" /> : null}
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#e67e22] mt-1 flex-shrink-0 relative z-10" />
+                  {alert.status === "resolved" || alert.status === "closed" ? <div className="w-px flex-1 bg-border mt-1 absolute top-3.5 bottom-[-16px] left-[4.5px]" /> : null}
                 </div>
                 <div className="pb-3">
-                  <div className="font-medium">Acknowledged</div>
-                  <div className="text-xs text-muted-foreground">Status updated to acknowledged</div>
+                  <div className="font-semibold">Acknowledged</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Status updated to acknowledged</div>
                 </div>
               </div>
             )}
             {(alert.status === "resolved" || alert.status === "closed") && (
-              <div className="flex gap-3 text-sm">
-                <div className="w-2 h-2 rounded-full bg-status-normal mt-1 flex-shrink-0" />
+              <div className="flex gap-4 text-sm relative">
+                <div className="w-2.5 h-2.5 rounded-full bg-status-normal mt-1 flex-shrink-0 relative z-10" />
                 <div>
-                  <div className="font-medium">Resolved</div>
-                  <div className="text-xs text-muted-foreground">Issue cleared</div>
+                  <div className="font-semibold">Resolved</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Issue cleared</div>
                 </div>
               </div>
             )}
@@ -237,9 +237,9 @@ export default function AlertCenter() {
           </div>
           {/* Filters */}
           <div className="flex flex-wrap gap-2">
-            <div className="flex items-center gap-2 bg-card border border-border rounded-md px-3 py-1.5 text-sm">
+            <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5 text-sm transition-colors focus-within:border-accent-brand focus-within:ring-1 focus-within:ring-accent-brand/50">
               <Filter className="w-3.5 h-3.5 text-muted-foreground" />
-              <select className="bg-transparent border-none outline-none text-foreground text-sm" value={filterStatus ?? ""} onChange={e => setFilterStatus(e.target.value ? e.target.value as AlertStatus : undefined)}>
+              <select className="bg-transparent border-none outline-none text-foreground text-sm cursor-pointer" value={filterStatus ?? ""} onChange={e => setFilterStatus(e.target.value ? e.target.value as AlertStatus : undefined)}>
                 <option value="">All Statuses</option>
                 <option value="open">Open</option>
                 <option value="acknowledged">Acknowledged</option>
@@ -247,9 +247,9 @@ export default function AlertCenter() {
                 <option value="resolved">Resolved</option>
               </select>
             </div>
-            <div className="flex items-center gap-2 bg-card border border-border rounded-md px-3 py-1.5 text-sm">
+            <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5 text-sm transition-colors focus-within:border-accent-brand focus-within:ring-1 focus-within:ring-accent-brand/50">
               <Filter className="w-3.5 h-3.5 text-muted-foreground" />
-              <select className="bg-transparent border-none outline-none text-foreground text-sm" value={filterSeverity ?? ""} onChange={e => setFilterSeverity(e.target.value ? e.target.value as AlertSeverity : undefined)}>
+              <select className="bg-transparent border-none outline-none text-foreground text-sm cursor-pointer" value={filterSeverity ?? ""} onChange={e => setFilterSeverity(e.target.value ? e.target.value as AlertSeverity : undefined)}>
                 <option value="">All Severities</option>
                 <option value="critical">Critical</option>
                 <option value="major">Major</option>
@@ -300,19 +300,19 @@ export default function AlertCenter() {
                 <button
                   key={alert.id}
                   onClick={() => setSelectedAlert(prev => prev?.id === alert.id ? null : alert)}
-                  className={`w-full text-left px-4 py-3.5 hover:bg-muted/30 transition-colors flex items-start gap-3 group ${selectedAlert?.id === alert.id ? "bg-primary/5 border-l-2 border-l-primary" : ""}`}
+                  className={`w-full text-left px-4 py-3.5 hover:bg-accent-brand/5 transition-colors flex items-start gap-3 group border-l-2 ${
+                    selectedAlert?.id === alert.id 
+                      ? "bg-accent-brand/10 border-l-accent-brand shadow-[inset_2px_0_0_rgba(20,205,230,1)]" 
+                      : alert.severity === "critical" ? "border-l-status-fault" :
+                        alert.severity === "major" ? "border-l-[#e67e22]" :
+                        alert.severity === "minor" ? "border-l-status-warning/50" :
+                        "border-l-blue-400/50"
+                  }`}
                 >
-                  {/* Severity dot */}
-                  <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                    alert.severity === "critical" ? "bg-status-fault" :
-                    alert.severity === "major"    ? "bg-[#e67e22]" :
-                    alert.severity === "minor"    ? "bg-status-warning" :
-                    "bg-blue-400"
-                  }`} />
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <span className="text-sm font-medium leading-snug truncate">{alert.title}</span>
+                      <span className="text-sm font-medium leading-snug truncate group-hover:text-accent-brand transition-colors">{alert.title}</span>
                       <span className="text-[10px] text-muted-foreground whitespace-nowrap flex-shrink-0 font-mono">
                         {timeAgo(alert.createdAt)}
                       </span>

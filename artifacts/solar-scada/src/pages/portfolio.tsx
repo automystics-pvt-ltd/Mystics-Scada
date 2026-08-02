@@ -1,7 +1,7 @@
 import { useGetPortfolioSummary, useListAlerts, getGetPortfolioSummaryQueryKey, getListAlertsQueryKey } from "@workspace/api-client-react";
 import { AppLayout } from "@/components/layout";
 import { KpiCard, HealthBadge, LiveValue, GenerationRing } from "@/components/ui/scada";
-import { Zap, Activity, AlertTriangle, Battery, Power, ArrowRight, XCircle, Brain, Radio } from "lucide-react";
+import { Zap, Activity, AlertTriangle, Battery, Power, ArrowRight, XCircle, Brain, Radio, CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -46,16 +46,16 @@ export default function PortfolioDashboard() {
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Portfolio Overview</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Portfolio Overview</h1>
             <p className="text-sm text-muted-foreground mt-1">Fleet-wide realtime generation and health</p>
           </div>
-          <div className={`flex items-center space-x-2 text-sm px-3 py-1.5 rounded border ${
+          <div className={`flex items-center space-x-2 text-sm px-3 py-1.5 rounded-full border ${
             connected
-              ? "bg-status-normal/8 border-status-normal/20 text-status-normal"
+              ? "bg-accent-brand/10 border-accent-brand/20 text-accent-brand"
               : "bg-muted/50 border-border text-muted-foreground"
           }`}>
             <Radio className={`h-4 w-4 ${connected ? "animate-pulse" : ""}`} />
-            <span className="font-mono">
+            <span className="font-mono font-medium">
               {connected
                 ? lastSync
                   ? `Live · ${Math.round((Date.now() - lastSync.getTime()) / 1000)}s ago`
@@ -82,30 +82,30 @@ export default function PortfolioDashboard() {
         {/* AI Insights summary widget */}
         {insightsSummary && insightsSummary.total > 0 && (
           <Link href="/insights">
-            <div className="flex items-center gap-4 bg-card border border-card-border rounded-xl px-4 py-3 cursor-pointer hover:border-primary/40 transition-colors group">
+            <div className="flex items-center gap-4 bg-accent-brand/5 border-l-2 border-l-accent-brand border-y border-r border-accent-brand/20 rounded-xl px-4 py-3 cursor-pointer hover:border-accent-brand/40 hover:bg-accent-brand/10 transition-colors group shadow-sm">
               <div className="flex items-center gap-2">
-                <Brain className="w-4 h-4 text-primary" />
-                <span className="text-sm font-semibold">AI Insights</span>
+                <Brain className="w-4 h-4 text-accent-brand" />
+                <span className="text-sm font-semibold text-foreground">AI Insights</span>
                 <span className="text-xs text-muted-foreground ml-1">{insightsSummary.total} finding{insightsSummary.total !== 1 ? "s" : ""} detected</span>
               </div>
               <div className="flex items-center gap-3 ml-2">
                 {insightsSummary.critical > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-status-fault/15 text-status-fault border border-status-fault/20">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-status-fault/15 text-status-fault border border-status-fault/20">
                     {insightsSummary.critical} Critical
                   </span>
                 )}
                 {insightsSummary.warning > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-status-warning/15 text-status-warning border border-status-warning/20">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-status-warning/15 text-status-warning border border-status-warning/20">
                     {insightsSummary.warning} Warning
                   </span>
                 )}
                 {insightsSummary.info > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
                     {insightsSummary.info} Info
                   </span>
                 )}
               </div>
-              <span className="ml-auto text-xs text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="ml-auto text-xs text-accent-brand flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity font-medium">
                 Review insights <ArrowRight className="w-3 h-3" />
               </span>
             </div>
@@ -129,7 +129,7 @@ export default function PortfolioDashboard() {
             precision={2}
             icon={Zap}
             loading={isLoading}
-            className="border-primary/20 bg-primary/5"
+            className="border-accent-brand/30 bg-accent-brand/5 relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-accent-brand after:shadow-[0_0_10px_rgba(20,205,230,0.5)]"
             trend={{ value: +(fleetUtilPct - 80).toFixed(1), label: "vs 80% target", positive: fleetUtilPct >= 80 }}
           />
           <KpiCard
@@ -151,40 +151,40 @@ export default function PortfolioDashboard() {
         </div>
 
         {/* Fleet utilisation + plant cards */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
 
           {/* Fleet generation ring */}
-          <div className="xl:col-span-1 bg-card border border-card-border rounded-xl p-6 flex flex-col items-center justify-center gap-4">
-            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Fleet Utilisation</p>
+          <div className="xl:col-span-1 bg-card border border-card-border rounded-xl p-6 flex flex-col items-center justify-center gap-6 self-start">
+            <p className="text-xs font-semibold text-muted-foreground tracking-normal capitalize">Fleet Utilisation</p>
             <GenerationRing
               pct={fleetUtilPct}
               label={`${summary ? (summary.totalCurrentPowerMw).toFixed(1) : "--"} MW`}
               sublabel={`of ${summary ? summary.totalCapacityMw.toFixed(1) : "--"} MWp`}
-              size={120}
-              strokeWidth={10}
+              size={140}
+              strokeWidth={12}
               color={fleetUtilPct >= 50 ? "hsl(142 71% 45%)" : fleetUtilPct >= 20 ? "hsl(38 92% 50%)" : "hsl(220 9% 46%)"}
             />
-            <div className="w-full border-t border-border pt-4 grid grid-cols-2 gap-2 text-center">
+            <div className="w-full border-t border-border pt-5 grid grid-cols-2 gap-4 text-center">
               <div>
-                <div className="text-xs text-muted-foreground">Plants</div>
-                <div className="text-lg font-bold font-mono">{summary?.plants.length ?? "--"}</div>
+                <div className="text-[10px] font-medium text-muted-foreground mb-1">Plants</div>
+                <div className="text-xl font-bold font-mono text-foreground">{summary?.plants.length ?? "--"}</div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">Open Alerts</div>
-                <div className="text-lg font-bold font-mono text-status-fault">{alerts?.length ?? "--"}</div>
+                <div className="text-[10px] font-medium text-muted-foreground mb-1">Open Alerts</div>
+                <div className="text-xl font-bold font-mono text-status-fault">{alerts?.length ?? "--"}</div>
               </div>
             </div>
           </div>
 
           {/* Plant cards */}
-          <div className="xl:col-span-3">
+          <div className="xl:col-span-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Plant Status</h2>
-              <span className="text-[10px] text-muted-foreground font-mono">
+              <h2 className="text-xs font-semibold text-muted-foreground tracking-normal capitalize">Plant Status</h2>
+              <span className="text-[10px] text-muted-foreground font-mono bg-muted/30 px-2 py-1 rounded">
                 {tickCount > 0 ? `${tickCount} SSE frames received` : "Waiting for stream…"}
               </span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {isLoading
                 ? Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="bg-card border border-card-border rounded-xl p-5 h-44 animate-pulse" />
@@ -211,11 +211,11 @@ export default function PortfolioDashboard() {
 
                     return (
                       <Link key={plant.id} href={`/plants/${plant.id}`}>
-                        <div className="bg-card border border-card-border rounded-xl p-4 hover:border-primary/40 hover:bg-card/80 transition-all cursor-pointer group">
+                        <div className="bg-card border border-card-border rounded-xl p-4 hover:border-accent-brand/40 hover:bg-accent-brand/5 transition-all cursor-pointer group hover:shadow-lg hover:shadow-black/20 duration-300 flex flex-col h-full">
                           {/* Top row */}
                           <div className="flex items-start justify-between mb-3">
                             <div>
-                              <div className="font-semibold text-foreground group-hover:text-primary transition-colors">{plant.name}</div>
+                              <div className="font-semibold text-foreground group-hover:text-accent-brand transition-colors leading-tight">{plant.name}</div>
                               <div className="text-xs text-muted-foreground mt-0.5">{plant.region}</div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -236,42 +236,46 @@ export default function PortfolioDashboard() {
                               strokeWidth={6}
                               color={ringColor}
                             />
-                            <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-1">
+                            <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2">
                               <div>
-                                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Capacity</div>
+                                <div className="text-[10px] text-muted-foreground/70 font-medium capitalize">Capacity</div>
                                 <div className="font-mono text-sm font-medium">{(plant.capacityKw / 1000).toFixed(1)} MWp</div>
                               </div>
                               <div>
-                                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">PR</div>
+                                <div className="text-[10px] text-muted-foreground/70 font-medium capitalize">PR</div>
                                 <div className="font-mono text-sm font-medium">{plant.pr.toFixed(1)}%</div>
                               </div>
                               <div>
-                                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Avail.</div>
+                                <div className="text-[10px] text-muted-foreground/70 font-medium capitalize">Avail.</div>
                                 <div className="font-mono text-sm font-medium">{plant.availabilityPct.toFixed(1)}%</div>
                               </div>
                               <div>
-                                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Alerts</div>
-                                <div className="flex items-center gap-1">
+                                <div className="text-[10px] text-muted-foreground/70 font-medium capitalize">Alerts</div>
+                                <div className="flex items-center gap-1 mt-0.5">
                                   {plant.alertCounts.critical > 0 && (
-                                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded text-[10px] font-bold bg-status-fault text-white">
+                                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded text-[10px] font-bold bg-status-fault/20 text-status-fault border border-status-fault/30">
                                       {plant.alertCounts.critical}
                                     </span>
                                   )}
                                   {plant.alertCounts.major > 0 && (
-                                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded text-[10px] font-bold bg-[#e67e22] text-white">
+                                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded text-[10px] font-bold bg-[#e67e22]/20 text-[#e67e22] border border-[#e67e22]/30">
                                       {plant.alertCounts.major}
                                     </span>
                                   )}
                                   {plant.alertCounts.critical === 0 && plant.alertCounts.major === 0 && (
-                                    <span className="text-xs text-status-normal">✓ Clear</span>
+                                    <span className="text-xs text-status-normal font-medium flex items-center gap-1">
+                                      <CheckCircle2 className="w-3 h-3" /> Clear
+                                    </span>
                                   )}
                                 </div>
                               </div>
                             </div>
                           </div>
 
+                          <div className="flex-1" />
+
                           {/* Live / synthetic sparkline */}
-                          <div className="mt-3 -mx-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                          <div className="mt-4 -mx-1 opacity-60 group-hover:opacity-100 transition-opacity">
                             <div className="h-10">
                               <_Sparkline data={sparkData} color={ringColor} isLive={!!(sseHistory && sseHistory.length >= 2)} />
                             </div>
@@ -279,10 +283,10 @@ export default function PortfolioDashboard() {
 
                           <div className="mt-2 flex justify-between items-center">
                             {sseHistory && sseHistory.length >= 2
-                              ? <span className="text-[9px] text-status-normal/60 font-mono">● {sseHistory.length} live pts</span>
-                              : <span className="text-[9px] text-muted-foreground/40 font-mono">est. curve</span>
+                              ? <span className="text-[9px] text-status-normal/80 font-mono flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-status-normal animate-pulse" /> {sseHistory.length} live pts</span>
+                              : <span className="text-[9px] text-muted-foreground/50 font-mono">est. curve</span>
                             }
-                            <span className="text-xs text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-xs text-accent-brand flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity font-medium">
                               Open plant <ArrowRight className="w-3 h-3" />
                             </span>
                           </div>

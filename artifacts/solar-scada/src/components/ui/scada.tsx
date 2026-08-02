@@ -22,41 +22,45 @@ export function HealthBadge({ status, className }: { status: HealthState; classN
   switch (status) {
     case "normal":
       return (
-        <div className={cn("inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-status-normal/10 text-status-normal border border-status-normal/20", className)}>
-          <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Normal
+        <div className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-status-normal/10 text-status-normal border border-status-normal/20", className)}>
+          <span className="w-1.5 h-1.5 rounded-full bg-status-normal mr-1.5" /> Normal
         </div>
       );
     case "warning":
       return (
-        <div className={cn("inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-status-warning/10 text-status-warning border border-status-warning/20", className)}>
-          <AlertTriangle className="w-3.5 h-3.5 mr-1" /> Warning
+        <div className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-status-warning/10 text-status-warning border border-status-warning/20", className)}>
+          <span className="w-1.5 h-1.5 rounded-full bg-status-warning mr-1.5" /> Warning
         </div>
       );
     case "fault":
       return (
-        <div className={cn("inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-status-fault/10 text-status-fault border border-status-fault/20", className)}>
-          <XCircle className="w-3.5 h-3.5 mr-1" /> Fault
+        <div className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-status-fault/10 text-status-fault border border-status-fault/20", className)}>
+          <span className="w-1.5 h-1.5 rounded-full bg-status-fault mr-1.5" /> Fault
         </div>
       );
     case "offline":
       return (
-        <div className={cn("inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-status-offline/10 text-status-offline border border-status-offline/20", className)}>
-          <HelpCircle className="w-3.5 h-3.5 mr-1" /> Offline
+        <div className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-status-offline/10 text-status-offline border border-status-offline/20", className)}>
+          <span className="w-1.5 h-1.5 rounded-full bg-status-offline mr-1.5" /> Offline
         </div>
       );
+    default:
+      return null;
   }
 }
 
 export function SeverityBadge({ severity, className }: { severity: AlertSeverity; className?: string }) {
   switch (severity) {
     case "critical":
-      return <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-status-fault/15 text-status-fault border border-status-fault/30", className)}>● Critical</span>;
+      return <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-fault/15 text-status-fault border border-status-fault/30", className)}>● Critical</span>;
     case "major":
-      return <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-[#e67e22]/15 text-[#e67e22] border border-[#e67e22]/30", className)}>● Major</span>;
+      return <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#e67e22]/15 text-[#e67e22] border border-[#e67e22]/30", className)}>● Major</span>;
     case "minor":
-      return <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-status-warning/15 text-status-warning border border-status-warning/30", className)}>● Minor</span>;
+      return <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-status-warning/15 text-status-warning border border-status-warning/30", className)}>● Minor</span>;
     case "informational":
-      return <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30", className)}>● Info</span>;
+      return <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30", className)}>● Info</span>;
+    default:
+      return null;
   }
 }
 
@@ -225,11 +229,11 @@ export function StatCard({
     <div className={cn("bg-card border rounded-lg px-4 py-3 flex items-center gap-3", accentCls, className)}>
       {Icon && <Icon className={cn("w-5 h-5 flex-shrink-0", iconCls)} />}
       <div className="min-w-0">
-        <div className="text-xs text-muted-foreground truncate">{label}</div>
+        <div className="text-[11px] font-medium text-muted-foreground tracking-normal truncate capitalize">{label}</div>
         {loading ? (
-          <div className="h-6 w-10 bg-muted animate-pulse rounded mt-0.5" />
+          <div className="h-6 w-10 bg-muted animate-pulse rounded mt-1" />
         ) : (
-          <div className="text-xl font-bold font-mono leading-none mt-0.5">{value ?? "--"}</div>
+          <div className="text-3xl font-bold font-mono leading-none mt-1">{value ?? "--"}</div>
         )}
       </div>
     </div>
@@ -265,19 +269,23 @@ export function KpiCard({
 
   return (
     <div className={cn(
-      "bg-card border border-card-border rounded-lg p-4 flex flex-col overflow-hidden transition-colors",
-      flashing && "border-primary/40",
+      "bg-card border border-card-border rounded-lg p-4 flex flex-col overflow-hidden transition-colors duration-300",
+      flashing ? "border-accent-brand shadow-[0_0_15px_rgba(20,205,230,0.1)]" : "",
       className,
     )}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</span>
-        {Icon && <Icon className="h-4 w-4 text-muted-foreground/50" />}
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[11px] font-medium text-muted-foreground tracking-normal capitalize">{title}</span>
+        {Icon && (
+          <div className="w-6 h-6 rounded flex items-center justify-center bg-muted/50 border border-border/50">
+            <Icon className="h-3.5 w-3.5 text-muted-foreground/70" />
+          </div>
+        )}
       </div>
 
       {loading ? (
         <div className="h-8 w-24 bg-muted animate-pulse rounded mt-1" />
       ) : (
-        <LiveValue value={value} unit={unit} precision={precision} valueClassName="text-2xl" flash />
+        <LiveValue value={value} unit={unit} precision={precision} valueClassName="text-3xl font-bold leading-none tracking-tight" flash />
       )}
 
       {trend && !loading && (
@@ -366,7 +374,7 @@ export function DrillDownCard({
 
   return (
     <Link href={href}>
-      <div className="bg-card border border-card-border rounded-xl p-4 hover:border-primary/40 cursor-pointer group transition-all">
+      <div className="bg-card border border-card-border rounded-xl p-4 hover:border-accent-brand/40 cursor-pointer group transition-all duration-300 hover:shadow-lg hover:shadow-black/20">
         <div className="flex items-start justify-between mb-3">
           <div>
             <div className="font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">{title}</div>
@@ -398,7 +406,7 @@ export function DrillDownCard({
           </div>
         )}
         <div className="mt-1.5 flex justify-end">
-          <span className="text-xs text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-xs text-primary flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
             View detail <ArrowRight className="w-3 h-3" />
           </span>
         </div>

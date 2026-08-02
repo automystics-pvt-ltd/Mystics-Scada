@@ -72,7 +72,7 @@ export default function Login() {
       {/* Brand header */}
       <div className="flex flex-col items-center text-center select-none">
         <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-lg"
+          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(20,205,230,0.4)] ring-2 ring-accent-brand/50"
           style={{ background: "linear-gradient(135deg,#6366f1,#4f46e5)" }}
         >
           <Zap className="h-7 w-7 text-white" strokeWidth={2.5} />
@@ -82,13 +82,13 @@ export default function Login() {
       </div>
 
       {/* Login card */}
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
-        <h2 className="text-2xl font-bold text-gray-900 mb-1">Sign in</h2>
-        <p className="text-sm text-gray-500 mb-6">Enter your email and password.</p>
+      <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <h2 className="text-2xl font-bold text-white mb-1">Sign in</h2>
+        <p className="text-sm text-slate-400 mb-6">Enter your email and password.</p>
 
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <label className="block text-sm font-semibold text-slate-300 mb-1.5">
               Email address
             </label>
             <input
@@ -98,18 +98,18 @@ export default function Login() {
               required
               autoFocus
               placeholder="you@example.com"
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-accent-brand focus:border-transparent transition-all"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-sm font-semibold text-gray-700">
+              <label className="block text-sm font-semibold text-slate-300">
                 Password
               </label>
               <Link
                 href="/forgot-password"
-                className="text-xs text-indigo-600 hover:text-indigo-500 font-medium"
+                className="text-xs text-accent-brand hover:opacity-80 font-medium transition-opacity"
               >
                 Forgot password?
               </Link>
@@ -121,12 +121,12 @@ export default function Login() {
                 onChange={e => setPassword(e.target.value)}
                 required
                 placeholder="••••••••"
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 pr-11 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-11 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-accent-brand focus:border-transparent transition-all"
               />
               <button
                 type="button"
                 onClick={() => setShowPwd(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
               >
                 {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -134,16 +134,16 @@ export default function Login() {
           </div>
 
           {error && (
-            <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
-              <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5">
+              <AlertTriangle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+              <p className="text-sm text-red-200">{error}</p>
             </div>
           )}
 
           <button
             type="submit"
             disabled={loading || !email.trim() || !password}
-            className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-all shadow-sm"
+            className="w-full flex items-center justify-center gap-2 bg-accent-brand hover:bg-[#14cde6] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(20,205,230,0.3)]"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             {loading ? "Signing in…" : "Sign in"}

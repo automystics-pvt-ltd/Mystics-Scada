@@ -65,18 +65,22 @@ function KpiBox({ label, value, unit, icon: Icon, accent = false, loading = fals
   return (
     <div className={`flex-1 min-w-0 px-5 py-4 rounded-xl border transition-all ${
       accent
-        ? "bg-primary/5 border-primary/20"
+        ? "bg-accent-brand/5 border-accent-brand/20 shadow-[0_0_15px_rgba(20,205,230,0.1)]"
         : "bg-card border-border/60"
     }`}>
-      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
-        <Icon className="w-3 h-3" />
-        {label}
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] font-medium text-muted-foreground tracking-normal capitalize">
+          {label}
+        </span>
+        <div className="w-6 h-6 rounded flex items-center justify-center bg-muted/50 border border-border/50">
+          <Icon className="w-3.5 h-3.5 text-muted-foreground/70" />
+        </div>
       </div>
       {loading ? (
-        <div className="h-7 w-24 bg-muted/40 rounded animate-pulse" />
+        <div className="h-7 w-24 bg-muted/40 rounded animate-pulse mt-1" />
       ) : (
-        <div className="flex items-baseline gap-1.5">
-          <span className={`text-2xl font-bold tabular-nums ${accent ? "text-primary" : "text-foreground"}`}>
+        <div className="flex items-baseline gap-1.5 mt-1">
+          <span className={`text-2xl font-bold tabular-nums ${accent ? "text-accent-brand" : "text-foreground"}`}>
             {value ?? "--"}
           </span>
           {unit && <span className="text-sm text-muted-foreground font-medium">{unit}</span>}
@@ -301,7 +305,7 @@ export default function PlantDashboard() {
               <Link key={item.name} href={item.href}>
                 <button className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition-all -mb-px ${
                   isActive
-                    ? "border-primary text-primary"
+                    ? "border-accent-brand text-accent-brand"
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                 }`}>
                   {item.icon && <item.icon className="w-3.5 h-3.5" />}
@@ -313,11 +317,11 @@ export default function PlantDashboard() {
         </div>
 
         {/* ── HERO: Live power number ───────────────────────────────────── */}
-        <div className="flex flex-col items-center justify-center py-6 bg-card border border-border/60 rounded-2xl relative overflow-hidden">
+        <div className="flex flex-col items-center justify-center py-8 bg-card border border-border/60 rounded-2xl relative overflow-hidden">
           {/* Subtle gradient glow */}
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/3 to-transparent pointer-events-none" />
-          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">Current Power Output</p>
-          <div className="flex items-baseline gap-2">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(190,85%,52%,0.08)_0%,transparent_70%)] pointer-events-none" />
+          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2 z-10">Current Power Output</p>
+          <div className="flex items-baseline gap-2 z-10">
             {isLoading ? (
               <div className="h-16 w-48 bg-muted/40 rounded animate-pulse" />
             ) : (
@@ -373,7 +377,7 @@ export default function PlantDashboard() {
                 onClick={() => { setPeriod(p); setDateOffset(0); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   period === p
-                    ? "bg-card shadow-sm text-foreground border border-border/40"
+                    ? "bg-card shadow-sm text-accent-brand border-b-2 border-accent-brand"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -553,12 +557,12 @@ export default function PlantDashboard() {
               ))}
             </div>
             {/* Dot matrix */}
-            <div className="flex flex-wrap gap-1.5 flex-1">
+            <div className="flex flex-wrap gap-2 flex-1">
               {inverters.length > 0 ? inverters.map((inv: any) => (
                 <Link key={inv.id ?? inv.index} href={`${BASE}plants/${pid}/inverters/${inv.id ?? inv.index}`}>
                   <div
                     title={`${inv.name}: ${inv.status} · ${inv.acPowerKw?.toFixed(0) ?? 0} kW`}
-                    className={`w-6 h-6 rounded-sm border border-white/10 cursor-pointer hover:scale-125 transition-transform ${STATUS_DOT[inv.status] ?? "bg-muted"}`}
+                    className={`w-7 h-7 rounded-md border border-white/10 cursor-pointer hover:scale-110 transition-transform ${STATUS_DOT[inv.status] ?? "bg-muted"}`}
                   />
                 </Link>
               )) : (
@@ -610,9 +614,9 @@ export default function PlantDashboard() {
               <div className="px-5 pb-5 grid grid-cols-1 md:grid-cols-3 gap-3">
                 {plantInsights.slice(0, 3).map(insight => {
                   const cfg = {
-                    critical: { color: "text-red-400",  bg: "bg-red-500/8",    border: "border-l-red-500" },
-                    warning:  { color: "text-amber-400", bg: "bg-amber-500/8",  border: "border-l-amber-500" },
-                    info:     { color: "text-primary",   bg: "bg-primary/8",    border: "border-l-primary" },
+                    critical: { color: "text-status-fault",  bg: "bg-status-fault/15",    border: "border-l-status-fault" },
+                    warning:  { color: "text-[#e67e22]", bg: "bg-[#e67e22]/15",  border: "border-l-[#e67e22]" },
+                    info:     { color: "text-blue-400",   bg: "bg-blue-500/15",    border: "border-l-blue-400" },
                   }[insight.severity];
                   return (
                     <div key={insight.id} className={`border border-border/50 border-l-4 ${cfg.border} rounded-lg p-3 ${cfg.bg}`}>

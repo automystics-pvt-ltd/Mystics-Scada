@@ -85,24 +85,24 @@ function buildSections(isSuperAdmin: boolean): Section[] {
       id: "operations",
       label: "Operations",
       icon: LayoutDashboard,
-      color: "text-indigo-400",
-      bgColor: "bg-indigo-500/15",
+      color: "text-accent-brand",
+      bgColor: "bg-accent-brand/15",
       items: OPERATIONS_ITEMS,
     },
     {
       id: "devices",
       label: "Devices & Data",
       icon: Cpu,
-      color: "text-cyan-400",
-      bgColor: "bg-cyan-500/15",
+      color: "text-accent-brand",
+      bgColor: "bg-accent-brand/15",
       items: DEVICES_ITEMS,
     },
     {
       id: "admin",
       label: "Administration",
       icon: Settings2,
-      color: "text-amber-400",
-      bgColor: "bg-amber-500/15",
+      color: "text-accent-brand",
+      bgColor: "bg-accent-brand/15",
       items: ADMIN_ITEMS,
     },
   ];
@@ -111,8 +111,8 @@ function buildSections(isSuperAdmin: boolean): Section[] {
       id: "platform",
       label: "Platform Admin",
       icon: ShieldAlert,
-      color: "text-purple-400",
-      bgColor: "bg-purple-500/15",
+      color: "text-accent-brand",
+      bgColor: "bg-accent-brand/15",
       items: PLATFORM_ITEMS,
     });
   }
@@ -371,9 +371,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <button
                   onClick={() => setUserMenuOpen(o => !o)}
                   title={user.name}
-                  className="relative w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center hover:ring-2 hover:ring-primary/30 transition-all"
+                  className="relative w-7 h-7 rounded-full bg-accent-brand/10 border border-accent-brand/30 flex items-center justify-center hover:ring-2 hover:ring-accent-brand/40 transition-all"
                 >
-                  <span className="text-[10px] font-bold text-primary leading-none">
+                  <span className="text-[10px] font-bold text-accent-brand leading-none">
                     {getInitials(user.name)}
                   </span>
                 </button>
@@ -412,11 +412,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {/* Section label + items */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden">
               {/* Section header */}
-              <div className="flex items-center gap-2 px-4 pt-4 pb-2">
-                <currentSection.icon
-                  className={`h-3.5 w-3.5 flex-shrink-0 ${currentSection.color}`}
-                />
-                <span className={`text-[10px] font-bold uppercase tracking-widest ${currentSection.color}`}>
+              <div className="flex items-center gap-2 px-4 pt-5 pb-3">
+                <div className={`flex items-center justify-center p-1.5 rounded-md ${currentSection.bgColor}`}>
+                  <currentSection.icon className={`h-4 w-4 flex-shrink-0 ${currentSection.color}`} />
+                </div>
+                <span className={`text-[11px] font-bold uppercase tracking-widest ${currentSection.color}`}>
                   {currentSection.label}
                 </span>
               </div>
@@ -435,7 +435,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
               {/* Divider + quick jump to other sections */}
               <div className="mx-3 border-t border-sidebar-border/40 pt-3 pb-3">
-                <p className="text-[9px] text-sidebar-foreground/30 font-semibold uppercase tracking-widest px-2 mb-1.5">
+                <p className="text-[9px] font-semibold tracking-[0.15em] text-muted-foreground/40 uppercase px-2 mb-1.5">
                   Jump to
                 </p>
                 {sections.filter(s => s.id !== activeSection).map(s => (
@@ -472,14 +472,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
               {/* Tick sparkline */}
               {connected && (
-                <div className="flex gap-px px-3 pb-2">
+                <div className="flex gap-px px-3 pb-2 h-4 items-end">
                   {Array.from({ length: 12 }).map((_, i) => (
                     <div
                       key={i}
                       className={`flex-1 rounded-sm transition-all duration-300 ${
                         flash && i >= 12 - (tickCount % 12) - 1
-                          ? "h-2.5 bg-emerald-500"
-                          : "h-1.5 bg-emerald-500/20"
+                          ? "h-3.5 bg-accent-brand"
+                          : "h-2 bg-accent-brand/20"
                       }`}
                     />
                   ))}
